@@ -1,0 +1,76 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+describe('group allowlist guard', () => {
+  beforeEach(() => {
+    delete process.env.VRCHAT_MCP_ALLOW_WRITES;
+    delete process.env.VRCHAT_MCP_GROUP_ALLOWLIST;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.VRCHAT_MCP_ALLOW_WRITES;
+    delete process.env.VRCHAT_MCP_GROUP_ALLOWLIST;
+    vi.resetModules();
+  });
+
+  it('blocks non-GET group operations when group not allowlisted', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    process.env.VRCHAT_MCP_GROUP_ALLOWLIST = 'grp_allowed';
+
+    vi.doMock('../../src/core/spec.js', () => ({
+      getSpecIndex: () => ({
+        operations: new Map([
+          [
+            'createGroupThing',
+            {
+              method: 'POST',
+              path: '/groups/{groupId}/things',
+              parameters: [{ name: 'groupId', in: 'path', required: true }],
+              hasRequestBody: true,
+            },
+          ],
+        ]),
+      }),
+    }));
+
+    const { callOperation } = await import('../../src/core/client.js');
+    await expect(
+      callOperation({
+        operationId: 'createGroupThing',
+        params: { groupId: 'grp_blocked' },
+        body: { name: 'test' },
+        options: { dryRun: true },
+      }),
+    ).rejects.toThrow(/not in groups\.allowlist/);
+  });
+
+  it('allows non-GET group operations when group allowlisted', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    process.env.VRCHAT_MCP_GROUP_ALLOWLIST = 'grp_allowed';
+
+    vi.doMock('../../src/core/spec.js', () => ({
+      getSpecIndex: () => ({
+        operations: new Map([
+          [
+            'createGroupThing',
+            {
+              method: 'POST',
+              path: '/groups/{groupId}/things',
+              parameters: [{ name: 'groupId', in: 'path', required: true }],
+              hasRequestBody: true,
+            },
+          ],
+        ]),
+      }),
+    }));
+
+    const { callOperation } = await import('../../src/core/client.js');
+    const result = await callOperation({
+      operationId: 'createGroupThing',
+      params: { groupId: 'grp_allowed' },
+      body: { name: 'test' },
+      options: { dryRun: true },
+    });
+    expect(result.dryRun).toBe(true);
+  });
+});

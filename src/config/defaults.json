@@ -1,0 +1,95 @@
+{
+  "api": {
+    "baseUrl": "https://api.vrchat.cloud/api/1",
+    "userAgent": "vrchat-mcp/{version}"
+  },
+  "spec": {
+    "url": "https://vrchat.community/openapi.yaml"
+  },
+  "logging": {
+    "level": "info"
+  },
+  "auth": {
+    "cookieStore": "memory",
+    "cookieFile": "~/.vrchat-mcp-cookies.json"
+  },
+  "writes": {
+    "allow": false
+  },
+  "cache": {
+    "enabled": true,
+    "ttlSeconds": {
+      "friends": 120,
+      "userGroups": 300,
+      "groups": 300,
+      "notifications": 30
+    },
+    "staleTtlSeconds": {
+      "friends": 600,
+      "userGroups": 1800,
+      "groups": 1800,
+      "notifications": 300
+    }
+  },
+  "pipeline": {
+    "enabled": true,
+    "url": "wss://pipeline.vrchat.cloud/",
+    "reconnectMs": 5000,
+    "changeBuffer": 200,
+    "userAgent": ""
+  },
+  "confirmations": {
+    "ttlMs": 120000
+  },
+  "groups": {
+    "allowlist": []
+  },
+  "generatedReadTools": {
+    "disable": false,
+    "skipOperationIds": [
+      "getCurrentUser",
+      "getFriends",
+      "getFriendStatus",
+      "getNotification",
+      "getNotifications",
+      "getConfig",
+      "getSystemTime",
+      "getUser",
+      "getUserByName",
+      "searchUsers",
+      "getWorld",
+      "searchWorlds",
+      "getActiveWorlds",
+      "getRecentWorlds",
+      "getFavoritedWorlds",
+      "getInstance",
+      "getInstanceByShortName",
+      "getRecentLocations",
+      "getGroup",
+      "getGroupMembers",
+      "getGroupMember",
+      "getGroupRoles",
+      "getGroupPermissions",
+      "getGroupAnnouncements",
+      "getGroupPosts",
+      "getGroupInstances",
+      "getUserGroups",
+      "getUserGroupRequests",
+      "getUserRepresentedGroup",
+      "getCalendarEvents",
+      "getFeaturedCalendarEvents",
+      "getFollowedCalendarEvents",
+      "searchCalendarEvents",
+      "getGroupCalendarEvents",
+      "getGroupCalendarEvent",
+      "getInviteMessages",
+      "getInviteMessage",
+      "getAvatar",
+      "searchAvatars",
+      "getFavoritedAvatars",
+      "getFavorites",
+      "getFavoriteGroups",
+      "getFavoriteLimits"
+    ]
+  }
+}

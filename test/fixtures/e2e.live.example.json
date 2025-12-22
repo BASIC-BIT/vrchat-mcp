@@ -1,0 +1,14 @@
+{
+  "cookieFile": ".vrchat-mcp-cookies.json",
+  "expectFriend": "Nakk",
+  "bogusQuery": "slkdjf",
+  "loginTimeoutSec": 120,
+  "debug": false,
+  "writeTests": {
+    "enabled": false,
+    "worldId": "wrld_example",
+    "region": "us",
+    "type": "private",
+    "inviteUserId": "usr_example"
+  }
+}

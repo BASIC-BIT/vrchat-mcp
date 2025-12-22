@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.vitest/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime / temp
+.tmp-*
+.cache/
+
+# Local auth / state
+.vrchat-mcp-cookies.json
+
+# Local E2E config
+test/fixtures/e2e.live.json
+test/fixtures/evals.live.json
+
+# Environment files
+.env
+.env.*.local
+
+# Local reference files
+specs/vrchat-openapi.yaml
+
+# OS / editor
+.DS_Store
+Thumbs.db

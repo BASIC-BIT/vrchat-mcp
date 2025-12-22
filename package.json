@@ -1,0 +1,67 @@
+{
+  "name": "vrchat-mcp",
+  "version": "0.0.0",
+  "description": "VRChat MCP server (TypeScript, stdio) with curated read tools and OpenAPI mirroring.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "vrchat-mcp": "dist/bin/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint . --ext .ts,.tsx,.mts --max-warnings=0",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run test/e2e",
+    "test:e2e:live": "vitest run test/e2e/live.test.ts",
+    "test:evals": "vitest run test/evals",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "mcp:login": "tsx scripts/mcp-client.ts login",
+    "mcp:status": "tsx scripts/mcp-client.ts status",
+    "mcp:logout": "tsx scripts/mcp-client.ts logout",
+    "mcp:list-tools": "tsx scripts/mcp-client.ts list-tools",
+    "mcp:call": "tsx scripts/mcp-client.ts call",
+    "generate:read-tools": "tsx scripts/generate-read-tools.ts",
+    "generate:test-schemas": "openapi-zod-client test/fixtures/spec.yaml -o test/generated/mock-schemas.ts -t scripts/templates/openapi-schemas.hbs --export-schemas -p .prettierrc.json",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "vrchat",
+    "mcp",
+    "modelcontextprotocol",
+    "claude"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0",
+    "openapi-backend": "^5.15.0",
+    "openapi-zod-client": "^1.18.3",
+    "prettier": "^3.7.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "keytar": "^7.9.0",
+    "tough-cookie": "^6.0.0",
+    "undici": "^7.16.0",
+    "yaml": "^2.8.2",
+    "zod": "^4.2.1"
+  }
+}

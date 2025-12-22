@@ -1,0 +1,1044 @@
+openapi: 3.0.0
+info:
+  title: VRChat Mock Spec
+  version: 0.0.0
+components:
+  parameters:
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    UsernameParam:
+      name: username
+      in: path
+      required: true
+      schema:
+        type: string
+    WorldIdParam:
+      name: worldId
+      in: path
+      required: true
+      schema:
+        type: string
+    InstanceIdParam:
+      name: instanceId
+      in: path
+      required: true
+      schema:
+        type: string
+    ShortNameParam:
+      name: shortName
+      in: path
+      required: true
+      schema:
+        type: string
+    GroupIdParam:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+    NotificationIdParam:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+    InviteUserIdParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    InviteMessageTypeParam:
+      name: messageType
+      in: path
+      required: true
+      schema:
+        type: string
+    InviteSlotParam:
+      name: slot
+      in: path
+      required: true
+      schema:
+        type: integer
+    AvatarIdParam:
+      name: avatarId
+      in: path
+      required: true
+      schema:
+        type: string
+    CalendarIdParam:
+      name: calendarId
+      in: path
+      required: true
+      schema:
+        type: string
+    LimitParam:
+      name: n
+      in: query
+      required: false
+      schema:
+        type: integer
+    OffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+    SearchParam:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    SearchTermParam:
+      name: searchTerm
+      in: query
+      required: true
+      schema:
+        type: string
+  schemas:
+    Config:
+      type: object
+      properties:
+        clientApiKey:
+          type: string
+      required: [clientApiKey]
+    SystemTime:
+      type: object
+      properties:
+        time:
+          type: string
+      required: [time]
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        username:
+          type: string
+      required: [id, displayName]
+    Friend:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+      required: [id, displayName]
+    FriendStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        message:
+          type: string
+      required: [id, type]
+    InviteMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        messageType:
+          type: string
+        slot:
+          type: integer
+        message:
+          type: string
+      required: [id, userId, messageType, slot]
+    World:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required: [id, name]
+    Instance:
+      type: object
+      properties:
+        id:
+          type: string
+        world:
+          $ref: '#/components/schemas/World'
+      required: [id]
+    Avatar:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required: [id, name]
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        favoriteId:
+          type: string
+      required: [id, type, favoriteId]
+    FavoriteGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required: [id, name, type]
+    FavoriteLimits:
+      type: object
+      properties:
+        maxFavorites:
+          type: integer
+        maxFavoriteGroups:
+          type: integer
+      required: [maxFavorites, maxFavoriteGroups]
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required: [id, name]
+    GroupMember:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        roleId:
+          type: string
+      required: [userId, displayName]
+    GroupRole:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required: [id, name]
+    GroupPermission:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required: [id, name]
+    GroupAnnouncement:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      required: [id, title]
+    GroupPost:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      required: [id, title]
+    GroupInstance:
+      type: object
+      properties:
+        id:
+          type: string
+        worldId:
+          type: string
+        instanceId:
+          type: string
+      required: [id, worldId, instanceId]
+    CalendarEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        groupId:
+          type: string
+      required: [id, title]
+paths:
+  /config:
+    get:
+      operationId: getConfig
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+  /time:
+    get:
+      operationId: getSystemTime
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemTime'
+  /auth/user:
+    get:
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{userId}:
+    get:
+      operationId: getUser
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{username}/name:
+    get:
+      operationId: getUserByName
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users:
+    get:
+      operationId: searchUsers
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /users/{userId}/groups:
+    get:
+      operationId: getUserGroups
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+  /users/{userId}/groups/requests:
+    get:
+      operationId: getUserGroupRequests
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+  /users/{userId}/groups/represented:
+    get:
+      operationId: getUserRepresentedGroup
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+  /friends:
+    get:
+      operationId: getFriends
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: offline
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+  /friends/{userId}:
+    get:
+      operationId: getFriendStatus
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendStatus'
+  /users/{userId}/friends:
+    get:
+      operationId: getUserFriends
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: tags
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+  /notifications:
+    get:
+      operationId: getNotifications
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+  /notifications/{notificationId}:
+    get:
+      operationId: getNotification
+      parameters:
+        - $ref: '#/components/parameters/NotificationIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+  /worlds/{worldId}:
+    get:
+      operationId: getWorld
+      parameters:
+        - $ref: '#/components/parameters/WorldIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/World'
+  /worlds:
+    get:
+      operationId: searchWorlds
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/World'
+  /worlds/active:
+    get:
+      operationId: getActiveWorlds
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/World'
+  /worlds/recent:
+    get:
+      operationId: getRecentWorlds
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/World'
+  /worlds/favorites:
+    get:
+      operationId: getFavoritedWorlds
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/World'
+  /instances:
+    post:
+      operationId: createInstance
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
+  /instances/{worldId}/{instanceId}:
+    get:
+      operationId: getInstance
+      parameters:
+        - $ref: '#/components/parameters/WorldIdParam'
+        - $ref: '#/components/parameters/InstanceIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
+  /instances/{shortName}:
+    get:
+      operationId: getInstanceByShortName
+      parameters:
+        - $ref: '#/components/parameters/ShortNameParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
+  /instances/recent:
+    get:
+      operationId: getRecentLocations
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /avatars/{avatarId}:
+    get:
+      operationId: getAvatar
+      parameters:
+        - $ref: '#/components/parameters/AvatarIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Avatar'
+  /avatars:
+    get:
+      operationId: searchAvatars
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Avatar'
+  /avatars/favorites:
+    get:
+      operationId: getFavoritedAvatars
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Avatar'
+  /favorites:
+    get:
+      operationId: getFavorites
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Favorite'
+  /favorites/groups:
+    get:
+      operationId: getFavoriteGroups
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FavoriteGroup'
+  /favorites/limits:
+    get:
+      operationId: getFavoriteLimits
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteLimits'
+  /groups/{groupId}:
+    get:
+      operationId: getGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+  /groups/{groupId}/members:
+    get:
+      operationId: getGroupMembers
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMember'
+  /groups/{groupId}/members/{userId}:
+    get:
+      operationId: getGroupMember
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMember'
+  /groups/{groupId}/roles:
+    get:
+      operationId: getGroupRoles
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupRole'
+  /groups/{groupId}/permissions:
+    get:
+      operationId: getGroupPermissions
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupPermission'
+  /groups/{groupId}/announcements:
+    get:
+      operationId: getGroupAnnouncements
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAnnouncement'
+  /groups/{groupId}/posts:
+    get:
+      operationId: getGroupPosts
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupPost'
+  /groups/{groupId}/instances:
+    get:
+      operationId: getGroupInstances
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupInstance'
+  /calendar/events:
+    get:
+      operationId: getCalendarEvents
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+  /calendar/events/featured:
+    get:
+      operationId: getFeaturedCalendarEvents
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+  /calendar/events/followed:
+    get:
+      operationId: getFollowedCalendarEvents
+      parameters:
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+  /calendar/events/search:
+    get:
+      operationId: searchCalendarEvents
+      parameters:
+        - $ref: '#/components/parameters/SearchTermParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+  /calendar/groups/{groupId}/events:
+    get:
+      operationId: getGroupCalendarEvents
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+    post:
+      operationId: createGroupCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+  /calendar/groups/{groupId}/events/{calendarId}:
+    get:
+      operationId: getGroupCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/CalendarIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+    put:
+      operationId: updateGroupCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/CalendarIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+    delete:
+      operationId: deleteGroupCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/CalendarIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /invite/myself/to/{worldId}:{instanceId}:
+    post:
+      operationId: inviteMyselfTo
+      parameters:
+        - $ref: '#/components/parameters/WorldIdParam'
+        - $ref: '#/components/parameters/InstanceIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+  /invite/{userId}:
+    post:
+      operationId: inviteUser
+      parameters:
+        - $ref: '#/components/parameters/InviteUserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+  /inviteMessages/{userId}/{messageType}:
+    get:
+      operationId: getInviteMessages
+      parameters:
+        - $ref: '#/components/parameters/InviteUserIdParam'
+        - $ref: '#/components/parameters/InviteMessageTypeParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InviteMessage'
+  /inviteMessages/{userId}/{messageType}/{slot}:
+    get:
+      operationId: getInviteMessage
+      parameters:
+        - $ref: '#/components/parameters/InviteUserIdParam'
+        - $ref: '#/components/parameters/InviteMessageTypeParam'
+        - $ref: '#/components/parameters/InviteSlotParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteMessage'
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean

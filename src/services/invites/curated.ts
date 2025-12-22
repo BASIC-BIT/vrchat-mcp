@@ -1,0 +1,72 @@
+import { callOperation } from '../../core/client.js';
+import type { InviteSelfInput, InviteUserInput } from '../../models/invites.js';
+
+export interface InviteLocation {
+  worldId: string;
+  instanceId: string;
+}
+
+export type InviteUserPreparation =
+  | { ok: true; userId: string; request: Record<string, unknown> }
+  | { ok: false; reason: string };
+
+export function resolveInviteLocation(args: InviteSelfInput): InviteLocation {
+  if (args.location) {
+    const parts = args.location.split(':');
+    if (parts.length >= 2) {
+      return { worldId: parts[0], instanceId: parts.slice(1).join(':') };
+    }
+  }
+  if (args.worldId && args.instanceId) {
+    return { worldId: args.worldId, instanceId: args.instanceId };
+  }
+  throw new Error('Provide location or worldId + instanceId.');
+}
+
+export function resolveInviteInstanceId(args: { instanceId?: string; location?: string }): string {
+  if (args.instanceId) return args.instanceId;
+  if (args.location) {
+    const parts = args.location.split(':');
+    if (parts.length >= 2) {
+      return parts.slice(1).join(':');
+    }
+    return args.location;
+  }
+  throw new Error('Provide instanceId or location.');
+}
+
+export function prepareInviteUser(input: InviteUserInput): InviteUserPreparation {
+  let instanceId: string;
+  try {
+    instanceId = resolveInviteInstanceId({ instanceId: input.instanceId, location: input.location });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Provide instanceId or location.';
+    return { ok: false, reason: message };
+  }
+
+  const request: Record<string, unknown> = { instanceId };
+  if (typeof input.messageSlot === 'number') {
+    request.messageSlot = input.messageSlot;
+  }
+  return { ok: true, userId: input.userId, request };
+}
+
+export async function sendSelfInvite(location: InviteLocation): Promise<unknown> {
+  const result = await callOperation({
+    operationId: 'inviteMyselfTo',
+    params: { worldId: location.worldId, instanceId: location.instanceId },
+  });
+  return result.data ?? null;
+}
+
+export async function sendUserInvite(
+  userId: string,
+  request: Record<string, unknown>,
+): Promise<unknown> {
+  const result = await callOperation({
+    operationId: 'inviteUser',
+    params: { userId },
+    body: request,
+  });
+  return result.data ?? null;
+}

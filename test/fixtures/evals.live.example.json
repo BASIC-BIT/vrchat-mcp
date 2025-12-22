@@ -1,0 +1,20 @@
+{
+  "openaiApiKeyEnv": "OPENAI_API_KEY",
+  "model": "gpt-4o-mini",
+  "apiBaseUrl": "https://api.openai.com/v1",
+  "temperature": 0,
+  "maxOutputTokens": 400,
+  "debug": false,
+  "expectations": {
+    "friendName": "Nakk",
+    "worldId": "wrld_123",
+    "worldName": "Example World",
+    "groupId": "grp_123",
+    "groupName": "Example Group",
+    "groupMemberName": "ExampleMember",
+    "avatarId": "avtr_123",
+    "avatarName": "Example",
+    "avatarNameExact": "Example Avatar",
+    "favoriteWorldId": "wrld_123"
+  }
+}
