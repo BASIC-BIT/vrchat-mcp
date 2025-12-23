@@ -7,7 +7,7 @@ This document is the canonical list of tools exposed by this MCP server. Tool na
 - `vrchat_friends_search` - search friends by display name (read-only).
 - `vrchat_friends_all` - fetch all friends (cache-backed, optional offline) (read-only).
 - `vrchat_friends_online` - fetch online friends only (cache-backed) (read-only).
-- `vrchat_friends_overview` - summarize friends by status/location (cache-backed) (read-only).
+- `vrchat_friends_overview` - location-centric social overview with per-instance friend lists + instance details (auto-unrolled, cache-backed, optional status filter + minInstanceUserCount + instanceDetailLevel) (read-only).
 - `vrchat_user_profile` - fetch a user profile and optionally include their groups (read-only).
 - `vrchat_user_groups` - list a user's groups (id + name only, cache-backed) (read-only).
 - `vrchat_groups_search` - search groups by name or shortCode (read-only).

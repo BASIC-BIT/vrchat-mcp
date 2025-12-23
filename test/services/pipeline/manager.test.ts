@@ -26,7 +26,7 @@ vi.mock('../../../src/infra/logger.js', () => ({
   },
 }));
 
-type FakeWebSocketCtor = {
+interface FakeWebSocketCtor {
   new (url: string, options?: unknown): {
     url: string;
     options: unknown;
@@ -36,7 +36,7 @@ type FakeWebSocketCtor = {
     onclose: (() => void) | null;
     close: () => void;
   };
-  instances: Array<{
+  instances: {
     url: string;
     options: unknown;
     onopen: (() => void) | null;
@@ -44,8 +44,8 @@ type FakeWebSocketCtor = {
     onerror: ((err: unknown) => void) | null;
     onclose: (() => void) | null;
     close: () => void;
-  }>;
-};
+  }[];
+}
 
 const { fakeWebSocketRef } = vi.hoisted(() => ({
   fakeWebSocketRef: { current: null as FakeWebSocketCtor | null },
@@ -85,14 +85,20 @@ import { getConfig } from '../../../src/config/index.js';
 import { logger } from '../../../src/infra/logger.js';
 import { PipelineManager } from '../../../src/services/pipeline/manager.js';
 
+const onStatusChangeSpy = vi.spyOn(authManager, 'onStatusChange');
+const getStatusSpy = vi.spyOn(authManager, 'getStatus');
+const getCookieValueSpy = vi.spyOn(authManager, 'getCookieValue');
+const loggerInfoSpy = vi.spyOn(logger, 'info');
+const loggerWarnSpy = vi.spyOn(logger, 'warn');
+
 describe('pipeline manager', () => {
   beforeEach(() => {
-    vi.mocked(authManager.onStatusChange).mockReset();
-    vi.mocked(authManager.getStatus).mockReset();
-    vi.mocked(authManager.getCookieValue).mockReset();
+    onStatusChangeSpy.mockReset();
+    getStatusSpy.mockReset();
+    getCookieValueSpy.mockReset();
     vi.mocked(getConfig).mockReset();
-    vi.mocked(logger.info).mockReset();
-    vi.mocked(logger.warn).mockReset();
+    loggerInfoSpy.mockReset();
+    loggerWarnSpy.mockReset();
     getFakeWebSocket().instances = [];
   });
 
@@ -109,8 +115,8 @@ describe('pipeline manager', () => {
     const manager = new PipelineManager();
     manager.start();
 
-    expect(logger.info).toHaveBeenCalledWith('Pipeline disabled via config.');
-    expect(authManager.onStatusChange).not.toHaveBeenCalled();
+    expect(loggerInfoSpy).toHaveBeenCalledWith('Pipeline disabled via config.');
+    expect(onStatusChangeSpy).not.toHaveBeenCalled();
   });
 
   it('subscribes to auth changes and stops cleanly when enabled', () => {
@@ -123,12 +129,12 @@ describe('pipeline manager', () => {
         userAgent: 'ua',
       },
     });
-    vi.mocked(authManager.onStatusChange).mockReturnValue(unsubscribe);
-    vi.mocked(authManager.getStatus).mockReturnValue({ loggedIn: false });
+    onStatusChangeSpy.mockReturnValue(unsubscribe);
+    getStatusSpy.mockReturnValue({ loggedIn: false });
 
     const manager = new PipelineManager();
     manager.start();
-    expect(authManager.onStatusChange).toHaveBeenCalled();
+    expect(onStatusChangeSpy).toHaveBeenCalled();
 
     manager.stop();
     expect(unsubscribe).toHaveBeenCalled();
@@ -144,15 +150,17 @@ describe('pipeline manager', () => {
         userAgent: 'ua',
       },
     });
-    vi.mocked(authManager.onStatusChange).mockReturnValue(unsubscribe);
-    vi.mocked(authManager.getStatus).mockReturnValue({ loggedIn: true });
-    vi.mocked(authManager.getCookieValue).mockResolvedValue(undefined);
+    onStatusChangeSpy.mockReturnValue(unsubscribe);
+    getStatusSpy.mockReturnValue({ loggedIn: true });
+    getCookieValueSpy.mockResolvedValue(undefined);
 
     const manager = new PipelineManager();
     manager.start();
 
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(logger.warn).toHaveBeenCalledWith('Pipeline auth token missing; waiting for login.');
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      'Pipeline auth token missing; waiting for login.',
+    );
   });
 
   it('connects websocket and dispatches messages', async () => {
@@ -164,9 +172,10 @@ describe('pipeline manager', () => {
         userAgent: 'ua',
       },
     });
-    vi.mocked(authManager.onStatusChange).mockReturnValue(() => {});
-    vi.mocked(authManager.getStatus).mockReturnValue({ loggedIn: true });
-    vi.mocked(authManager.getCookieValue).mockResolvedValue('token');
+    const unsubscribe = vi.fn();
+    onStatusChangeSpy.mockReturnValue(unsubscribe);
+    getStatusSpy.mockReturnValue({ loggedIn: true });
+    getCookieValueSpy.mockResolvedValue('token');
 
     const manager = new PipelineManager();
     const listener = vi.fn();
@@ -178,7 +187,7 @@ describe('pipeline manager', () => {
     expect(socket).toBeTruthy();
     expect(socket.url).toContain('authToken=token');
     socket.onopen?.();
-    expect(logger.info).toHaveBeenCalledWith('Pipeline websocket connected.');
+    expect(loggerInfoSpy).toHaveBeenCalledWith('Pipeline websocket connected.');
 
     socket.onmessage?.({
       data: JSON.stringify({ type: 'friend-online', content: { userId: 'usr_1' } }),
@@ -198,9 +207,10 @@ describe('pipeline manager', () => {
         userAgent: 'ua',
       },
     });
-    vi.mocked(authManager.onStatusChange).mockReturnValue(() => {});
-    vi.mocked(authManager.getStatus).mockReturnValue({ loggedIn: true });
-    vi.mocked(authManager.getCookieValue).mockResolvedValue('token');
+    const unsubscribe = vi.fn();
+    onStatusChangeSpy.mockReturnValue(unsubscribe);
+    getStatusSpy.mockReturnValue({ loggedIn: true });
+    getCookieValueSpy.mockResolvedValue('token');
 
     const manager = new PipelineManager();
     manager.start();

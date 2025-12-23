@@ -24,6 +24,10 @@ import {
   resolveGroupId,
 } from '../../../src/services/groups/curated.js';
 
+function expectPage(value: Record<string, unknown>) {
+  return expect.objectContaining(value) as Record<string, unknown>;
+}
+
 describe('groups curated service', () => {
   beforeEach(() => {
     cacheManager.invalidateAll();
@@ -72,7 +76,7 @@ describe('groups curated service', () => {
       'searchGroups',
       { query: 'Group' },
       expect.objectContaining({
-        page: expect.objectContaining({ size: 50, maxPages: 10, maxItems: 500 }),
+        page: expectPage({ size: 50, maxPages: 10, maxItems: 500 }),
       }),
     );
     expect(result).toMatchObject({ groups: [{ groupId: 'grp_1', name: 'Group' }] });
@@ -113,7 +117,7 @@ describe('groups curated service', () => {
       'getGroupMembers',
       { groupId: 'grp_1', roleId: 'role_1', sort: 'joinedAt', offset: 5 },
       expect.objectContaining({
-        page: expect.objectContaining({ size: 10, maxPages: 2, maxItems: 15 }),
+        page: expectPage({ size: 10, maxPages: 2, maxItems: 15 }),
       }),
     );
     expect(result.members).toHaveLength(1);
@@ -163,7 +167,7 @@ describe('groups curated service', () => {
       'getGroupPosts',
       { groupId: 'grp_1', publicOnly: true },
       expect.objectContaining({
-        page: expect.objectContaining({ size: 50, maxPages: 10 }),
+        page: expectPage({ size: 50, maxPages: 10 }),
       }),
     );
     expect(result.posts).toHaveLength(1);
@@ -180,7 +184,7 @@ describe('groups curated service', () => {
       'getGroupPosts',
       { groupId: 'grp_1', publicOnly: false },
       expect.objectContaining({
-        page: expect.objectContaining({ size: 5, maxPages: 1 }),
+        page: expectPage({ size: 5, maxPages: 1 }),
       }),
     );
     expect(result.posts).toHaveLength(1);

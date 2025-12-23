@@ -130,7 +130,8 @@ export function registerCuratedFriendTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.friends.overview'),
     {
-      description: 'Summarize friends by status and location (read-only).',
+      description:
+        'Summarize friends by status and location with enriched world/group info (read-only).',
       inputSchema: FriendsOverviewInputSchema,
       outputSchema: FriendsOverviewOutputSchema,
     },
@@ -139,12 +140,15 @@ export function registerCuratedFriendTools(server: McpServer): void {
         const result = await getFriendsOverview(args ?? {});
         const payload = {
           includeOffline: result.includeOffline,
+          statusFilter: result.statusFilter,
+          minInstanceUserCount: result.minInstanceUserCount,
+          instanceDetailLevel: result.instanceDetailLevel,
           totalFriends: result.totalFriends,
           onlineCount: result.onlineCount,
           offlineCount: result.offlineCount,
           statusCounts: result.statusCounts,
-          topOnline: result.topOnline,
-          locationsTop: result.locationsTop,
+          totals: result.totals,
+          locations: result.locations,
           truncated: result.meta.truncated,
           stale: result.meta.stale,
           segments: result.meta.segments,

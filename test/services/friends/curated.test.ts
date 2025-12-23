@@ -14,6 +14,12 @@ vi.mock('../../../src/services/friends/match.js', () => ({
   parseLocation: vi.fn(),
   searchFriendsByName: vi.fn(),
 }));
+vi.mock('../../../src/services/groups/index.js', () => ({
+  getGroupProfile: vi.fn(),
+}));
+vi.mock('../../../src/services/instances/index.js', () => ({
+  getInstanceDetails: vi.fn(),
+}));
 
 import { callReadOperation } from '../../../src/core/readTools.js';
 import { fetchFriends, fetchFriendsWithMeta } from '../../../src/services/friends/fetch.js';
@@ -22,6 +28,8 @@ import {
   parseLocation,
   searchFriendsByName,
 } from '../../../src/services/friends/match.js';
+import { getGroupProfile } from '../../../src/services/groups/index.js';
+import { getInstanceDetails } from '../../../src/services/instances/index.js';
 import {
   getFriendLocationDetails,
   getFriendsOverview,
@@ -38,6 +46,8 @@ describe('friends curated service', () => {
     vi.mocked(parseLocation).mockReset();
     vi.mocked(callReadOperation).mockReset();
     vi.mocked(searchFriendsByName).mockReset();
+    vi.mocked(getGroupProfile).mockReset();
+    vi.mocked(getInstanceDetails).mockReset();
   });
 
   it('returns not-found for missing friend', async () => {
@@ -142,6 +152,16 @@ describe('friends curated service', () => {
         stale: false,
       },
     });
+    vi.mocked(parseLocation).mockImplementation((raw?: string) => ({
+      raw: raw ?? null,
+      type: raw?.startsWith('wrld_') ? 'instance' : 'unknown',
+      worldId: raw?.startsWith('wrld_') ? raw.split(':')[0] : undefined,
+      instanceId: raw?.startsWith('wrld_') ? raw.split(':')[1] : undefined,
+    }));
+    vi.mocked(getInstanceDetails).mockResolvedValue({
+      instance: { id: 'inst', world: { name: 'Mock World' }, userCount: 3 },
+      stale: false,
+    });
 
     const result = await getFriendsOverview({});
     expect(result).toMatchObject({
@@ -149,22 +169,135 @@ describe('friends curated service', () => {
       onlineCount: 1,
       offlineCount: 1,
     });
+    expect(result.totals.all.totalFriends).toBe(2);
+    expect(result.totals.filtered.totalFriends).toBe(2);
+    expect(result.locations).toHaveLength(1);
   });
 
-  it('limits top online and top locations', async () => {
+  it('enriches locations with instance and group info', async () => {
+    vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
+      friends: [
+        {
+          id: 'u1',
+          displayName: 'A',
+          status: 'active',
+          location: 'wrld_1:inst~group(grp_1)~region(use)',
+        },
+        {
+          id: 'u2',
+          displayName: 'B',
+          status: 'active',
+          location: 'wrld_1:inst~group(grp_1)~region(use)',
+        },
+      ],
+      meta: { segments: [], truncated: false, total: 2, stale: false },
+    });
+    vi.mocked(parseLocation).mockImplementation((raw?: string) => ({
+      raw: raw ?? null,
+      type: 'instance',
+      worldId: 'wrld_1',
+      instanceId: 'inst',
+      groupId: 'grp_1',
+      accessType: 'group',
+      region: 'use',
+    }));
+    vi.mocked(getInstanceDetails).mockResolvedValue({
+      instance: { id: 'inst', world: { name: 'Mock World' }, userCount: 42 },
+      stale: false,
+    });
+    vi.mocked(getGroupProfile).mockResolvedValue({
+      group: { name: 'Mock Group', shortCode: 'MG' },
+      stale: false,
+    });
+
+    const result = await getFriendsOverview({});
+    expect(result.locations).toHaveLength(1);
+    expect(result.locations[0]).toMatchObject({
+      location: 'wrld_1:inst~group(grp_1)~region(use)',
+      worldId: 'wrld_1',
+      worldName: 'Mock World',
+      groupId: 'grp_1',
+      groupName: 'Mock Group',
+      groupShortCode: 'MG',
+      region: 'use',
+      friendCount: 2,
+    });
+    expect(result.locations[0]?.instance).toMatchObject({ userCount: 42 });
+    expect(getInstanceDetails).toHaveBeenCalledTimes(1);
+    expect(getGroupProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters by status', async () => {
     vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
       friends: [
         { id: 'u1', displayName: 'A', status: 'active', location: 'wrld_1:inst' },
-        { id: 'u2', displayName: 'B', status: 'active', location: 'wrld_1:inst' },
-        { id: 'u3', displayName: 'C', status: 'active', location: 'wrld_2:inst' },
-        { id: 'u4', displayName: 'D', status: 'offline', location: 'offline' },
+        { id: 'u2', displayName: 'B', status: 'busy', location: 'wrld_2:inst' },
       ],
-      meta: { segments: [], truncated: false, total: 4, stale: false },
+      meta: { segments: [], truncated: false, total: 2, stale: false },
+    });
+    vi.mocked(parseLocation).mockImplementation((raw?: string) => ({
+      raw: raw ?? null,
+      type: 'instance',
+      worldId: raw?.split(':')[0],
+      instanceId: raw?.split(':')[1],
+    }));
+    vi.mocked(getInstanceDetails).mockResolvedValue({
+      instance: { id: 'inst', world: { name: 'Mock World' }, userCount: 7 },
+      stale: false,
     });
 
-    const result = await getFriendsOverview({ maxOnline: 2, maxLocations: 1 });
-    expect(result.topOnline).toHaveLength(2);
-    expect(result.locationsTop).toHaveLength(1);
-    expect(result.locationsTop[0]?.location).toBe('wrld_1:inst');
+    const result = await getFriendsOverview({ status: 'busy' });
+    expect(result.totalFriends).toBe(1);
+    expect(result.statusCounts).toEqual({ busy: 1 });
+    expect(result.locations[0]?.friends).toHaveLength(1);
+    expect(result.totals.all.totalFriends).toBe(2);
+    expect(result.totals.filtered.totalFriends).toBe(1);
+  });
+
+  it('filters locations by min instance user count', async () => {
+    vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
+      friends: [
+        { id: 'u1', displayName: 'A', status: 'active', location: 'wrld_1:inst' },
+        { id: 'u2', displayName: 'B', status: 'active', location: 'wrld_2:inst' },
+      ],
+      meta: { segments: [], truncated: false, total: 2, stale: false },
+    });
+    vi.mocked(parseLocation).mockImplementation((raw?: string) => ({
+      raw: raw ?? null,
+      type: 'instance',
+      worldId: raw?.split(':')[0],
+      instanceId: raw?.split(':')[1],
+    }));
+    vi.mocked(getInstanceDetails).mockImplementation((worldId: string) => {
+      if (worldId === 'wrld_1') {
+        return { instance: { id: 'inst', userCount: 2 }, stale: false };
+      }
+      return { instance: { id: 'inst', userCount: 10 }, stale: false };
+    });
+
+    const result = await getFriendsOverview({ minInstanceUserCount: 5 });
+    expect(result.locations).toHaveLength(1);
+    expect(result.locations[0]?.worldId).toBe('wrld_2');
+    expect(result.onlineCount).toBe(1);
+    expect(result.totals.all.totalFriends).toBe(2);
+    expect(result.totals.filtered.totalFriends).toBe(1);
+  });
+
+  it('throws when min instance user count is set and instance fetch fails', async () => {
+    vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
+      friends: [{ id: 'u1', displayName: 'A', status: 'active', location: 'wrld_1:inst' }],
+      meta: { segments: [], truncated: false, total: 1, stale: false },
+    });
+    vi.mocked(parseLocation).mockReturnValue({
+      raw: 'wrld_1:inst',
+      type: 'instance',
+      worldId: 'wrld_1',
+      instanceId: 'inst',
+    });
+    vi.mocked(getInstanceDetails).mockRejectedValue(new Error('boom'));
+
+    await expect(getFriendsOverview({ minInstanceUserCount: 5 })).rejects.toThrow(
+      /Failed to fetch instance/,
+    );
   });
 });

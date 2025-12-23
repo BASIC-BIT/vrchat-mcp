@@ -39,7 +39,8 @@ Add this to your Claude Desktop config file and replace the path + user agent:
 - `test:e2e:live` - run only the live E2E tests
 - `test:evals` - run opt-in LLM evaluation tests
 - `check` - lint + typecheck + tests
-- `generate:test-schemas` - regenerate zod schemas for mock API fixtures
+- `generate:schemas` - regenerate VRChat OpenAPI Zod schemas in `src/generated/vrchat-schemas.ts` (do not edit manually)
+- `generate:test-schemas` - regenerate zod schemas for mock API fixtures        
 
 ## Configuration
 Defaults live in `src/config/defaults.json`. To override, create a JSON config file and point to it with `VRCHAT_MCP_CONFIG_FILE`.
@@ -81,7 +82,7 @@ LLM eval config (local only):
 - Create `test/fixtures/evals.live.json` (gitignored) to enable eval tests.
 - See `test/fixtures/evals.live.example.json` for the expected shape.
 - Run evals with `npm run test:evals`.
-- Live evals reuse `test/fixtures/e2e.live.json` for login + optional friend expectations.
+- Live evals reuse `test/fixtures/e2e.live.json` for login + optional friend expectations. Set `VRCHAT_MCP_ENABLE_LIVE_EVALS=1` to enable them (disabled by default so coverage runs don’t hit live APIs).
 - Add optional `expectations` in `evals.live.json` to run extra live checks (world/group/avatar/favorite).
   - `expectations.avatarName` is treated as a substring match; use `avatarNameExact` for strict equality.
 
@@ -90,6 +91,7 @@ LLM eval config (local only):
 - `src/core/` - VRChat API plumbing (spec parsing, request dispatch, read helpers).
 - `src/tools/` - MCP tool registrations (curated, read, auth, cache, generated).
 - `src/schemas/` - shared zod schemas for tool input/output.
+- `src/generated/` - generated VRChat OpenAPI schemas (Zod).
 - `src/services/` - domain services (cache, friends, pipeline).
 - `src/resources/` - MCP resources (delta feeds, snapshots).
 - `src/auth/` - login flow + cookie storage.

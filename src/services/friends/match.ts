@@ -3,6 +3,9 @@ export interface LocationInfo {
   type: 'instance' | 'offline' | 'private' | 'traveling' | 'unknown';
   worldId?: string;
   instanceId?: string;
+  groupId?: string;
+  accessType?: string;
+  region?: string;
 }
 
 export interface FriendRecordLite {
@@ -42,10 +45,39 @@ export function parseLocation(raw?: string): LocationInfo {
   if (raw === 'private') return { raw, type: 'private' };
   if (raw === 'traveling') return { raw, type: 'traveling' };
   if (raw.startsWith('wrld_') && raw.includes(':')) {
-    const [worldId, instanceId] = raw.split(':');
-    return { raw, type: 'instance', worldId, instanceId };
+    const [worldId, rest] = raw.split(':');
+    const instanceId = rest?.split('~')[0] ?? rest;
+    const info: LocationInfo = { raw, type: 'instance', worldId, instanceId };
+    const groupId = extractGroupId(raw);
+    const accessType = extractAccessType(raw);
+    const region = extractRegion(raw);
+    if (groupId) info.groupId = groupId;
+    if (accessType) info.accessType = accessType;
+    if (region) info.region = region;
+    return info;
   }
   return { raw, type: 'unknown' };
+}
+
+function extractGroupId(raw: string): string | undefined {
+  const match = /~group\(([^)]+)\)/i.exec(raw);
+  if (!match) return undefined;
+  return match[1];
+}
+
+function extractAccessType(raw: string): string | undefined {
+  if (raw.includes('~group(') || raw.includes('~groupAccessType')) return 'group';
+  if (raw.includes('~private')) return 'private';
+  if (raw.includes('~friends')) return 'friends';
+  if (raw.includes('~hidden')) return 'hidden';
+  if (raw.includes('~public')) return 'public';
+  return raw.includes('~') ? 'custom' : undefined;
+}
+
+function extractRegion(raw: string): string | undefined {
+  const match = /~region\(([^)]+)\)/i.exec(raw);
+  if (!match) return undefined;
+  return match[1];
 }
 
 export function findFriendByNameOrId<T extends FriendRecordLite>(

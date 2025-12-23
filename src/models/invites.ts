@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 
 export const InviteSelfSchema = z.object({
   worldId: z.string().optional(),
@@ -8,7 +9,7 @@ export const InviteSelfSchema = z.object({
 
 export const InviteSelfOutputSchema = z.object({
   status: z.literal('sent'),
-  notification: z.any().optional(),
+  notification: schemas.Notification.partial().optional(),
 });
 
 export const InviteUserSchema = z.object({
@@ -23,7 +24,7 @@ export const InviteUserOutputSchema = z.object({
   status: z.enum(['confirm_required', 'sent']),
   confirmId: z.string().optional(),
   expiresAt: z.string().optional(),
-  notification: z.any().optional(),
+  notification: schemas.Notification.partial().optional(),
 });
 
 export type InviteSelfInput = z.infer<typeof InviteSelfSchema>;

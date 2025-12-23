@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import type { RequestInfo, RequestInit } from 'undici';
 
 const authModulePath = '../../src/auth/index.js';
 
@@ -7,11 +8,45 @@ interface AuthManagerLike {
   logout: () => Promise<void>;
 }
 
+interface MockFetchEntry {
+  status: number;
+  json: unknown;
+  cookies?: string[];
+}
+
 async function getAuthManager(): Promise<AuthManagerLike> {
   const mod = (await import(authModulePath)) as unknown as {
     authManager: AuthManagerLike;
   };
   return mod.authManager;
+}
+
+function getTargetUrl(input: RequestInfo): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  if (typeof input === 'object' && input !== null && 'url' in input) {
+    const url = (input as { url?: unknown }).url;
+    if (typeof url === 'string') return url;
+  }
+  return '';
+}
+
+function createMockFetch(queue: MockFetchEntry[], realFetch: typeof fetch) {
+  return vi.fn((input: RequestInfo, init?: RequestInit) => {
+    const target = getTargetUrl(input);
+    if (target.startsWith('http://127.0.0.1')) {
+      return realFetch(input, init);
+    }
+    const next = queue.shift();
+    if (!next) {
+      return Promise.reject(new Error('Unexpected fetch call'));
+    }
+    return Promise.resolve({
+      status: next.status,
+      headers: { getSetCookie: () => next.cookies ?? [] },
+      json: () => Promise.resolve(next.json),
+    } as Response);
+  });
 }
 
 describe.sequential('auth login server', () => {
@@ -86,19 +121,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     const res = await realFetch(parsed.toString(), {
       method: 'POST',
@@ -134,19 +157,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     await realFetch(parsed.toString(), {
       method: 'POST',
@@ -183,19 +194,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     const res = await realFetch(parsed.toString(), {
       method: 'POST',
@@ -221,19 +220,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     const res = await realFetch(parsed.toString(), {
       method: 'POST',
@@ -264,19 +251,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     const res = await realFetch(parsed.toString(), {
       method: 'POST',
@@ -302,19 +277,7 @@ describe.sequential('auth login server', () => {
       },
     ];
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      const target = typeof input === 'string' ? input : input.toString();
-      if (target.startsWith('http://127.0.0.1')) {
-        return realFetch(input, init);
-      }
-      const next = queue.shift();
-      if (!next) throw new Error('Unexpected fetch call');
-      return {
-        status: next.status,
-        headers: { getSetCookie: () => next.cookies ?? [] },
-        json: async () => next.json,
-      } as Response;
-    });
+    globalThis.fetch = createMockFetch(queue, realFetch);
 
     const res = await realFetch(parsed.toString(), {
       method: 'POST',

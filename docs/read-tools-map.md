@@ -1,6 +1,6 @@
 # Read Tools Map (GET endpoints)
 
-Source: specs/vrchat-openapi.yaml (downloaded 2025-12-20T23:33:01.494Z)
+Source: specs/vrchat-openapi.yaml (downloaded 2025-12-23T05:02:25.395Z)
 
 Spec: VRChat API Documentation (1.20.5)
 
@@ -20,23 +20,23 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 
 ## Tag: avatars (7)
 
-- getAvatar -> vrchat_read_getAvatar (/avatars/{avatarId})
+- getAvatar -> vrchat_avatars_get (/avatars/{avatarId})
 - getAvatarStyles -> vrchat_read_getAvatarStyles (/avatarStyles)
-- getFavoritedAvatars -> vrchat_read_getFavoritedAvatars (/avatars/favorites)
+- getFavoritedAvatars -> vrchat_avatars_favorites (/avatars/favorites)
 - getImpostorQueueStats -> vrchat_read_getImpostorQueueStats (/avatars/impostor/queue/stats)
 - getLicensedAvatars -> vrchat_read_getLicensedAvatars (/avatars/licensed)
 - getOwnAvatar -> vrchat_read_getOwnAvatar (/users/{userId}/avatar)
-- searchAvatars -> vrchat_read_searchAvatars (/avatars)
+- searchAvatars -> vrchat_avatars_search (/avatars)
 
 ## Tag: calendar (7)
 
-- getCalendarEvents -> vrchat_read_getCalendarEvents (/calendar)
-- getFeaturedCalendarEvents -> vrchat_read_getFeaturedCalendarEvents (/calendar/featured)
-- getFollowedCalendarEvents -> vrchat_read_getFollowedCalendarEvents (/calendar/following)
-- getGroupCalendarEvent -> vrchat_read_getGroupCalendarEvent (/calendar/{groupId}/{calendarId})
+- getCalendarEvents -> vrchat_calendar_events_list (/calendar)
+- getFeaturedCalendarEvents -> vrchat_calendar_featured_list (/calendar/featured)
+- getFollowedCalendarEvents -> vrchat_calendar_followed_list (/calendar/following)
+- getGroupCalendarEvent -> vrchat_group_event_get (/calendar/{groupId}/{calendarId})
 - getGroupCalendarEventICS -> vrchat_read_getGroupCalendarEventICS (/calendar/{groupId}/{calendarId}.ics)
-- getGroupCalendarEvents -> vrchat_read_getGroupCalendarEvents (/calendar/{groupId})
-- searchCalendarEvents -> vrchat_read_searchCalendarEvents (/calendar/search)
+- getGroupCalendarEvents -> vrchat_group_events_list (/calendar/{groupId})
+- searchCalendarEvents -> vrchat_calendar_search (/calendar/search)
 
 ## Tag: economy (20)
 
@@ -64,9 +64,9 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 ## Tag: favorites (4)
 
 - getFavoriteGroup -> vrchat_read_getFavoriteGroup (/favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId})
-- getFavoriteGroups -> vrchat_read_getFavoriteGroups (/favorite/groups)
-- getFavoriteLimits -> vrchat_read_getFavoriteLimits (/auth/user/favoritelimits)
-- getFavorites -> vrchat_read_getFavorites (/favorites)
+- getFavoriteGroups -> vrchat_favorite_groups_list (/favorite/groups)
+- getFavoriteLimits -> vrchat_favorites_limits (/auth/user/favoritelimits)
+- getFavorites -> vrchat_favorites_list (/favorites)
 
 ## Tag: files (8)
 
@@ -82,31 +82,31 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 ## Tag: friends (2)
 
 - getFriends -> vrchat_friends_list (/auth/user/friends)
-- getFriendStatus -> vrchat_read_getFriendStatus (/user/{userId}/friendStatus)
+- getFriendStatus -> vrchat_friends_status (/user/{userId}/friendStatus)
 
 ## Tag: groups (15)
 
 - getGroup -> vrchat_groups_get (/groups/{groupId})
-- getGroupAnnouncements -> vrchat_read_getGroupAnnouncements (/groups/{groupId}/announcement)
+- getGroupAnnouncements -> vrchat_groups_announcements_get (/groups/{groupId}/announcement)
 - getGroupAuditLogs -> vrchat_read_getGroupAuditLogs (/groups/{groupId}/auditLogs)
 - getGroupBans -> vrchat_read_getGroupBans (/groups/{groupId}/bans)
 - getGroupGalleryImages -> vrchat_read_getGroupGalleryImages (/groups/{groupId}/galleries/{groupGalleryId})
-- getGroupInstances -> vrchat_read_getGroupInstances (/groups/{groupId}/instances)
+- getGroupInstances -> vrchat_groups_instances_list (/groups/{groupId}/instances)
 - getGroupInvites -> vrchat_read_getGroupInvites (/groups/{groupId}/invites)
-- getGroupMember -> vrchat_read_getGroupMember (/groups/{groupId}/members/{userId})
-- getGroupMembers -> vrchat_read_getGroupMembers (/groups/{groupId}/members)
-- getGroupPermissions -> vrchat_read_getGroupPermissions (/groups/{groupId}/permissions)
-- getGroupPosts -> vrchat_read_getGroupPosts (/groups/{groupId}/posts)
+- getGroupMember -> vrchat_groups_members_get (/groups/{groupId}/members/{userId})
+- getGroupMembers -> vrchat_groups_members_list (/groups/{groupId}/members)
+- getGroupPermissions -> vrchat_groups_permissions_list (/groups/{groupId}/permissions)
+- getGroupPosts -> vrchat_groups_posts_list (/groups/{groupId}/posts)
 - getGroupRequests -> vrchat_read_getGroupRequests (/groups/{groupId}/requests)
-- getGroupRoles -> vrchat_read_getGroupRoles (/groups/{groupId}/roles)
+- getGroupRoles -> vrchat_groups_roles_list (/groups/{groupId}/roles)
 - getGroupRoleTemplates -> vrchat_read_getGroupRoleTemplates (/groups/roleTemplates)
-- searchGroups -> vrchat_read_searchGroups (/groups)
+- searchGroups -> vrchat_groups_search (/groups)
 
 ## Tag: instances (4)
 
 - getInstance -> vrchat_instances_get (/instances/{worldId}:{instanceId})
-- getInstanceByShortName -> vrchat_read_getInstanceByShortName (/instances/s/{shortName})
-- getRecentLocations -> vrchat_read_getRecentLocations (/instances/recent)
+- getInstanceByShortName -> vrchat_instances_getByShortName (/instances/s/{shortName})
+- getRecentLocations -> vrchat_instances_recent (/instances/recent)
 - getShortName -> vrchat_read_getShortName (/instances/{worldId}:{instanceId}/shortName)
 
 ## Tag: inventory (6)
@@ -120,8 +120,8 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 
 ## Tag: invite (2)
 
-- getInviteMessage -> vrchat_read_getInviteMessage (/message/{userId}/{messageType}/{slot})
-- getInviteMessages -> vrchat_read_getInviteMessages (/message/{userId}/{messageType})
+- getInviteMessage -> vrchat_invite_messages_get (/message/{userId}/{messageType}/{slot})
+- getInviteMessages -> vrchat_invite_messages_list (/message/{userId}/{messageType})
 
 ## Tag: jams (3)
 
@@ -132,19 +132,19 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 ## Tag: miscellaneous (9)
 
 - getAssignedPermissions -> vrchat_read_getAssignedPermissions (/auth/permissions)
-- getConfig -> vrchat_read_getConfig (/config)
+- getConfig -> vrchat_config_get (/config)
 - getCSS -> vrchat_read_getCSS (/css/app.css)
 - getCurrentOnlineUsers -> vrchat_read_getCurrentOnlineUsers (/visits)
 - getHealth -> vrchat_read_getHealth (/health)
 - getInfoPush -> vrchat_read_getInfoPush (/infoPush)
 - getJavaScript -> vrchat_read_getJavaScript (/js/app.js)
 - getPermission -> vrchat_read_getPermission (/permissions/{permissionId})
-- getSystemTime -> vrchat_read_getSystemTime (/time)
+- getSystemTime -> vrchat_system_time (/time)
 
 ## Tag: notifications (2)
 
-- getNotification -> vrchat_read_getNotification (/auth/user/notifications/{notificationId})
-- getNotifications -> vrchat_read_getNotifications (/auth/user/notifications)
+- getNotification -> vrchat_notifications_get (/auth/user/notifications/{notificationId})
+- getNotifications -> vrchat_notifications_list (/auth/user/notifications)
 
 ## Tag: playermoderation (1)
 
@@ -167,22 +167,22 @@ Legend: suggested tool names default to `vrchat_read_<operationId>` unless a cur
 - getUserFeedback -> vrchat_read_getUserFeedback (/users/{userId}/feedback)
 - getUserGroupInstances -> vrchat_read_getUserGroupInstances (/users/{userId}/instances/groups)
 - getUserGroupInstancesForGroup -> vrchat_read_getUserGroupInstancesForGroup (/users/{userId}/instances/groups/{groupId})
-- getUserGroupRequests -> vrchat_read_getUserGroupRequests (/users/{userId}/groups/requested)
-- getUserGroups -> vrchat_read_getUserGroups (/users/{userId}/groups)
+- getUserGroupRequests -> vrchat_users_groups_requests (/users/{userId}/groups/requested)
+- getUserGroups -> vrchat_users_groups_list (/users/{userId}/groups)
 - getUserNote -> vrchat_read_getUserNote (/userNotes/{userNoteId})
 - getUserNotes -> vrchat_read_getUserNotes (/userNotes)
-- getUserRepresentedGroup -> vrchat_read_getUserRepresentedGroup (/users/{userId}/groups/represented)
+- getUserRepresentedGroup -> vrchat_users_groups_represented (/users/{userId}/groups/represented)
 - searchUsers -> vrchat_users_search (/users)
 
 ## Tag: worlds (9)
 
 - checkUserPersistenceExists -> vrchat_read_checkUserPersistenceExists (/users/{userId}/{worldId}/persist/exists)
-- getActiveWorlds -> vrchat_read_getActiveWorlds (/worlds/active)
-- getFavoritedWorlds -> vrchat_read_getFavoritedWorlds (/worlds/favorites)
-- getRecentWorlds -> vrchat_read_getRecentWorlds (/worlds/recent)
+- getActiveWorlds -> vrchat_worlds_active (/worlds/active)
+- getFavoritedWorlds -> vrchat_worlds_favorites (/worlds/favorites)
+- getRecentWorlds -> vrchat_worlds_recent (/worlds/recent)
 - getWorld -> vrchat_worlds_get (/worlds/{worldId})
 - getWorldInstance -> vrchat_read_getWorldInstance (/worlds/{worldId}/{instanceId})
 - getWorldMetadata -> vrchat_read_getWorldMetadata (/worlds/{worldId}/metadata)
 - getWorldPublishStatus -> vrchat_read_getWorldPublishStatus (/worlds/{worldId}/publish)
-- searchWorlds -> vrchat_read_searchWorlds (/worlds)
+- searchWorlds -> vrchat_worlds_search (/worlds)
 

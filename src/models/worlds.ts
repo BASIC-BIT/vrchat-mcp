@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 
 export const WorldShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -104,7 +105,7 @@ export const WorldProfileOutputSchema = z.object({
   worldId: z.string(),
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
-  world: z.any(),
+  world: schemas.World.partial(),
 });
 
 export const WorldInstancesOverviewOutputSchema = z.object({

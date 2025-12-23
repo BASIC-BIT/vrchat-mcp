@@ -1,6 +1,6 @@
 # Read Tools Inventory (GET endpoints)
 
-Source: specs/vrchat-openapi.yaml (downloaded 2025-12-20T23:33:01.494Z)
+Source: specs/vrchat-openapi.yaml (downloaded 2025-12-23T05:02:25.395Z)
 
 Spec: VRChat API Documentation (1.20.5)
 

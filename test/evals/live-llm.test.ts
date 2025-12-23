@@ -25,7 +25,11 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 const evalConfig = loadEvalConfig();
 const liveConfig = loadLiveConfig();
-const describeLive = evalConfig && liveConfig ? describe : describe.skip;
+const liveEvalsEnabled = (() => {
+  const value = String(process.env.VRCHAT_MCP_ENABLE_LIVE_EVALS ?? '').toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
+})();
+const describeLive = evalConfig && liveConfig && liveEvalsEnabled ? describe : describe.skip;
 
 describeLive('llm evals (live)', () => {
   let harness: McpHarness | null = null;

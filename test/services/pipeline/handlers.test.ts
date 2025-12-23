@@ -37,9 +37,12 @@ describe('pipeline handlers', () => {
   it('registers handlers and notifies resources', async () => {
     vi.resetModules();
     let handler: ((event: unknown) => void) | null = null;
-    vi.mocked(pipelineManager.onEvent).mockImplementation((cb: (event: unknown) => void) => {
+    const onEventSpy = vi.spyOn(pipelineManager, 'onEvent');
+    const startSpy = vi.spyOn(pipelineManager, 'start');
+    onEventSpy.mockImplementation((cb: (event: unknown) => void) => {
       handler = cb;
-      return () => {};
+      const unsubscribe = vi.fn();
+      return unsubscribe;
     });
     vi.mocked(recordFriendChange).mockReturnValue({
       sequence: 1,
@@ -55,8 +58,8 @@ describe('pipeline handlers', () => {
     registerPipelineHandlers(server);
     registerPipelineHandlers(server);
 
-    expect(pipelineManager.start).toHaveBeenCalledTimes(1);
-    expect(pipelineManager.onEvent).toHaveBeenCalledTimes(1);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(onEventSpy).toHaveBeenCalledTimes(1);
 
     handler?.({ type: 'friend-online', content: { userId: 'usr_1' }, receivedAt: '' });
 
@@ -68,9 +71,11 @@ describe('pipeline handlers', () => {
   it('skips notifications when change is not recorded', async () => {
     vi.resetModules();
     let handler: ((event: unknown) => void) | null = null;
-    vi.mocked(pipelineManager.onEvent).mockImplementation((cb: (event: unknown) => void) => {
+    const onEventSpy = vi.spyOn(pipelineManager, 'onEvent');
+    onEventSpy.mockImplementation((cb: (event: unknown) => void) => {
       handler = cb;
-      return () => {};
+      const unsubscribe = vi.fn();
+      return unsubscribe;
     });
     vi.mocked(recordFriendChange).mockReturnValue(null);
 

@@ -8,6 +8,7 @@ import { callOperation } from '../../../src/core/client.js';
 import {
   prepareInviteUser,
   resolveInviteLocation,
+  resolveInviteInstanceId,
   sendSelfInvite,
   sendUserInvite,
 } from '../../../src/services/invites/curated.js';
@@ -20,6 +21,11 @@ describe('invites curated service', () => {
   it('resolves invite location from location string', () => {
     const location = resolveInviteLocation({ location: 'wrld_1:inst_1' });
     expect(location).toEqual({ worldId: 'wrld_1', instanceId: 'inst_1' });
+  });
+
+  it('resolves invite location from worldId and instanceId', () => {
+    const location = resolveInviteLocation({ worldId: 'wrld_2', instanceId: 'inst_2' });
+    expect(location).toEqual({ worldId: 'wrld_2', instanceId: 'inst_2' });
   });
 
   it('prepares user invite with instance and message slot', () => {
@@ -38,6 +44,11 @@ describe('invites curated service', () => {
   it('returns error when invite user has no location', () => {
     const prepared = prepareInviteUser({ userId: 'usr_1' });
     expect(prepared).toMatchObject({ ok: false });
+  });
+
+  it('extracts instanceId from location without delimiter', () => {
+    const instanceId = resolveInviteInstanceId({ location: 'inst_only' });
+    expect(instanceId).toBe('inst_only');
   });
 
   it('sends self invite via API', async () => {

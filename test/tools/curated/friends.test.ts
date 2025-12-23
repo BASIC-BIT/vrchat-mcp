@@ -103,12 +103,37 @@ describe('curated friend tools', () => {
   it('returns overview counts', async () => {
     vi.mocked(getFriendsOverview).mockResolvedValue({
       includeOffline: true,
+      statusFilter: ['active'],
+      minInstanceUserCount: 5,
       totalFriends: 2,
       onlineCount: 1,
       offlineCount: 1,
       statusCounts: { active: 1, offline: 1 },
-      topOnline: [{ displayName: 'Online' }],
-      locationsTop: [{ location: 'wrld_1:inst', count: 1 }],
+      totals: {
+        all: {
+          totalFriends: 2,
+          onlineCount: 1,
+          offlineCount: 1,
+          statusCounts: { active: 1, offline: 1 },
+        },
+        filtered: {
+          totalFriends: 2,
+          onlineCount: 1,
+          offlineCount: 1,
+          statusCounts: { active: 1, offline: 1 },
+        },
+      },
+      locations: [
+        {
+          location: 'wrld_1:inst',
+          raw: 'wrld_1:inst',
+          type: 'instance',
+          worldId: 'wrld_1',
+          instanceId: 'inst',
+          friendCount: 1,
+          friends: [{ displayName: 'Online' }],
+        },
+      ],
       meta: {
         segments: [{ offline: false }, { offline: true }],
         truncated: false,

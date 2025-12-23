@@ -32,9 +32,11 @@ class FakeResourceServer {
   }
 }
 
+const snapshotSpy = vi.spyOn(friendsChangeStore, 'snapshot');
+
 describe('friends changes resource', () => {
   it('returns change snapshot with query parameters', () => {
-    vi.mocked(friendsChangeStore.snapshot).mockReturnValue({
+    snapshotSpy.mockReturnValue({
       after: 10,
       nextAfter: 12,
       truncated: false,
@@ -61,10 +63,28 @@ describe('friends changes resource', () => {
       changedIds: string[];
     };
 
-    expect(friendsChangeStore.snapshot).toHaveBeenCalledWith(10, 2);
+    expect(snapshotSpy).toHaveBeenCalledWith(10, 2);
     expect(payload.after).toBe(10);
     expect(payload.nextAfter).toBe(12);
     expect(payload.truncated).toBe(false);
     expect(payload.changedIds).toEqual(['usr_1']);
+  });
+
+  it('parses array variables for change feed', () => {
+    snapshotSpy.mockReturnValue({
+      after: 5,
+      nextAfter: 6,
+      truncated: false,
+      changedIds: [],
+      events: [],
+    });
+
+    const server = new FakeResourceServer();
+    registerFriendsChangesResource(server as unknown as McpServer);
+    const resource = server.resources[0];
+    const uri = new URL('vrchat://friends/changes');
+    resource.read(uri, { after: ['5'], limit: ['1'] });
+
+    expect(snapshotSpy).toHaveBeenCalledWith(5, 1);
   });
 });

@@ -64,4 +64,27 @@ describe('friends snapshot resource', () => {
     expect(payload.maxPages).toBe(2);
     expect(payload.totalFriends).toBe(1);
   });
+
+  it('parses array variables for snapshot arguments', async () => {
+    const server = new FakeResourceServer();
+    vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
+      friends: [],
+      meta: { segments: [], truncated: false, total: 0, stale: false },
+    });
+
+    registerFriendsSnapshotResource(server as unknown as McpServer);
+    const resource = server.resources[0];
+    const uri = new URL('vrchat://friends/snapshot');
+    await resource.read(uri, {
+      includeOffline: ['false'],
+      pageSize: ['25'],
+      maxPages: ['3'],
+    });
+
+    expect(fetchFriendsWithMeta).toHaveBeenCalledWith({
+      includeOffline: false,
+      pageSize: 25,
+      maxPages: 3,
+    });
+  });
 });

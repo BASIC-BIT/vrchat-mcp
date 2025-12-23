@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 import { GroupPageSchema, GroupSummarySchema } from './groups.js';
 
 export const UserShapeSchema = z.object({
@@ -29,7 +30,7 @@ export const UserProfileInputSchema = UserShapeSchema.extend({
 
 export const UserProfileOutputSchema = z.object({
   userId: z.string(),
-  user: z.any(),
+  user: schemas.User.partial(),
   groups: UserGroupsOutputSchema.optional(),
 });
 

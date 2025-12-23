@@ -43,7 +43,6 @@ describe('config loader', () => {
     expect(config.auth.cookieFile.endsWith('cookies.json')).toBe(true);
     expect(config.api.userAgent).toContain('custom-agent/');
     expect(config.api.userAgent).not.toContain('{version}');
-    expect(config.pipeline.userAgent).toBe(config.api.userAgent);
   });
 
   it('reads config file overrides and replaces arrays', () => {
@@ -69,6 +68,30 @@ describe('config loader', () => {
     expect(config.pipeline.userAgent).toContain('pipeline/');
     expect(config.pipeline.userAgent).not.toContain('{version}');
     expect(config.generatedReadTools.skipOperationIds).toEqual(['customOp']);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('falls back pipeline user agent when config file sets it blank', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
+    const filePath = path.join(tempDir, 'config.json');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          pipeline: { userAgent: '' },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+    const relativePath = path.relative(process.cwd(), filePath);
+    setEnv('VRCHAT_MCP_CONFIG_FILE', relativePath);
+    setEnv('VRCHAT_MCP_USER_AGENT', 'custom-agent/{version}');
+
+    const config = getConfig();
+    expect(config.pipeline.userAgent).toBe(config.api.userAgent);
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
 
 vi.mock('undici', async () => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await vi.importActual<typeof import('undici')>('undici');
   return {
     ...actual,
@@ -22,8 +23,12 @@ vi.mock('../../src/services/groups/index.js', () => ({
 
 import { fetch as undiciFetch, Headers } from 'undici';
 import { authManager } from '../../src/auth/index.js';
+import { checkGroupAllowed } from '../../src/services/groups/index.js';
 
 const fixtureSpecPath = path.join(process.cwd(), 'test', 'fixtures', 'spec.yaml');
+
+const getCookieHeaderSpy = vi.spyOn(authManager, 'getCookieHeader');
+const setCookiesFromResponseSpy = vi.spyOn(authManager, 'setCookiesFromResponse');
 
 async function loadCallOperation() {
   const { clearSpecCache } = await import('../../src/core/spec.js');
@@ -39,8 +44,8 @@ describe('callOperation behavior', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.mocked(undiciFetch).mockReset();
-    vi.mocked(authManager.getCookieHeader).mockReset();
-    vi.mocked(authManager.setCookiesFromResponse).mockReset();
+    getCookieHeaderSpy.mockReset();
+    setCookiesFromResponseSpy.mockReset();
     process.env.VRCHAT_MCP_SPEC_URL = fixtureSpecPath;
   });
 
@@ -67,9 +72,9 @@ describe('callOperation behavior', () => {
       ok: true,
       status: 200,
       headers,
-      text: async () => '{"hello":1}',
+      text: () => Promise.resolve('{"hello":1}'),
     } as Response);
-    vi.mocked(authManager.getCookieHeader).mockResolvedValue('auth=token');
+    getCookieHeaderSpy.mockResolvedValue('auth=token');
 
     const callOperation = await loadCallOperation();
     const result = await callOperation({
@@ -79,7 +84,7 @@ describe('callOperation behavior', () => {
 
     expect(result.status).toBe(200);
     expect(result.data).toEqual({ hello: 1 });
-    expect(authManager.setCookiesFromResponse).toHaveBeenCalled();
+    expect(setCookiesFromResponseSpy).toHaveBeenCalled();
     const init = vi.mocked(undiciFetch).mock.calls[0]?.[1];
     if (init?.headers instanceof Headers) {
       expect(init.headers.get('cookie')).toBe('auth=token');
@@ -93,7 +98,7 @@ describe('callOperation behavior', () => {
       ok: false,
       status: 500,
       headers,
-      text: async () => 'fail',
+      text: () => Promise.resolve('fail'),
     } as Response);
 
     const callOperation = await loadCallOperation();
@@ -118,7 +123,7 @@ describe('callOperation behavior', () => {
       ok: true,
       status: 200,
       headers,
-      text: async () => '{"id":"inst_1"}',
+      text: () => Promise.resolve('{"id":"inst_1"}'),
     } as Response);
 
     const callOperation = await loadCallOperation();
@@ -141,6 +146,59 @@ describe('callOperation behavior', () => {
     await expect(callOperation({ operationId: 'nope' })).rejects.toThrow(
       'Unknown operationId: nope',
     );
+  });
+
+  it('throws when required path params are missing', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const callOperation = await loadCallOperation();
+    await expect(callOperation({ operationId: 'getUser' })).rejects.toThrow(
+      'Missing required path param: userId',
+    );
+  });
+
+  it('builds URLs with array query params in dry run', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const callOperation = await loadCallOperation();
+    const result = await callOperation({
+      operationId: 'searchUsers',
+      params: { search: ['alpha', 'beta'], offset: 2 },
+      options: { dryRun: true },
+    });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.url).toContain('/users');
+    expect(result.url).toContain('search=alpha');
+    expect(result.url).toContain('search=beta');
+    expect(result.url).toContain('offset=2');
+  });
+
+  it('blocks group writes when allowlist rejects', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    vi.mocked(checkGroupAllowed).mockReturnValueOnce({ ok: false, reason: 'blocked' });
+    const callOperation = await loadCallOperation();
+
+    await expect(
+      callOperation({
+        operationId: 'createGroupCalendarEvent',
+        params: { groupId: 'grp_blocked' },
+        body: { title: 'Test' },
+      }),
+    ).rejects.toThrow('blocked');
+    expect(undiciFetch).not.toHaveBeenCalled();
+  });
+
+  it('blocks group writes when groupId is in body', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    vi.mocked(checkGroupAllowed).mockReturnValueOnce({ ok: false, reason: 'blocked' });
+    const callOperation = await loadCallOperation();
+
+    await expect(
+      callOperation({
+        operationId: 'createGroupCalendarEvent',
+        body: { groupId: 'grp_body', title: 'Test' },
+      }),
+    ).rejects.toThrow('blocked');
+    expect(undiciFetch).not.toHaveBeenCalled();
   });
 
   it('wraps network errors', async () => {

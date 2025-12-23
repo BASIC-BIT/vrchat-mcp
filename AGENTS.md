@@ -14,7 +14,8 @@ Guidance for coding agents:
   - The harness defaults cookie storage to `file`. Override via config JSON or env vars if needed.
   - Use `VRCHAT_MCP_SERVER_COMMAND` / `VRCHAT_MCP_SERVER_ARGS` to switch between `tsx src/index.ts` and built `dist/bin/cli.js`.
 - Default to read-only calls. Non-GET requests are blocked unless `writes.allow=true` in config (or env override).
-- Regenerate read-tool docs after spec updates: `npm run generate:read-tools`.
+- Regenerate read-tool docs after spec updates: `npm run generate:read-tools`.  
+- Regenerate VRChat OpenAPI schemas after spec updates: `npm run generate:schemas` (updates `src/generated/vrchat-schemas.ts`; do not edit manually).
 - Regenerate mock test schemas after spec tweaks: `npm run generate:test-schemas` (updates `test/generated/mock-schemas.ts`; do not edit manually).
 
 ## Tool ergonomics goals (distilled)
@@ -26,6 +27,7 @@ Guidance for coding agents:
 ## Curated output philosophy
 - Curated tools should return the smallest set of fields that answer the likely user question and support follow-up actions.
 - For high-volume collections (friends, group members, large lists), never return full objects by default; return compact summaries + IDs.
+- High-volume curated tools should auto-unroll pagination internally; only expose pagination when partial results are the intent (e.g., world search).
 - Avoid arbitrary sampling. Either return counts/aggregations, or return a compact snippet for every item (and mark truncation explicitly).
 - Use name-first search flows; include IDs in results so the agent can resolve detail views explicitly.
 - If we include potentially noisy fields (e.g., tags), note that they may be noisy and consider cleaning later.

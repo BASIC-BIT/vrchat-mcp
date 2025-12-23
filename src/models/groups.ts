@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 
 export const GroupShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -79,7 +80,7 @@ export const GroupProfileInputSchema = GroupShapeSchema.extend({
 export const GroupProfileOutputSchema = z.object({
   groupId: z.string(),
   stale: z.boolean(),
-  group: z.any(),
+  group: schemas.Group.partial(),
 });
 
 export const GroupMembersInputSchema = z.object({
@@ -152,7 +153,7 @@ export const GroupEventsListOutputSchema = z.object({
   truncated: z.boolean(),
   stale: z.boolean(),
   page: GroupPageSchema.optional(),
-  events: z.array(z.any()),
+  events: z.array(schemas.CalendarEvent.partial()),
 });
 
 export const GroupEventGetInputSchema = GroupShapeSchema.extend({
@@ -165,7 +166,7 @@ export const GroupEventGetOutputSchema = z.object({
   groupId: z.string(),
   calendarId: z.string(),
   stale: z.boolean(),
-  event: z.any().optional(),
+  event: schemas.CalendarEvent.partial().optional(),
 });
 
 export const GroupEventsUpcomingInputSchema = GroupShapeSchema.extend({
@@ -195,7 +196,7 @@ export const GroupEventsUpcomingOutputSchema = z.object({
       page: GroupPageSchema.optional(),
     }),
   ),
-  events: z.array(z.any()),
+  events: z.array(schemas.CalendarEvent.partial()),
 });
 
 export const GroupInstancesOverviewInputSchema = z.object({

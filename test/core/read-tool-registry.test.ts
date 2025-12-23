@@ -28,6 +28,9 @@ vi.mock('../../src/core/spec.js', () => {
     }),
   };
 });
+vi.mock('../../src/core/readTools.js', () => ({
+  callReadOperation: vi.fn(),
+}));
 
 describe('read tool registry', () => {
   const prevDisable = process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS;
@@ -86,5 +89,37 @@ describe('read tool registry', () => {
 
     expect(count).toBe(0);
     expect(server.registerTool).not.toHaveBeenCalled();
+  });
+
+  it('returns toolError when read operation throws', async () => {
+    const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
+    const { callReadOperation } = await import('../../src/core/readTools.js');
+    vi.mocked(callReadOperation).mockRejectedValueOnce(new Error('boom'));
+
+    interface ToolResponse {
+      isError?: boolean;
+      structuredContent?: { error?: string };
+    }
+    const handlers: Record<string, (args: unknown) => Promise<ToolResponse>> = {};
+    const server = {
+      registerTool: (name: string, _meta: unknown, handler: (args: unknown) => Promise<any>) => {
+        handlers[name] = handler;
+      },
+    };
+
+    await registerGeneratedReadTools(server as never, {
+      readOptionsSchema: z.object({}),
+      readOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    const response = await handlers.vrchat_read_getWidget?.({ params: {} });
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getWidget',
+      {},
+      expect.objectContaining({ includeMeta: undefined }),
+    );
+    expect(response?.isError).toBe(true);
+    expect(response?.structuredContent?.error).toBe('boom');
   });
 });

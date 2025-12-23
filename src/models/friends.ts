@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
+import { InstanceSummarySchema } from './instances.js';
 
 export const FriendListShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -73,34 +75,68 @@ export const FriendsListOnlineOutputSchema = z.object({
   friends: z.array(z.any()),
 });
 
-export const FriendsOverviewInputSchema = z.object({
-  includeOffline: z.boolean().optional(),
-  maxOnline: z.number().int().min(1).max(200).optional(),
-  maxLocations: z.number().int().min(1).max(200).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
-  maxPages: z.number().int().min(1).max(500).optional(),
+const FriendStatusFilterSchema = z.union([
+  z.string().min(1),
+  z.array(z.string().min(1)).min(1),
+]);
+
+export const FriendLocationInfoSchema = z.object({
+  raw: z.string().nullable(),
+  type: z.string(),
+  worldId: z.string().optional(),
+  instanceId: z.string().optional(),
+  groupId: z.string().optional(),
+  accessType: z.string().optional(),
+  region: z.string().optional(),
+  worldName: z.string().optional(),
+  groupName: z.string().optional(),
+  groupShortCode: z.string().optional(),
 });
 
-export const FriendsOverviewOutputSchema = z.object({
-  includeOffline: z.boolean(),
+export const FriendOverviewFriendSchema = z.object({
+  userId: z.string().optional(),
+  displayName: z.string().optional(),
+  status: z.string().optional(),
+});
+
+export const FriendOverviewLocationSchema = FriendLocationInfoSchema.extend({   
+  location: z.string(),
+  instance: z.union([InstanceSummarySchema, schemas.Instance]).optional(),
+  friendCount: z.number().int().min(0),
+  friends: z.array(FriendOverviewFriendSchema),
+});
+
+export const FriendsOverviewInputSchema = z.object({
+  includeOffline: z.boolean().optional(),
+  status: FriendStatusFilterSchema.optional(),
+  statusFilter: FriendStatusFilterSchema.optional(),
+  minInstanceUserCount: z.number().int().min(0).optional(),
+  instanceDetailLevel: z.enum(['summary', 'full']).optional(),
+});
+
+const FriendOverviewCountsSchema = z.object({
   totalFriends: z.number().int().min(0),
   onlineCount: z.number().int().min(0),
   offlineCount: z.number().int().min(0),
   statusCounts: z.record(z.string(), z.number().int().min(0)),
-  topOnline: z.array(
-    z.object({
-      userId: z.string().optional(),
-      displayName: z.string().optional(),
-      status: z.string().optional(),
-      location: z.string().optional(),
-    }),
-  ),
-  locationsTop: z.array(
-    z.object({
-      location: z.string(),
-      count: z.number().int().min(1),
-    }),
-  ),
+});
+
+export const FriendOverviewTotalsSchema = z.object({
+  all: FriendOverviewCountsSchema,
+  filtered: FriendOverviewCountsSchema,
+});
+
+export const FriendsOverviewOutputSchema = z.object({
+  includeOffline: z.boolean(),
+  statusFilter: z.array(z.string()).optional(),
+  minInstanceUserCount: z.number().int().min(0).optional(),
+  instanceDetailLevel: z.enum(['summary', 'full']).optional(),
+  totalFriends: z.number().int().min(0),
+  onlineCount: z.number().int().min(0),
+  offlineCount: z.number().int().min(0),
+  statusCounts: z.record(z.string(), z.number().int().min(0)),
+  totals: FriendOverviewTotalsSchema,
+  locations: z.array(FriendOverviewLocationSchema),
   truncated: z.boolean(),
   stale: z.boolean(),
   segments: z.array(FriendsSegmentSchema),
@@ -114,14 +150,9 @@ export const FriendLocationDetailsInputSchema = z.object({
 
 export const FriendLocationDetailsOutputSchema = z.object({
   friend: z.any(),
-  location: z.object({
-    raw: z.string().nullable(),
-    type: z.string(),
-    worldId: z.string().optional(),
-    instanceId: z.string().optional(),
-  }),
-  instance: z.any().nullable(),
-  world: z.any().nullable(),
+  location: FriendLocationInfoSchema,
+  instance: InstanceSummarySchema.nullable(),
+  world: schemas.World.partial().nullable(),
 });
 
 export type FriendSearchInput = z.infer<typeof FriendSearchInputSchema>;

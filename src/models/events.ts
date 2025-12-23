@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 
 export const EventListShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -37,7 +38,7 @@ export const EventsUpcomingOutputSchema = z.object({
       page: EventsPageSchema.optional(),
     }),
   ),
-  events: z.array(z.any()),
+  events: z.array(schemas.CalendarEvent.partial()),
 });
 
 export const EventsSearchInputSchema = EventListShapeSchema.extend({
@@ -56,7 +57,7 @@ export const EventsSearchOutputSchema = z.object({
   totalEvents: z.number().int().min(0),
   truncated: z.boolean(),
   page: EventsPageSchema.optional(),
-  events: z.array(z.any()),
+  events: z.array(schemas.CalendarEvent.partial()),
 });
 
 export const CalendarEventCreateSchema = z.object({
@@ -118,8 +119,8 @@ export const CalendarEventWriteOutputSchema = z.object({
   status: z.enum(['confirm_required', 'created', 'updated', 'deleted']),
   confirmId: z.string().optional(),
   expiresAt: z.string().optional(),
-  event: z.any().optional(),
-  result: z.any().optional(),
+  event: schemas.CalendarEvent.optional(),
+  result: schemas.Success.optional(),
 });
 
 export type EventsUpcomingInput = z.infer<typeof EventsUpcomingInputSchema>;

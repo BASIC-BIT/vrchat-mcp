@@ -23,6 +23,17 @@ describe('friends helpers', () => {
       worldId: 'wrld_abc',
       instanceId: '123',
     });
+    expect(
+      parseLocation('wrld_abc:123~group(grp_456)~region(use)'),
+    ).toEqual({
+      raw: 'wrld_abc:123~group(grp_456)~region(use)',
+      type: 'instance',
+      worldId: 'wrld_abc',
+      instanceId: '123',
+      groupId: 'grp_456',
+      accessType: 'group',
+      region: 'use',
+    });
     expect(parseLocation('weird')).toEqual({ raw: 'weird', type: 'unknown' });
     expect(parseLocation()).toEqual({ raw: null, type: 'unknown' });
   });
