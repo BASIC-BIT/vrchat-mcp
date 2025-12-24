@@ -1,10 +1,15 @@
-import { callReadOperation } from '../../core/readTools.js';
+import { callReadOperationParsed, type ReadOperationData } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 
 const INSTANCE_TTL_MS = cacheConfig.notificationsTtlMs;
 const INSTANCE_STALE_TTL_MS = cacheConfig.notificationsStaleTtlMs;
 
-export async function getInstanceDetails(worldId: string, instanceId: string) {
+type InstanceRecord = ReadOperationData<'getInstance'>;
+
+export async function getInstanceDetails(
+  worldId: string,
+  instanceId: string,
+): Promise<{ instance: InstanceRecord | null; stale: boolean }> {
   const cacheKey = buildCacheKey('instances:get', { worldId, instanceId });
   const tags = ['instances', `instances:${worldId}`];
   const { value, stale } = await cacheManager.getOrSetStale(
@@ -13,7 +18,7 @@ export async function getInstanceDetails(worldId: string, instanceId: string) {
     INSTANCE_STALE_TTL_MS,
     tags,
     async () => {
-      const result = await callReadOperation('getInstance', { worldId, instanceId });
+      const result = await callReadOperationParsed('getInstance', { worldId, instanceId });
       return result.data ?? null;
     },
   );

@@ -83,7 +83,7 @@ describe('friends curated service', () => {
     });
 
     const result = await getFriendDetails({ name: 'Test', includeOffline: true });
-    expect(callReadOperation).toHaveBeenCalledWith('getUser', { userId: 'u1' });
+    expect(callReadOperation).toHaveBeenCalledWith('getUser', { userId: 'u1' }, undefined);
     expect(result).toMatchObject({
       ok: true,
       friend: { id: 'u1' },

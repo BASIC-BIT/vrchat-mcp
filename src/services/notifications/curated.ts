@@ -1,9 +1,6 @@
-import { callReadOperation } from '../../core/readTools.js';
+import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
-import {
-  mapNotification,
-  type NotificationSummary,
-} from '../../models/notifications.js';
+import { mapNotification, type NotificationSummary } from '../../models/notifications.js';
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
@@ -54,7 +51,7 @@ export async function listRecentNotifications(input: {
     cacheConfig.notificationsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getNotifications',
         {
           type,
@@ -69,8 +66,7 @@ export async function listRecentNotifications(input: {
           },
         },
       );
-      const data = Array.isArray(result.data) ? result.data : [];
-      const notifications = data
+      const notifications = result.data
         .map(mapNotification)
         .filter((notification): notification is NotificationSummary => Boolean(notification))
         .filter((notification) => (unreadOnly ? notification.seen === false : true));

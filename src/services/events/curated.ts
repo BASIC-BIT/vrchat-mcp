@@ -1,12 +1,19 @@
-import { callOperation } from '../../core/client.js';
-import { callReadOperation } from '../../core/readTools.js';
-import type {
-  CalendarEventCreateInput,
-  CalendarEventUpdateInput,
-  EventsSearchInput,
-  EventsUpcomingInput,
+import type { z } from 'zod';
+import {
+  CalendarEventCreateSchema,
+  type CalendarEventCreateInput,
+  type CalendarEventUpdateInput,
+  type EventsSearchInput,
+  type EventsUpcomingInput,
 } from '../../models/events.js';
-import { getMonthKeys, parseEventTime, parseIsoDate } from './utils.js';
+import type { schemas } from '../../generated/vrchat-schemas.js';
+import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
+import {
+  getMonthKeys,
+  parseEventTime,
+  parseIsoDate,
+  type CalendarEventRecord,
+} from './utils.js';
 
 interface PageInfo {
   pages: number;
@@ -19,8 +26,14 @@ interface PageInfo {
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 4;
 const DEFAULT_WINDOW_HOURS = 168;
+type CalendarEventCreateRequest = z.infer<typeof schemas.CreateCalendarEventRequest>;
+type CalendarEventUpdateRequest = z.infer<typeof schemas.UpdateCalendarEventRequest>;
+type CalendarEventUpdatePayload = Omit<CalendarEventUpdateInput, 'groupId' | 'calendarId'> & {
+  groupId?: string;
+  calendarId?: string;
+};
 
-function parseNumber(value: unknown, fallback: number): number {
+function parseNumber(value: number | null | undefined, fallback: number): number {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.floor(value);
   return fallback;
 }
@@ -38,7 +51,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
   const maxItems = parseNumber(input.maxItems, pageSize * maxPages);
   const dateKeys = getMonthKeys(fromDate, toDate);
   const segments: { date: string; page?: PageInfo }[] = [];
-  const collected: unknown[] = [];
+  const collected: CalendarEventRecord[] = [];
   const seenIds = new Set<string>();
   let truncated = false;
 
@@ -49,7 +62,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
       break;
     }
 
-    const result = await callReadOperation(
+    const result = await callReadOperationParsed(
       'getCalendarEvents',
       { monthDate: date },
       {
@@ -65,25 +78,17 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
       },
     );
 
-    const batch = Array.isArray(result.data)
-      ? result.data
-      : Array.isArray((result.data as { results?: unknown[] })?.results)
-        ? (result.data as { results?: unknown[] }).results ?? []
-        : [];
+    const batch = result.data;
     const filtered = batch.filter((event) => {
-      if (!event || typeof event !== 'object') return false;
-      const startsAt = (event as Record<string, unknown>).startsAt;
-      const ts = parseEventTime(startsAt);
+      const ts = parseEventTime(event.startsAt);
       if (ts === null) return false;
       return ts >= fromDate.getTime() && ts < toDate.getTime();
     });
     for (const event of filtered) {
-      if (event && typeof event === 'object') {
-        const id = (event as Record<string, unknown>).id;
-        if (typeof id === 'string') {
-          if (seenIds.has(id)) continue;
-          seenIds.add(id);
-        }
+      const id = event.id;
+      if (typeof id === 'string') {
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
       }
       collected.push(event);
     }
@@ -98,8 +103,8 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
   }
 
   collected.sort((a, b) => {
-    const aTime = parseEventTime((a as Record<string, unknown>)?.startsAt);
-    const bTime = parseEventTime((b as Record<string, unknown>)?.startsAt);
+    const aTime = parseEventTime(a?.startsAt);
+    const bTime = parseEventTime(b?.startsAt);
     if (aTime === null && bTime === null) return 0;
     if (aTime === null) return 1;
     if (bTime === null) return -1;
@@ -134,10 +139,10 @@ export async function searchEvents(input: EventsSearchInput) {
   const maxPages = parseNumber(input.maxPages, DEFAULT_MAX_PAGES);
   const maxItems = parseNumber(input.maxItems, pageSize * maxPages);
 
-  const params: Record<string, unknown> = { searchTerm };
+  const params: { searchTerm: string; utcOffset?: number } = { searchTerm };
   if (typeof input.utcOffset === 'number') params.utcOffset = Math.floor(input.utcOffset);
 
-  const result = await callReadOperation('searchCalendarEvents', params, {
+  const result = await callReadOperationParsed('searchCalendarEvents', params, {
     fields: input.fields,
     compact: input.compact,
     maxArrayLength: input.maxArrayLength,
@@ -149,11 +154,7 @@ export async function searchEvents(input: EventsSearchInput) {
     },
   });
 
-  const events = Array.isArray(result.data)
-    ? result.data
-    : Array.isArray((result.data as { results?: unknown[] })?.results)
-      ? (result.data as { results?: unknown[] }).results ?? []
-      : [];
+  const events = result.data;
   return {
     searchTerm,
     utcOffset: typeof input.utcOffset === 'number' ? Math.floor(input.utcOffset) : undefined,
@@ -166,80 +167,46 @@ export async function searchEvents(input: EventsSearchInput) {
   };
 }
 
-export function buildCalendarCreateRequest(input: CalendarEventCreateInput) {
-  return {
-    accessType: input.accessType ?? 'group',
-    category: input.category,
-    description: input.description,
-    endsAt: input.endsAt,
-    sendCreationNotification: input.sendCreationNotification ?? false,
-    startsAt: input.startsAt,
-    title: input.title,
-    closeInstanceAfterEndMinutes: input.closeInstanceAfterEndMinutes,
-    featured: input.featured,
-    guestEarlyJoinMinutes: input.guestEarlyJoinMinutes,
-    hostEarlyJoinMinutes: input.hostEarlyJoinMinutes,
-    imageId: input.imageId,
-    isDraft: input.isDraft,
-    languages: input.languages,
-    parentId: input.parentId,
-    platforms: input.platforms,
-    roleIds: input.roleIds,
-    tags: input.tags,
-    usesInstanceOverflow: input.usesInstanceOverflow,
-  };
+export function buildCalendarCreateRequest(
+  input: CalendarEventCreateInput,
+): CalendarEventCreateRequest {
+  const parsed = CalendarEventCreateSchema.parse(input);
+  const { groupId, ...request } = parsed;
+  void groupId;
+  return request;
 }
 
-export function buildCalendarUpdateRequest(input: CalendarEventUpdateInput) {
-  return {
-    accessType: input.accessType,
-    category: input.category,
-    description: input.description,
-    endsAt: input.endsAt,
-    sendCreationNotification: input.sendCreationNotification,
-    startsAt: input.startsAt,
-    title: input.title,
-    closeInstanceAfterEndMinutes: input.closeInstanceAfterEndMinutes,
-    featured: input.featured,
-    guestEarlyJoinMinutes: input.guestEarlyJoinMinutes,
-    hostEarlyJoinMinutes: input.hostEarlyJoinMinutes,
-    imageId: input.imageId,
-    isDraft: input.isDraft,
-    languages: input.languages,
-    parentId: input.parentId,
-    platforms: input.platforms,
-    roleIds: input.roleIds,
-    tags: input.tags,
-    usesInstanceOverflow: input.usesInstanceOverflow,
-  };
+export function buildCalendarUpdateRequest(
+  input: CalendarEventUpdatePayload,
+): CalendarEventUpdateRequest {
+  const { groupId, calendarId, ...request } = input;
+  void groupId;
+  void calendarId;
+  return request;
 }
 
-export async function createCalendarEvent(groupId: string, request: Record<string, unknown>) {
-  const result = await callOperation({
-    operationId: 'createGroupCalendarEvent',
-    params: { groupId },
-    body: request,
-  });
+export async function createCalendarEvent(groupId: string, request: CalendarEventCreateRequest) {
+  const result = await callWriteOperationParsed('createGroupCalendarEvent', { groupId }, request);
   return result.data ?? null;
 }
 
 export async function updateCalendarEvent(
   groupId: string,
   calendarId: string,
-  request: Record<string, unknown>,
+  request: CalendarEventUpdateRequest,
 ) {
-  const result = await callOperation({
-    operationId: 'updateGroupCalendarEvent',
-    params: { groupId, calendarId },
-    body: request,
-  });
+  const result = await callWriteOperationParsed(
+    'updateGroupCalendarEvent',
+    { groupId, calendarId },
+    request,
+  );
   return result.data ?? null;
 }
 
 export async function deleteCalendarEvent(groupId: string, calendarId: string) {
-  const result = await callOperation({
-    operationId: 'deleteGroupCalendarEvent',
-    params: { groupId, calendarId },
+  const result = await callWriteOperationParsed('deleteGroupCalendarEvent', {
+    groupId,
+    calendarId,
   });
   return result.data ?? null;
 }

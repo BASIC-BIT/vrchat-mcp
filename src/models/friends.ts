@@ -5,7 +5,7 @@ import { InstanceSummarySchema } from './instances.js';
 export const FriendListDetailLevelSchema = z.enum(['summary', 'full']);
 
 export const FriendListEntrySchema = z.object({
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   displayName: z.string().optional(),
   status: z.string().optional(),
   statusDescription: z.string().optional(),
@@ -26,7 +26,7 @@ export const FriendSearchInputSchema = z.object({
 });
 
 export const FriendSearchMatchSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   displayName: z.string(),
   location: z.string().optional(),
   status: z.string().optional(),
@@ -73,7 +73,7 @@ const FriendsListBaseSchema = z.object({
 
 export const FriendsListOutputSchema = FriendsListBaseSchema.extend({
   detailLevel: FriendListDetailLevelSchema,
-  friends: z.array(z.any()),
+  friends: z.array(schemas.LimitedUserFriend.partial()),
 });
 
 const FriendStatusFilterSchema = z.union([
@@ -84,9 +84,9 @@ const FriendStatusFilterSchema = z.union([
 export const FriendLocationInfoSchema = z.object({
   raw: z.string().nullable(),
   type: z.string(),
-  worldId: z.string().optional(),
-  instanceId: z.string().optional(),
-  groupId: z.string().optional(),
+  worldId: schemas.WorldID.optional(),
+  instanceId: schemas.InstanceID.optional(),
+  groupId: schemas.GroupID.optional(),
   accessType: z.string().optional(),
   region: z.string().optional(),
   worldName: z.string().optional(),
@@ -95,7 +95,7 @@ export const FriendLocationInfoSchema = z.object({
 });
 
 export const FriendOverviewFriendSchema = z.object({
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   displayName: z.string().optional(),
   status: z.string().optional(),
 });
@@ -145,7 +145,7 @@ export const FriendsOverviewOutputSchema = z.object({
 
 export const FriendDetailsInputSchema = z.object({
   name: z.string().optional(),
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   includeOffline: z.boolean().optional(),
 });
 

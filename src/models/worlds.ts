@@ -8,9 +8,9 @@ export const WorldShapeSchema = z.object({
 });
 
 export const WorldSummarySchema = z.object({
-  worldId: z.string(),
+  worldId: schemas.WorldID,
   name: z.string(),
-  authorId: z.string().optional(),
+  authorId: schemas.UserID.optional(),
   authorName: z.string().optional(),
   capacity: z.number().int().optional(),
   visits: z.number().int().optional(),
@@ -20,8 +20,8 @@ export const WorldSummarySchema = z.object({
   releaseStatus: z.string().optional(),
   updatedAt: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  favoriteGroup: z.string().optional(),
-  favoriteId: z.string().optional(),
+  favoriteGroup: schemas.FavoriteGroupID.optional(),
+  favoriteId: schemas.FavoriteID.optional(),
 });
 
 export const WorldInstancesSummarySchema = z.object({
@@ -71,16 +71,16 @@ export const WorldFavoritesInputSchema = z.object({
   maxUnityVersion: z.string().optional(),
   minUnityVersion: z.string().optional(),
   platform: z.string().optional(),
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
 });
 
 export const WorldProfileInputSchema = WorldShapeSchema.extend({
-  worldId: z.string().optional(),
+  worldId: schemas.WorldID.optional(),
   name: z.string().optional(),
 });
 
 export const WorldInstancesInputSchema = z.object({
-  worldId: z.string().optional(),
+  worldId: schemas.WorldID.optional(),
   name: z.string().optional(),
 });
 
@@ -102,14 +102,14 @@ export const WorldFavoritesOutputSchema = z.object({
 });
 
 export const WorldProfileOutputSchema = z.object({
-  worldId: z.string(),
+  worldId: schemas.WorldID,
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
   world: schemas.World.partial(),
 });
 
 export const WorldInstancesOverviewOutputSchema = z.object({
-  worldId: z.string(),
+  worldId: schemas.WorldID,
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
   instances: WorldInstancesSummarySchema,
@@ -141,39 +141,36 @@ export function normalizeWorldName(value: string): string {
   return value.trim().toLowerCase();
 }
 
+type WorldSummarySource = Partial<z.infer<typeof schemas.World>> & {
+  favoriteGroup?: string;
+  favoriteId?: string;
+};
+
 export function buildWorldSummary(
-  world: Record<string, unknown>,
+  world: WorldSummarySource,
 ): WorldSummary | null {
-  const worldId = typeof world.id === 'string' ? world.id : undefined;
-  const name = typeof world.name === 'string' ? world.name : undefined;
+  const worldId = world.id ?? undefined;
+  const name = world.name ?? undefined;
   if (!worldId || !name) return null;
-  const tags = Array.isArray(world.tags)
-    ? world.tags.filter((tag) => typeof tag === 'string')
-    : undefined;
-  const summary: WorldSummary = {
+  const tags = Array.isArray(world.tags) ? world.tags : undefined;
+  return {
     worldId,
     name,
-    authorId: typeof world.authorId === 'string' ? world.authorId : undefined,
-    authorName: typeof world.authorName === 'string' ? world.authorName : undefined,
+    authorId: world.authorId ?? undefined,
+    authorName: world.authorName ?? undefined,
     capacity: typeof world.capacity === 'number' ? Math.floor(world.capacity) : undefined,
     visits: typeof world.visits === 'number' ? Math.floor(world.visits) : undefined,
     favorites:
       typeof world.favorites === 'number' ? Math.floor(world.favorites) : undefined,
     heat: typeof world.heat === 'number' ? Math.floor(world.heat) : undefined,
     popularity:
-      typeof world.popularity === 'number' ? Math.floor(world.popularity) : undefined,
-    releaseStatus:
-      typeof world.releaseStatus === 'string' ? world.releaseStatus : undefined,
-    updatedAt:
-      typeof world.updated_at === 'string'
-        ? world.updated_at
-        : typeof world.updatedAt === 'string'
-          ? world.updatedAt
-          : undefined,
+      typeof world.popularity === 'number'
+        ? Math.floor(world.popularity)
+        : undefined,
+    releaseStatus: world.releaseStatus ?? undefined,
+    updatedAt: world.updated_at ?? undefined,
     tags: tags && tags.length > 0 ? tags : undefined,
-    favoriteGroup:
-      typeof world.favoriteGroup === 'string' ? world.favoriteGroup : undefined,
-    favoriteId: typeof world.favoriteId === 'string' ? world.favoriteId : undefined,
+    favoriteGroup: world.favoriteGroup ?? undefined,
+    favoriteId: world.favoriteId ?? undefined,
   };
-  return summary;
 }

@@ -57,8 +57,9 @@ describe('invites curated service', () => {
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'inviteMyselfTo',
       params: { worldId: 'wrld_1', instanceId: 'inst_1' },
+      body: undefined,
     });
-    expect(notification).toEqual({ id: 'ntf_1' });
+    expect(notification).toMatchObject({ id: 'ntf_1' });
   });
 
   it('sends user invite via API', async () => {
@@ -69,6 +70,6 @@ describe('invites curated service', () => {
       params: { userId: 'usr_2' },
       body: { instanceId: 'inst_9' },
     });
-    expect(notification).toEqual({ id: 'ntf_2' });
+    expect(notification).toMatchObject({ id: 'ntf_2' });
   });
 });

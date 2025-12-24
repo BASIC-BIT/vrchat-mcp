@@ -3,26 +3,26 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 import { registerCuratedWorldTools } from '../../../src/tools/curated/worlds.js';
 import { cacheManager } from '../../../src/services/cache.js';
-import { callReadOperation } from '../../../src/core/readTools.js';
+import { callReadOperationParsed } from '../../../src/services/api/client.js';
 
-vi.mock('../../../src/core/readTools.js', async () => {
+vi.mock('../../../src/services/api/client.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>(
-    '../../../src/core/readTools.js',
+    '../../../src/services/api/client.js',
   );
   return {
     ...actual,
-    callReadOperation: vi.fn(),
+    callReadOperationParsed: vi.fn(),
   };
 });
 
 describe('curated world tools', () => {
   beforeEach(() => {
     cacheManager.invalidateAll();
-    vi.mocked(callReadOperation).mockReset();
+    vi.mocked(callReadOperationParsed).mockReset();
   });
 
   it('searches worlds and returns compact summaries', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: [
         {
           id: 'wrld_1',
@@ -40,7 +40,7 @@ describe('curated world tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_worlds_search');
     const result = await tool!.handler({ query: 'mock' });
 
-    expect(callReadOperation).toHaveBeenCalledWith(
+    expect(callReadOperationParsed).toHaveBeenCalledWith(
       'searchWorlds',
       expect.objectContaining({ search: 'mock' }),
       expect.any(Object),
@@ -71,7 +71,7 @@ describe('curated world tools', () => {
   });
 
   it('lists favorited worlds with compact summaries', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: [
         {
           id: 'wrld_fav',
@@ -88,7 +88,7 @@ describe('curated world tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_worlds_favorites');
     const result = await tool!.handler({});
 
-    expect(callReadOperation).toHaveBeenCalledWith(
+    expect(callReadOperationParsed).toHaveBeenCalledWith(
       'getFavoritedWorlds',
       expect.any(Object),
       expect.any(Object),
@@ -109,7 +109,7 @@ describe('curated world tools', () => {
   });
 
   it('returns world profile by id with field shaping', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: { id: 'wrld_1', name: 'Mock World', description: 'Hidden' },
     });
 
@@ -118,7 +118,7 @@ describe('curated world tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_world_profile');
     const result = await tool!.handler({ worldId: 'wrld_1', fields: ['id', 'name'] });
 
-    expect(callReadOperation).toHaveBeenCalledWith('getWorld', { worldId: 'wrld_1' });
+    expect(callReadOperationParsed).toHaveBeenCalledWith('getWorld', { worldId: 'wrld_1' });
     expect(result).toMatchObject({
       structuredContent: {
         worldId: 'wrld_1',
@@ -129,7 +129,7 @@ describe('curated world tools', () => {
   });
 
   it('returns a hint when name resolution is ambiguous', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: [
         { id: 'wrld_1', name: 'Same' },
         { id: 'wrld_2', name: 'Same' },
@@ -148,7 +148,7 @@ describe('curated world tools', () => {
   });
 
   it('summarizes world instances without listing samples', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: {
         id: 'wrld_1',
         instances: [

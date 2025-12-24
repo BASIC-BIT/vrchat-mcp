@@ -1,11 +1,10 @@
+import type { z } from 'zod';
+import type { schemas } from '../../generated/vrchat-schemas.js';
+import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
-import { callReadOperation } from '../../core/readTools.js';
 
-export type FriendRecord = Record<string, unknown> & {
-  id?: string;
-  displayName?: string;
-  location?: string;
-  status?: string;
+export type FriendRecord = Partial<z.infer<typeof schemas.LimitedUserFriend>> & {
+  canRequestInvite?: boolean;
 };
 
 export interface FriendsPageInfo {
@@ -62,7 +61,7 @@ export async function fetchFriendsWithMeta(options: FriendsFetchOptions): Promis
     let truncated = false;
 
     for (const offline of segments) {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getFriends',
         { offline },
         {
@@ -74,9 +73,7 @@ export async function fetchFriendsWithMeta(options: FriendsFetchOptions): Promis
           },
         },
       );
-      if (Array.isArray(result.data)) {
-        collected.push(...(result.data as FriendRecord[]));
-      }
+      collected.push(...result.data);
       if (result.page) {
         segmentMeta.push({ offline, page: result.page as FriendsPageInfo });
         if (result.page.truncated) truncated = true;

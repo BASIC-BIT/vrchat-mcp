@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
 
-export const StatusSchema = z.enum(['active', 'ask me', 'busy', 'join me', 'offline']);
+export const StatusSchema = schemas.UserStatus;
 export const StatusColorSchema = z.enum(['blue', 'green', 'orange', 'red']);
 
 export const StatusGetOutputSchema = z.object({
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   status: StatusSchema.optional(),
   statusDescription: z.string().optional(),
 });
@@ -13,11 +14,11 @@ export const StatusSetInputSchema = z.object({
   status: StatusSchema.optional(),
   color: StatusColorSchema.optional(),
   description: z.string().optional(),
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
 });
 
 export const StatusSetOutputSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   status: StatusSchema,
   statusDescription: z.string().optional(),
 });

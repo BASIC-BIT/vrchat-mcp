@@ -1,5 +1,7 @@
-import { callOperation } from '../../core/client.js';
+import type { z } from 'zod';
 import type { InviteSelfInput, InviteUserInput } from '../../models/invites.js';
+import type { schemas } from '../../generated/vrchat-schemas.js';
+import { callWriteOperationParsed, type WriteOperationData } from '../api/client.js';
 
 export interface InviteLocation {
   worldId: string;
@@ -7,8 +9,11 @@ export interface InviteLocation {
 }
 
 export type InviteUserPreparation =
-  | { ok: true; userId: string; request: Record<string, unknown> }
+  | { ok: true; userId: string; request: InviteRequest }
   | { ok: false; reason: string };
+
+type InviteRequest = z.infer<typeof schemas.InviteRequest>;
+type SentNotification = WriteOperationData<'inviteUser'>;
 
 export function resolveInviteLocation(args: InviteSelfInput): InviteLocation {
   if (args.location) {
@@ -44,29 +49,25 @@ export function prepareInviteUser(input: InviteUserInput): InviteUserPreparation
     return { ok: false, reason: message };
   }
 
-  const request: Record<string, unknown> = { instanceId };
+  const request: InviteRequest = { instanceId };
   if (typeof input.messageSlot === 'number') {
     request.messageSlot = input.messageSlot;
   }
   return { ok: true, userId: input.userId, request };
 }
 
-export async function sendSelfInvite(location: InviteLocation): Promise<unknown> {
-  const result = await callOperation({
-    operationId: 'inviteMyselfTo',
-    params: { worldId: location.worldId, instanceId: location.instanceId },
+export async function sendSelfInvite(location: InviteLocation): Promise<SentNotification | null> {
+  const result = await callWriteOperationParsed('inviteMyselfTo', {
+    worldId: location.worldId,
+    instanceId: location.instanceId,
   });
   return result.data ?? null;
 }
 
 export async function sendUserInvite(
   userId: string,
-  request: Record<string, unknown>,
-): Promise<unknown> {
-  const result = await callOperation({
-    operationId: 'inviteUser',
-    params: { userId },
-    body: request,
-  });
+  request: InviteRequest,
+): Promise<SentNotification | null> {
+  const result = await callWriteOperationParsed('inviteUser', { userId }, request);
   return result.data ?? null;
 }

@@ -1,17 +1,24 @@
-import { WebSocket } from 'undici';
+import { WebSocket, type ErrorEvent } from 'undici';
 import { authManager } from '../../auth/index.js';
 import { getConfig } from '../../config/index.js';
 import { logger } from '../../infra/logger.js';
-import { parsePipelineMessage, type PipelineEvent } from './events.js';
+import {
+  parsePipelineMessage,
+  type PipelineEvent,
+  type PipelineMessageData,
+} from './events.js';
 
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
+type PipelineError = ErrorEvent | Error | string;
+
+function formatError(err: PipelineError): string {
   if (typeof err === 'string') return err;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return 'Unknown error';
+  if ('error' in err && err.error instanceof Error) {
+    return err.error.message || err.message;
   }
+  if ('message' in err && typeof err.message === 'string') {
+    return err.message;
+  }
+  return 'Unknown error';
 }
 
 export interface PipelineConfig {
@@ -124,7 +131,7 @@ export class PipelineManager {
         logger.info('Pipeline websocket connected.');
       };
       socket.onmessage = (message) => {
-        const event = parsePipelineMessage(message.data);
+        const event = parsePipelineMessage(message.data as PipelineMessageData);
         if (!event) return;
         for (const listener of this.listeners) {
           listener(event);

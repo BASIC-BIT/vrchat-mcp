@@ -8,7 +8,7 @@ export const GroupShapeSchema = z.object({
 });
 
 export const GroupSummarySchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   name: z.string().optional(),
   shortCode: z.string().optional(),
   memberCount: z.number().int().optional(),
@@ -20,29 +20,29 @@ export const GroupPostSummarySchema = z.object({
   text: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-  authorId: z.string().optional(),
+  authorId: schemas.UserID.optional(),
   visibility: z.string().optional(),
 });
 
 export const GroupAnnouncementSchema = z.object({
-  id: z.string().optional(),
+  id: schemas.GroupAnnouncementID.optional(),
   title: z.string().optional(),
   text: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-  authorId: z.string().optional(),
+  authorId: schemas.UserID.optional(),
 });
 
 export const GroupInstanceSummarySchema = z.object({
-  worldId: z.string().optional(),
+  worldId: schemas.WorldID.optional(),
   worldName: z.string().optional(),
-  instanceId: z.string(),
+  instanceId: schemas.InstanceID,
   location: z.string().optional(),
   memberCount: z.number().int().min(0),
 });
 
 export const GroupMemberSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   displayName: z.string().optional(),
 });
 
@@ -73,20 +73,20 @@ export const GroupSearchOutputSchema = z.object({
 });
 
 export const GroupProfileInputSchema = GroupShapeSchema.extend({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
 });
 
 export const GroupProfileOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   stale: z.boolean(),
   group: schemas.Group.partial(),
 });
 
 export const GroupMembersInputSchema = z.object({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
-  roleId: z.string().optional(),
+  roleId: schemas.GroupRoleID.optional(),
   sort: z.string().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
   maxPages: z.number().int().min(1).max(200).optional(),
@@ -95,7 +95,7 @@ export const GroupMembersInputSchema = z.object({
 });
 
 export const GroupMembersOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   totalMembers: z.number().int().min(0),
   truncated: z.boolean(),
   stale: z.boolean(),
@@ -104,18 +104,18 @@ export const GroupMembersOutputSchema = z.object({
 });
 
 export const GroupAnnouncementInputSchema = z.object({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
 });
 
 export const GroupAnnouncementOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   stale: z.boolean(),
   announcement: GroupAnnouncementSchema.nullable(),
 });
 
 export const GroupPostsRecentInputSchema = z.object({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
   publicOnly: z.boolean().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
@@ -124,7 +124,7 @@ export const GroupPostsRecentInputSchema = z.object({
 });
 
 export const GroupPostsRecentOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   pageSize: z.number().int().min(1),
   maxPages: z.number().int().min(1),
   totalPosts: z.number().int().min(0),
@@ -135,7 +135,7 @@ export const GroupPostsRecentOutputSchema = z.object({
 });
 
 export const GroupEventsListInputSchema = GroupShapeSchema.extend({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
   date: z.string().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
@@ -144,7 +144,7 @@ export const GroupEventsListInputSchema = GroupShapeSchema.extend({
 });
 
 export const GroupEventsListOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   date: z.string().optional(),
   pageSize: z.number().int().min(1),
   maxPages: z.number().int().min(1),
@@ -157,20 +157,20 @@ export const GroupEventsListOutputSchema = z.object({
 });
 
 export const GroupEventGetInputSchema = GroupShapeSchema.extend({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
-  calendarId: z.string(),
+  calendarId: schemas.CalendarID,
 });
 
 export const GroupEventGetOutputSchema = z.object({
-  groupId: z.string(),
-  calendarId: z.string(),
+  groupId: schemas.GroupID,
+  calendarId: schemas.CalendarID,
   stale: z.boolean(),
   event: schemas.CalendarEvent.partial().optional(),
 });
 
 export const GroupEventsUpcomingInputSchema = GroupShapeSchema.extend({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
   from: z.string().optional(),
   windowHours: z.number().int().min(1).max(168).optional(),
@@ -180,7 +180,7 @@ export const GroupEventsUpcomingInputSchema = GroupShapeSchema.extend({
 });
 
 export const GroupEventsUpcomingOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   from: z.string(),
   to: z.string(),
   windowHours: z.number().int().min(1),
@@ -200,13 +200,13 @@ export const GroupEventsUpcomingOutputSchema = z.object({
 });
 
 export const GroupInstancesOverviewInputSchema = z.object({
-  groupId: z.string().optional(),
+  groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
   maxInstances: z.number().int().min(1).max(200).optional(),
 });
 
 export const GroupInstancesOverviewOutputSchema = z.object({
-  groupId: z.string(),
+  groupId: schemas.GroupID,
   totalInstances: z.number().int().min(0),
   totalMembers: z.number().int().min(0),
   stale: z.boolean(),
@@ -233,76 +233,91 @@ export type GroupResolution =
   | { ok: true; groupId: string; resolvedBy: 'id' | 'shortCode' }
   | { ok: false; reason: string; status: 'not_found'; nextSteps: string[] };
 
-export function mapGroupSummary(entry: unknown): GroupSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const groupId =
-    typeof record.id === 'string'
-      ? record.id
-      : typeof record.groupId === 'string'
-        ? record.groupId
-        : '';
+type LimitedGroupRecord = Partial<z.infer<typeof schemas.LimitedGroup>>;
+type GroupAnnouncementRecord = Partial<z.infer<typeof schemas.GroupAnnouncement>>;
+type GroupPostRecord = Partial<z.infer<typeof schemas.GroupPost>>;
+type GroupMemberRecord = Partial<z.infer<typeof schemas.GroupMember>>;
+type GroupInstanceRecord = Partial<
+  Omit<z.infer<typeof schemas.GroupInstance>, 'world'> & {
+    world?: Partial<z.infer<typeof schemas.World>>;
+  }
+>;
+
+export function toGroupSummary(group: LimitedGroupRecord): GroupSummary | null {
+  const groupId = group.id ?? '';
   if (!groupId) return null;
-  const name = typeof record.name === 'string' ? record.name : undefined;
-  const shortCode = typeof record.shortCode === 'string' ? record.shortCode : undefined;
-  const memberCount =
-    typeof record.memberCount === 'number' && Number.isFinite(record.memberCount)
-      ? Math.floor(record.memberCount)
-      : undefined;
-  return { groupId, name, shortCode, memberCount };
+  return {
+    groupId,
+    name: group.name ?? undefined,
+    shortCode: group.shortCode ?? undefined,
+    memberCount:
+      typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
+  };
 }
 
-export function mapGroupAnnouncement(entry: unknown): GroupAnnouncement | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const id = typeof record.id === 'string' ? record.id : undefined;
-  const title = typeof record.title === 'string' ? record.title : undefined;
-  const text = typeof record.text === 'string' ? record.text : undefined;
-  const createdAt = typeof record.createdAt === 'string' ? record.createdAt : undefined;
-  const updatedAt = typeof record.updatedAt === 'string' ? record.updatedAt : undefined;
-  const authorId = typeof record.authorId === 'string' ? record.authorId : undefined;
-  if (!id && !title && !text && !createdAt && !updatedAt && !authorId) return null;
-  return { id, title, text, createdAt, updatedAt, authorId };
+export function toGroupAnnouncement(
+  announcement: GroupAnnouncementRecord,
+): GroupAnnouncement | null {
+  const content: GroupAnnouncement = {
+    id: announcement.id ?? undefined,
+    title: announcement.title ?? undefined,
+    text: announcement.text ?? undefined,
+    createdAt: announcement.createdAt ?? undefined,
+    updatedAt: announcement.updatedAt ?? undefined,
+    authorId: announcement.authorId ?? undefined,
+  };
+  if (
+    !content.id &&
+    !content.title &&
+    !content.text &&
+    !content.createdAt &&
+    !content.updatedAt &&
+    !content.authorId
+  ) {
+    return null;
+  }
+  return content;
 }
 
-export function mapGroupPost(entry: unknown): GroupPostSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const id = typeof record.id === 'string' ? record.id : '';
+export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | null {
+  const id = post.id ?? '';
   if (!id) return null;
-  const title = typeof record.title === 'string' ? record.title : undefined;
-  const text = typeof record.text === 'string' ? record.text : undefined;
-  const createdAt = typeof record.createdAt === 'string' ? record.createdAt : undefined;
-  const updatedAt = typeof record.updatedAt === 'string' ? record.updatedAt : undefined;
-  const authorId = typeof record.authorId === 'string' ? record.authorId : undefined;
-  const visibility = typeof record.visibility === 'string' ? record.visibility : undefined;
-  return { id, title, text, createdAt, updatedAt, authorId, visibility };
+  return {
+    id,
+    title: post.title ?? undefined,
+    text: post.text ?? undefined,
+    createdAt: post.createdAt ?? undefined,
+    updatedAt: post.updatedAt ?? undefined,
+    authorId: post.authorId ?? undefined,
+    visibility: post.visibility ?? undefined,
+  };
 }
 
-export function mapGroupInstance(entry: unknown): GroupInstanceSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const instanceId = typeof record.instanceId === 'string' ? record.instanceId : '';
+export function toGroupInstanceSummary(
+  instance: GroupInstanceRecord,
+): GroupInstanceSummary | null {
+  const instanceId =
+    typeof instance.instanceId === 'string' ? instance.instanceId : '';
   if (!instanceId) return null;
-  const location = typeof record.location === 'string' ? record.location : undefined;
-  const memberCount =
-    typeof record.memberCount === 'number' && Number.isFinite(record.memberCount)
-      ? Math.floor(record.memberCount)
-      : 0;
-  const world = record.world && typeof record.world === 'object' ? (record.world as Record<string, unknown>) : undefined;
-  const worldId = typeof world?.id === 'string' ? world.id : undefined;
-  const worldName = typeof world?.name === 'string' ? world.name : undefined;
-  return { instanceId, location, memberCount, worldId, worldName };
+  const worldId =
+    typeof instance.world?.id === 'string' ? instance.world.id : undefined;
+  const worldName =
+    typeof instance.world?.name === 'string' ? instance.world.name : undefined;
+  return {
+    instanceId,
+    location: typeof instance.location === 'string' ? instance.location : undefined,
+    memberCount:
+      typeof instance.memberCount === 'number' ? instance.memberCount : 0,
+    worldId,
+    worldName,
+  };
 }
 
-export function mapGroupMember(entry: unknown): GroupMemberSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const userId = typeof record.userId === 'string' ? record.userId : '';
-  const user = record.user && typeof record.user === 'object' ? (record.user as Record<string, unknown>) : undefined;
-  const fallbackId = typeof user?.id === 'string' ? user.id : '';
-  const resolvedId = userId || fallbackId;
-  if (!resolvedId) return null;
-  const displayName = typeof user?.displayName === 'string' ? user.displayName : undefined;
-  return { userId: resolvedId, displayName };
+export function toGroupMemberSummary(member: GroupMemberRecord): GroupMemberSummary | null {
+  const userId = member.userId ?? member.user?.id ?? '';
+  if (!userId) return null;
+  return {
+    userId,
+    displayName: member.user?.displayName ?? undefined,
+  };
 }

@@ -1,5 +1,11 @@
-import { callOperation } from '../../core/client.js';
+import type { z } from 'zod';
+import type { schemas } from '../../generated/vrchat-schemas.js';
 import { type ProfileUpdateInput, type ProfileUpdateOutput, type UserGroupsOutput } from '../../models/users.js';
+import {
+  callReadOperationParsed,
+  callWriteOperationParsed,
+  type ReadOperationData,
+} from '../api/client.js';
 import { fetchUserGroupsWithMeta, type UserGroupSummary } from './groups.js';
 
 export type UserResolution =
@@ -7,8 +13,12 @@ export type UserResolution =
   | { ok: false; reason: string };
 
 export type UserProfileResolution =
-  | { ok: true; user: unknown; userId: string }
+  | { ok: true; user: UserProfileRecord; userId: string }
   | { ok: false; reason: string };
+
+type UserProfileRecord = NonNullable<ReadOperationData<'getUser'>> | NonNullable<ReadOperationData<'getCurrentUser'>>;
+type CurrentUserRecord = NonNullable<ReadOperationData<'getCurrentUser'>>;
+type UpdateUserRequest = z.infer<typeof schemas.UpdateUserRequest>;
 
 function buildGroupsPayload(
   userId: string,
@@ -37,27 +47,21 @@ export async function resolveUserId(
   }
 
   if (args?.username) {
-    const result = await callOperation({
-      operationId: 'getUserByName',
-      params: { username: args.username },
+    const result = await callReadOperationParsed('getUserByName', {
+      username: args.username,
     });
-    const user = result.data ?? null;
+    const user = result.data;
     const userId =
-      typeof (user as Record<string, unknown> | null)?.id === 'string'
-        ? String((user as Record<string, unknown>).id)
-        : '';
+      user && typeof user.id === 'string' ? String(user.id) : '';
     if (!userId) {
       return { ok: false, reason: 'Unable to resolve userId from username.' };
     }
     return { ok: true, userId };
   }
 
-  const result = await callOperation({ operationId: 'getCurrentUser' });
-  const user = result.data ?? null;
-  const userId =
-    typeof (user as Record<string, unknown> | null)?.id === 'string'
-      ? String((user as Record<string, unknown>).id)
-      : '';
+  const result = await callReadOperationParsed('getCurrentUser', {});
+  const user = result.data;
+  const userId = user && typeof user.id === 'string' ? String(user.id) : '';
   if (!userId) {
     return { ok: false, reason: 'Unable to resolve current user id.' };
   }
@@ -68,40 +72,36 @@ export async function resolveUserProfile(
   args: { userId?: string; username?: string } | undefined,
 ): Promise<UserProfileResolution> {
   if (args?.userId) {
-    const result = await callOperation({
-      operationId: 'getUser',
-      params: { userId: args.userId },
-    });
-    const user = result.data ?? null;
-    const userId =
-      typeof (user as Record<string, unknown> | null)?.id === 'string'
-        ? String((user as Record<string, unknown>).id)
-        : String(args.userId);
+    const result = await callReadOperationParsed('getUser', { userId: args.userId });
+    const user = result.data;
+    if (!user) {
+      return { ok: false, reason: 'User not found.' };
+    }
+    const userId = user && typeof user.id === 'string' ? String(user.id) : String(args.userId);
     return { ok: true, user, userId };
   }
 
   if (args?.username) {
-    const result = await callOperation({
-      operationId: 'getUserByName',
-      params: { username: args.username },
+    const result = await callReadOperationParsed('getUserByName', {
+      username: args.username,
     });
-    const user = result.data ?? null;
-    const userId =
-      typeof (user as Record<string, unknown> | null)?.id === 'string'
-        ? String((user as Record<string, unknown>).id)
-        : '';
+    const user = result.data;
+    if (!user) {
+      return { ok: false, reason: 'User not found for username.' };
+    }
+    const userId = user && typeof user.id === 'string' ? String(user.id) : '';
     if (!userId) {
       return { ok: false, reason: 'Unable to resolve userId from username.' };
     }
     return { ok: true, user, userId };
   }
 
-  const result = await callOperation({ operationId: 'getCurrentUser' });
-  const user = result.data ?? null;
-  const userId =
-    typeof (user as Record<string, unknown> | null)?.id === 'string'
-      ? String((user as Record<string, unknown>).id)
-      : '';
+  const result = await callReadOperationParsed('getCurrentUser', {});
+  const user = result.data;
+  if (!user) {
+    return { ok: false, reason: 'Unable to resolve current user profile.' };
+  }
+  const userId = user && typeof user.id === 'string' ? String(user.id) : '';
   if (!userId) {
     return { ok: false, reason: 'Unable to resolve current user id.' };
   }
@@ -124,8 +124,8 @@ export async function listUserGroups(input: {
   return buildGroupsPayload(input.userId, groups, meta, input.pageSize, input.maxPages);
 }
 
-function buildProfileUpdateBody(input: ProfileUpdateInput, current: Record<string, unknown>) {
-  const body: Record<string, unknown> = {};
+function buildProfileUpdateBody(input: ProfileUpdateInput, current: CurrentUserRecord) {
+  const body: UpdateUserRequest = {};
   if (typeof input.bio === 'string') body.bio = input.bio;
   if (Array.isArray(input.bioLinks)) body.bioLinks = input.bioLinks;
   if (typeof input.pronouns === 'string') body.pronouns = input.pronouns;
@@ -152,19 +152,17 @@ function buildProfileUpdateBody(input: ProfileUpdateInput, current: Record<strin
 }
 
 export async function updateProfile(input: ProfileUpdateInput): Promise<ProfileUpdateOutput> {
-  const currentResult = await callOperation({ operationId: 'getCurrentUser' });
-  const current = (currentResult.data ?? {}) as Record<string, unknown>;
-  const userId = typeof current.id === 'string' ? current.id : '';
-  if (!userId) {
+  const currentResult = await callReadOperationParsed('getCurrentUser', {});
+  const current = currentResult.data;
+  const userId = current && typeof current.id === 'string' ? current.id : '';
+  if (!current || !userId) {
     throw new Error('Unable to resolve current user id.');
   }
 
   const body = buildProfileUpdateBody(input, current);
-  const result = await callOperation({
-    operationId: 'updateUser',
-    params: { userId },
-    body,
-  });
-  const user = (result.data ?? {}) as Record<string, unknown>;
-  return { userId, user };
+  const result = await callWriteOperationParsed('updateUser', { userId }, body);
+  if (!result.data) {
+    throw new Error('Profile update returned no user data.');
+  }
+  return { userId, user: result.data };
 }

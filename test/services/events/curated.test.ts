@@ -97,9 +97,12 @@ describe('events curated service', () => {
 
   it('builds calendar create and update requests', () => {
     const create = buildCalendarCreateRequest({
+      groupId: 'grp_1',
       title: 'Party',
-      startsAt: '2025-12-31T10:00:00Z',
+      description: 'Party time',
       category: 'meetup',
+      startsAt: '2025-12-31T10:00:00Z',
+      endsAt: '2025-12-31T12:00:00Z',
     });
     const update = buildCalendarUpdateRequest({
       title: 'Updated Party',
@@ -125,7 +128,15 @@ describe('events curated service', () => {
       .mockResolvedValueOnce({ data: { id: 'evt_updated' } })
       .mockResolvedValueOnce({ data: { id: 'evt_deleted' } });
 
-    const created = await createCalendarEvent('grp_1', { title: 'Party' });
+    const created = await createCalendarEvent('grp_1', {
+      title: 'Party',
+      description: 'Party time',
+      category: 'meetup',
+      startsAt: '2025-12-31T10:00:00Z',
+      endsAt: '2025-12-31T12:00:00Z',
+      accessType: 'group',
+      sendCreationNotification: false,
+    });
     const updated = await updateCalendarEvent('grp_1', 'cal_1', { title: 'Updated' });
     const deleted = await deleteCalendarEvent('grp_1', 'cal_1');
 

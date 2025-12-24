@@ -1,27 +1,24 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
 
-export const InstanceTypeSchema = z.enum(['friends', 'group', 'hidden', 'private', 'public']);
-export const InstanceRegionSchema = z.enum(['eu', 'jp', 'unknown', 'us', 'use']);
-export const GroupAccessTypeSchema = z.enum(['members', 'plus', 'public']);
-
 export const InstanceCreateSchema = z.object({
-  worldId: z.string(),
-  type: InstanceTypeSchema,
-  region: InstanceRegionSchema,
-  groupId: z.string().optional(),
-  ownerId: z.string().optional(),
-  groupAccessType: GroupAccessTypeSchema.optional(),
-  roleIds: z.array(z.string()).optional(),
-  displayName: z.string().optional(),
+  worldId: schemas.WorldID,
+  type: schemas.InstanceType,
+  region: schemas.InstanceRegion,
+  groupId: schemas.GroupID.optional(),
+  ownerId: schemas.CreateInstanceRequest.shape.ownerId,
+  groupAccessType: schemas.GroupAccessType.optional(),
+  roleIds: z.array(schemas.GroupRoleID).optional(),
+  displayName: schemas.CreateInstanceRequest.shape.displayName,
   inviteOnly: z.boolean().optional(),
   canRequestInvite: z.boolean().optional(),
   queueEnabled: z.boolean().optional(),
   ageGate: z.boolean().optional(),
-  instancePersistenceEnabled: z.boolean().optional(),
-  closedAt: z.string().optional(),
+  instancePersistenceEnabled:
+    schemas.CreateInstanceRequest.shape.instancePersistenceEnabled,
+  closedAt: schemas.CreateInstanceRequest.shape.closedAt,
   hardClose: z.boolean().optional(),
-  contentSettings: z.record(z.string(), z.boolean()).optional(),
+  contentSettings: schemas.InstanceContentSettings.optional(),
 });
 
 export const InstanceSummarySchema = schemas.Instance.pick({
@@ -46,7 +43,12 @@ export const InstanceSummarySchema = schemas.Instance.pick({
   displayName: true,
   shortName: true,
   name: true,
-}).partial();
+})
+  .partial()
+  .extend({
+    region: schemas.Region.optional(),
+    photonRegion: schemas.Region.optional(),
+  });
 
 export const InstanceCreateOutputSchema = z.object({
   status: z.literal('created'),
@@ -55,3 +57,4 @@ export const InstanceCreateOutputSchema = z.object({
 
 export type InstanceCreateInput = z.infer<typeof InstanceCreateSchema>;
 export type InstanceSummary = z.infer<typeof InstanceSummarySchema>;
+export type InstanceCreateRequest = z.input<typeof schemas.CreateInstanceRequest>;

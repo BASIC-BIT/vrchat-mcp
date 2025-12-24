@@ -1,4 +1,4 @@
-import { callReadOperation } from '../../core/readTools.js';
+import type { InstanceSummary } from '../../models/instances.js';
 import type {
   FriendDetailsInput,
   FriendSearchInput,
@@ -14,16 +14,20 @@ import {
 } from './match.js';
 import { getGroupProfile } from '../groups/index.js';
 import { getInstanceDetails } from '../instances/index.js';
+import {
+  callReadOperationParsed,
+  type ReadOperationData,
+} from '../api/client.js';
 
 export type FriendDetailsResult =
   | {
       ok: true;
       friend: FriendRecord;
-      profile: unknown;
+      profile: ReadOperationData<'getUser'>;
       location: LocationInfo;
-      instance: unknown;
-      world: unknown;
-      group: unknown;
+      instance: InstanceSummary | null;
+      world: ReadOperationData<'getWorld'> | null;
+      group: ReadOperationData<'getGroup'> | null;
     }
   | {
       ok: false;
@@ -38,6 +42,10 @@ interface EnrichedLocationInfo extends LocationInfo {
   groupShortCode?: string;
 }
 
+type InstanceRecord = ReadOperationData<'getInstance'>;
+type WorldRecord = ReadOperationData<'getWorld'>;
+type GroupRecord = ReadOperationData<'getGroup'>;
+
 interface FriendSummary {
   userId?: string;
   displayName?: string;
@@ -47,7 +55,7 @@ interface FriendSummary {
 interface LocationBucket {
   info: EnrichedLocationInfo;
   friends: FriendSummary[];
-  instance?: unknown;
+  instance?: InstanceRecord | InstanceSummary | null;
 }
 
 const DEFAULT_LIST_PAGE_SIZE = 100;
@@ -55,15 +63,17 @@ const DEFAULT_ALL_MAX_PAGES = 200;
 const DEFAULT_ONLINE_MAX_PAGES = 50;
 const DEFAULT_SEARCH_MAX_PAGES = 100;
 const DEFAULT_SEARCH_MAX_RESULTS = 10;
-function normalizePageSize(value: unknown, fallback: number): number {
+function normalizePageSize(value: number | undefined, fallback: number): number {
   return typeof value === 'number' ? Math.floor(value) : fallback;
 }
 
-function normalizeMaxPages(value: unknown, fallback: number): number {
+function normalizeMaxPages(value: number | undefined, fallback: number): number {
   return typeof value === 'number' ? Math.floor(value) : fallback;
 }
 
-function normalizeStatusFilter(value: unknown): string[] | undefined {
+function normalizeStatusFilter(
+  value: string | string[] | undefined,
+): string[] | undefined {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     return trimmed ? [trimmed.toLowerCase()] : undefined;
@@ -90,83 +100,88 @@ function matchesStatusFilter(
   return matchesOffline || matchesOnline || filter.has(normalized);
 }
 
-function buildInstanceSummary(instance: unknown): Record<string, unknown> | undefined {
-  if (!instance || typeof instance !== 'object') return undefined;
-  const record = instance as Record<string, unknown>;
-  const region =
-    typeof record.region === 'string'
-      ? record.region
-      : typeof record.photonRegion === 'string'
-        ? record.photonRegion
-        : undefined;
+function buildInstanceSummary(instance: InstanceRecord | null | undefined): InstanceSummary | undefined {
+  if (!instance) return undefined;
+  const region = instance.region ?? instance.photonRegion ?? undefined;
 
   return {
-    id: record.id,
-    instanceId: record.instanceId,
-    location: record.location,
-    worldId: record.worldId,
-    userCount: record.userCount,
-    n_users: record.n_users,
-    capacity: record.capacity,
-    recommendedCapacity: record.recommendedCapacity,
-    full: record.full,
-    hasCapacityForYou: record.hasCapacityForYou,
-    queueEnabled: record.queueEnabled,
-    queueSize: record.queueSize,
-    type: record.type,
-    groupAccessType: record.groupAccessType,
+    id: instance.id,
+    instanceId: instance.instanceId,
+    location: instance.location,
+    worldId: instance.worldId,
+    userCount: instance.userCount,
+    n_users: instance.n_users,
+    capacity: instance.capacity,
+    recommendedCapacity: instance.recommendedCapacity,
+    full: instance.full,
+    hasCapacityForYou: instance.hasCapacityForYou,
+    queueEnabled: instance.queueEnabled,
+    queueSize: instance.queueSize,
+    type: instance.type,
+    groupAccessType: instance.groupAccessType,
     region,
-    photonRegion: record.photonRegion,
-    canRequestInvite: record.canRequestInvite,
-    tags: record.tags,
-    displayName: record.displayName,
-    shortName: record.shortName,
-    name: record.name,
+    photonRegion: instance.photonRegion,
+    canRequestInvite: instance.canRequestInvite,
+    tags: instance.tags,
+    displayName: instance.displayName,
+    shortName: instance.shortName,
+    name: instance.name,
   };
 }
 
-function getInstanceUserCount(instance: unknown): number | null {
-  if (!instance || typeof instance !== 'object') return null;
-  const record = instance as Record<string, unknown>;
+function getInstanceUserCount(instance: InstanceRecord | InstanceSummary | null | undefined): number | null {
+  if (!instance) return null;
   const count =
-    typeof record.userCount === 'number'
-      ? record.userCount
-      : typeof record.n_users === 'number'
-        ? record.n_users
+    typeof instance.userCount === 'number'
+      ? instance.userCount
+      : typeof instance.n_users === 'number'
+        ? instance.n_users
         : null;
   if (count === null || !Number.isFinite(count)) return null;
   return Math.max(0, Math.floor(count));
 }
 
+interface InstanceErrorInfo {
+  status?: number;
+  message?: string;
+}
+
+function toInstanceErrorInfo(err: unknown): InstanceErrorInfo {
+  if (err instanceof Error) {
+    return { message: err.message };
+  }
+  if (!err || typeof err !== 'object') return {};
+  const status =
+    'status' in err && typeof err.status === 'number' ? err.status : undefined;
+  const message =
+    'message' in err && typeof err.message === 'string' ? err.message : undefined;
+  return { status, message };
+}
+
 function formatInstanceError(
   worldId: string,
   instanceId: string,
-  err: unknown,
+  err: InstanceErrorInfo,
 ): string {
-  const status =
-    err && typeof err === 'object' && 'status' in err
-      ? ((err as { status?: number }).status ?? undefined)
-      : undefined;
+  const status = err.status;
   if (status === 401) {
     return `Not authorized to access instance ${worldId}:${instanceId}.`;
   }
   if (status === 404) {
     return `Instance ${worldId}:${instanceId} not found.`;
   }
-  if (err instanceof Error && err.message) {
+  if (err.message) {
     return `Failed to fetch instance ${worldId}:${instanceId}: ${err.message}`;
   }
   return `Failed to fetch instance ${worldId}:${instanceId}.`;
 }
 
 function extractGroupInfo(
-  group: unknown,
+  group: GroupRecord | null,
 ): { name?: string; shortCode?: string } | null {
-  if (!group || typeof group !== 'object') return null;
-  const record = group as Record<string, unknown>;
-  const name = typeof record.name === 'string' ? record.name : undefined;
-  const shortCode =
-    typeof record.shortCode === 'string' ? record.shortCode : undefined;
+  if (!group) return null;
+  const name = typeof group.name === 'string' ? group.name : undefined;
+  const shortCode = typeof group.shortCode === 'string' ? group.shortCode : undefined;
   if (!name && !shortCode) return null;
   return { name, shortCode };
 }
@@ -324,32 +339,23 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
           instanceDetailLevel === 'full'
             ? instance
             : (buildInstanceSummary(instance) ?? instance);
-        if (instance && typeof instance === 'object') {
-          const record = instance as Record<string, unknown>;
-          const world =
-            record.world && typeof record.world === 'object'
-              ? (record.world as Record<string, unknown>)
-              : undefined;
-          const worldName = typeof world?.name === 'string' ? world.name : undefined;
+        if (instance) {
+          const worldName = instance.world?.name ?? undefined;
           if (worldName) bucket.info.worldName = worldName;
-          const worldIdFromInstance =
-            typeof record.worldId === 'string' ? record.worldId : undefined;
+          const worldIdFromInstance = instance.worldId ?? instance.world?.id ?? undefined;
           if (!bucket.info.worldId && worldIdFromInstance) {
             bucket.info.worldId = worldIdFromInstance;
           }
-          const region =
-            typeof record.region === 'string'
-              ? record.region
-              : typeof record.photonRegion === 'string'
-                ? record.photonRegion
-                : undefined;
+          const region = instance.region ?? instance.photonRegion ?? undefined;
           if (region) bucket.info.region = region;
-          const typeValue = typeof record.type === 'string' ? record.type : undefined;
+          const typeValue = instance.type ?? undefined;
           if (typeValue) bucket.info.accessType = typeValue;
         }
       } catch (err) {
         if (strictInstanceFilter) {
-          throw new Error(formatInstanceError(worldId, instanceId, err));
+          throw new Error(
+            formatInstanceError(worldId, instanceId, toInstanceErrorInfo(err)),
+          );
         }
         // best-effort enrichment
       }
@@ -467,9 +473,9 @@ export async function getFriendDetails(
   const location = parseLocation(
     typeof target.location === 'string' ? target.location : undefined,
   );
-  let instance: unknown = null;
-  let world: unknown = null;
-  let group: unknown = null;
+  let instance: InstanceSummary | null = null;
+  let world: WorldRecord | null = null;
+  let group: GroupRecord | null = null;
 
   const resolvedUserId =
     typeof target.id === 'string' ? target.id : userId ? String(userId) : '';
@@ -482,13 +488,10 @@ export async function getFriendDetails(
     };
   }
 
-  const profileResult = await callReadOperation('getUser', {
+  const profileResult = await callReadOperationParsed('getUser', {
     userId: resolvedUserId,
   });
-  const profile =
-    profileResult.data && typeof profileResult.data === 'object'
-      ? profileResult.data
-      : {};
+  const profile = profileResult.data ?? {};
 
   if (location.type === 'instance' && location.worldId && location.instanceId) {
     const { instance: instanceResult } = await getInstanceDetails(
@@ -496,27 +499,18 @@ export async function getFriendDetails(
       location.instanceId,
     );
     if (instanceResult) {
-      instance = buildInstanceSummary(instanceResult) ?? instanceResult;
-      if (instanceResult && typeof instanceResult === 'object') {
-        const record = instanceResult as Record<string, unknown>;
-        if (record.world && typeof record.world === 'object') {
-          world = record.world ?? null;
-          const worldRecord = record.world as Record<string, unknown>;
-          const worldName = worldRecord.name;
-          if (typeof worldName === 'string' && worldName) {
-            (location as EnrichedLocationInfo).worldName = worldName;
-          }
+      instance = buildInstanceSummary(instanceResult) ?? null;
+      if (instanceResult.world) {
+        world = instanceResult.world ?? null;
+        const worldName = instanceResult.world.name;
+        if (typeof worldName === 'string' && worldName) {
+          (location as EnrichedLocationInfo).worldName = worldName;
         }
-        const region =
-          typeof record.region === 'string'
-            ? record.region
-            : typeof record.photonRegion === 'string'
-              ? record.photonRegion
-              : undefined;
-        if (region) (location as EnrichedLocationInfo).region = region;
-        const typeValue = typeof record.type === 'string' ? record.type : undefined;
-        if (typeValue) (location as EnrichedLocationInfo).accessType = typeValue;
       }
+      const region = instanceResult.region ?? instanceResult.photonRegion ?? undefined;
+      if (region) (location as EnrichedLocationInfo).region = region;
+      const typeValue = instanceResult.type ?? undefined;
+      if (typeValue) (location as EnrichedLocationInfo).accessType = typeValue;
     }
   }
 

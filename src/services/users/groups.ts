@@ -1,5 +1,7 @@
-import { callOperation } from '../../core/client.js';
+import type { z } from 'zod';
+import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
+import type { schemas } from '../../generated/vrchat-schemas.js';
 
 export interface UserGroupSummary {
   groupId: string;
@@ -35,15 +37,16 @@ export interface UserGroupsFetchResult {
   meta: UserGroupsMeta;
 }
 
-function mapGroup(entry: unknown): UserGroupSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const idRaw = record.groupId ?? record.id;
-  const groupId = typeof idRaw === 'string' ? idRaw : '';
+function toUserGroupSummary(
+  group: z.infer<typeof schemas.LimitedUserGroups>,
+): UserGroupSummary | null {
+  const groupId = group.groupId ?? '';
   if (!groupId) return null;
-  const name = typeof record.name === 'string' ? record.name : undefined;
-  const shortCode = typeof record.shortCode === 'string' ? record.shortCode : undefined;
-  return { groupId, name, shortCode };
+  return {
+    groupId,
+    name: group.name ?? undefined,
+    shortCode: group.shortCode ?? undefined,
+  };
 }
 
 export async function fetchUserGroupsWithMeta(
@@ -62,12 +65,12 @@ export async function fetchUserGroupsWithMeta(
     cacheConfig.userGroupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callOperation({
-        operationId: 'getUserGroups',
-        params: { userId: options.userId },
+      const result = await callReadOperationParsed('getUserGroups', {
+        userId: options.userId,
       });
-      const data = Array.isArray(result.data) ? result.data : [];
-      const groups = data.map(mapGroup).filter((group): group is UserGroupSummary => Boolean(group));
+      const groups = result.data
+        .map(toUserGroupSummary)
+        .filter((group): group is UserGroupSummary => Boolean(group));
       return { groups };
     },
   );

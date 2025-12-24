@@ -1,7 +1,9 @@
 import { getConfig } from '../config/index.js';
 import { logger } from '../infra/logger.js';
 
-export interface CacheEntry<T = unknown> {
+type CacheValue = object | string | number | boolean | null;
+
+export interface CacheEntry<T = CacheValue> {
   key: string;
   value: T;
   createdAt: number;
@@ -50,10 +52,10 @@ export function buildCacheKey(
 }
 
 export class CacheManager {
-  private entries = new Map<string, CacheEntry>();
-  private inflight = new Map<string, Promise<unknown>>();
+  private entries = new Map<string, CacheEntry<CacheValue>>();
+  private inflight = new Map<string, Promise<CacheValue>>();
 
-  get<T>(key: string): T | undefined {
+  get<T extends CacheValue>(key: string): T | undefined {
     const entry = this.entries.get(key);
     if (!entry) return undefined;
     if (Date.now() >= entry.expiresAt) {
@@ -63,7 +65,12 @@ export class CacheManager {
     return entry.value as T;
   }
 
-  set<T>(key: string, value: T, ttlMs: number, tags: string[] = []): void {
+  set<T extends CacheValue>(
+    key: string,
+    value: T,
+    ttlMs: number,
+    tags: string[] = [],
+  ): void {
     if (ttlMs <= 0) return;
     const now = Date.now();
     const entry: CacheEntry<T> = {
@@ -76,7 +83,7 @@ export class CacheManager {
     this.entries.set(key, entry);
   }
 
-  async getOrSet<T>(
+  async getOrSet<T extends CacheValue>(
     key: string,
     ttlMs: number,
     tags: string[],
@@ -98,11 +105,11 @@ export class CacheManager {
       .finally(() => {
         this.inflight.delete(key);
       });
-    this.inflight.set(key, promise);
+    this.inflight.set(key, promise as Promise<CacheValue>);
     return promise;
   }
 
-  async getOrSetStale<T>(
+  async getOrSetStale<T extends CacheValue>(
     key: string,
     ttlMs: number,
     staleTtlMs: number,
@@ -131,7 +138,7 @@ export class CacheManager {
             .finally(() => {
               this.inflight.delete(key);
             });
-          this.inflight.set(key, promise);
+          this.inflight.set(key, promise as Promise<CacheValue>);
         }
         return { value: entry.value as T, stale: true };
       }
@@ -151,11 +158,11 @@ export class CacheManager {
       .finally(() => {
         this.inflight.delete(key);
       });
-    this.inflight.set(key, promise);
+    this.inflight.set(key, promise as Promise<CacheValue>);
     return { value: await promise, stale: false };
   }
 
-  updateByTag<T>(
+  updateByTag<T extends CacheValue>(
     tag: string,
     updater: (value: T, key: string) => T | undefined,
   ): number {

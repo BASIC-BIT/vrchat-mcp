@@ -1,12 +1,11 @@
-import { callOperation } from '../../core/client.js';
-import { callReadOperation } from '../../core/readTools.js';
+import { callReadOperationParsed, type ReadOperationData } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import {
-  mapGroupAnnouncement,
-  mapGroupInstance,
-  mapGroupMember,
-  mapGroupPost,
-  mapGroupSummary,
+  toGroupAnnouncement,
+  toGroupInstanceSummary,
+  toGroupMemberSummary,
+  toGroupPostSummary,
+  toGroupSummary,
   type GroupAnnouncement,
   type GroupEventsListInput,
   type GroupEventsUpcomingInput,
@@ -14,11 +13,13 @@ import {
   type GroupInstanceSummary,
   type GroupMembersInput,
   type GroupPostsRecentInput,
+  type GroupPostSummary,
   type GroupResolution,
   type GroupSearchInput,
   type GroupSummary,
 } from '../../models/groups.js';
 import { getMonthKeys, parseEventTime, parseIsoDate, toMonthKey } from '../events/utils.js';
+import type { CalendarEventRecord } from '../events/utils.js';
 
 interface PageInfo {
   pages: number;
@@ -36,6 +37,8 @@ const DEFAULT_GROUP_POSTS_PAGE_SIZE = 50;
 const DEFAULT_GROUP_POSTS_MAX_PAGES = 10;
 const DEFAULT_GROUP_EVENT_PAGE_SIZE = 50;
 const DEFAULT_GROUP_EVENT_MAX_PAGES = 10;
+type GroupRecord = ReadOperationData<'getGroup'>;
+type GroupCalendarEvent = ReadOperationData<'getGroupCalendarEvent'>;
 
 export async function searchGroups(
   input: GroupSearchInput,
@@ -65,7 +68,7 @@ export async function searchGroups(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'searchGroups',
         { query },
         {
@@ -77,13 +80,8 @@ export async function searchGroups(
           },
         },
       );
-      const data = Array.isArray(result.data)
-        ? result.data
-        : Array.isArray((result.data as { posts?: unknown[] })?.posts)
-          ? (result.data as { posts?: unknown[] }).posts ?? []
-          : [];
-      const groups = data
-        .map(mapGroupSummary)
+      const groups = result.data
+        .map(toGroupSummary)
         .filter((group): group is GroupSummary => Boolean(group));
       return {
         groups,
@@ -134,7 +132,9 @@ export async function resolveGroupId(
   return { ok: true, groupId: match.groupId, resolvedBy: 'shortCode' };
 }
 
-export async function getGroupProfile(groupId: string): Promise<{ group: unknown; stale: boolean }> {
+export async function getGroupProfile(
+  groupId: string,
+): Promise<{ group: GroupRecord | null; stale: boolean }> {
   const cacheKey = buildCacheKey('groups:profile', { groupId });
   const tags = ['groups', `groups:${groupId}`];
   const { value, stale } = await cacheManager.getOrSetStale(
@@ -143,11 +143,9 @@ export async function getGroupProfile(groupId: string): Promise<{ group: unknown
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callOperation({
-        operationId: 'getGroup',
-        params: { groupId },
-      });
-      return { group: result.data ?? null };
+      const result = await callReadOperationParsed('getGroup', { groupId });
+      const group = result.data ?? null;
+      return { group };
     },
   );
   return { group: value.group, stale };
@@ -188,7 +186,7 @@ export async function listGroupMembers(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getGroupMembers',
         { groupId, roleId, sort, offset },
         {
@@ -200,10 +198,12 @@ export async function listGroupMembers(
           },
         },
       );
-      const data = Array.isArray(result.data) ? result.data : [];
-      const members = data
-        .map(mapGroupMember)
-        .filter((member): member is { userId: string; displayName?: string } => Boolean(member));
+      const members = result.data
+        .map(toGroupMemberSummary)
+        .filter(
+          (member): member is { userId: string; displayName?: string } =>
+            Boolean(member),
+        );
       const byId = new Map<string, { userId: string; displayName?: string }>();
       for (const member of members) {
         if (!byId.has(member.userId)) byId.set(member.userId, member);
@@ -235,12 +235,13 @@ export async function getGroupAnnouncement(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callOperation({
-        operationId: 'getGroupAnnouncements',
-        params: { groupId },
-      });
-      const payload = Array.isArray(result.data) ? result.data[0] : result.data;
-      return { announcement: mapGroupAnnouncement(payload) };
+      const result = await callReadOperationParsed('getGroupAnnouncements', { groupId });
+      const announcements = result.data;
+      return {
+        announcement: announcements[0]
+          ? toGroupAnnouncement(announcements[0])
+          : null,
+      };
     },
   );
 
@@ -251,7 +252,7 @@ export async function listGroupPosts(
   groupId: string,
   input: GroupPostsRecentInput,
 ): Promise<{
-  posts: ReturnType<typeof mapGroupPost>[];
+  posts: GroupPostSummary[];
   page?: PageInfo;
   truncated: boolean;
   stale: boolean;
@@ -274,7 +275,7 @@ export async function listGroupPosts(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getGroupPosts',
         { groupId, publicOnly },
         {
@@ -286,10 +287,11 @@ export async function listGroupPosts(
           },
         },
       );
-      const data = Array.isArray(result.data) ? result.data : [];
-      const posts = data
-        .map(mapGroupPost)
-        .filter((post): post is ReturnType<typeof mapGroupPost> => Boolean(post));
+      const posts = result.data
+        .map(toGroupPostSummary)
+        .filter(
+          (post): post is GroupPostSummary => Boolean(post),
+        );
       return {
         posts,
         page: result.page as PageInfo | undefined,
@@ -312,7 +314,7 @@ export async function listGroupEvents(
   groupId: string,
   input: GroupEventsListInput,
 ): Promise<{
-  events: unknown[];
+  events: CalendarEventRecord[];
   page?: PageInfo;
   truncated: boolean;
   stale: boolean;
@@ -348,7 +350,7 @@ export async function listGroupEvents(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getGroupCalendarEvents',
         { groupId, monthDate },
         {
@@ -360,11 +362,7 @@ export async function listGroupEvents(
           },
         },
       );
-      const events = Array.isArray(result.data)
-        ? result.data
-        : Array.isArray((result.data as { results?: unknown[] })?.results)
-          ? (result.data as { results?: unknown[] }).results ?? []
-          : [];
+      const events = result.data;
       return {
         events,
         page: result.page as PageInfo | undefined,
@@ -388,7 +386,7 @@ export async function listGroupEvents(
 export async function getGroupEvent(
   groupId: string,
   input: GroupEventGetInput,
-): Promise<{ event: unknown; stale: boolean }> {
+): Promise<{ event: GroupCalendarEvent | null; stale: boolean }> {
   const calendarId = typeof input.calendarId === 'string' ? input.calendarId.trim() : '';
   if (!calendarId) {
     throw new Error('calendarId is required.');
@@ -401,12 +399,13 @@ export async function getGroupEvent(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callReadOperation(
+      const result = await callReadOperationParsed(
         'getGroupCalendarEvent',
         { groupId, calendarId },
         {},
       );
-      return { event: result.data ?? null };
+      const event = result.data ?? null;
+      return { event };
     },
   );
 
@@ -417,7 +416,7 @@ export async function listGroupEventsUpcoming(
   groupId: string,
   input: GroupEventsUpcomingInput,
 ): Promise<{
-  events: unknown[];
+  events: CalendarEventRecord[];
   truncated: boolean;
   stale: boolean;
   segments: { date: string; page?: PageInfo }[];
@@ -460,7 +459,7 @@ export async function listGroupEventsUpcoming(
     async () => {
       const dateKeys = getMonthKeys(fromDate, toDate);
       const segments: { date: string; page?: PageInfo }[] = [];
-      const collected: unknown[] = [];
+      const collected: CalendarEventRecord[] = [];
       const seenIds = new Set<string>();
       let truncated = false;
 
@@ -470,7 +469,7 @@ export async function listGroupEventsUpcoming(
           truncated = true;
           break;
         }
-        const result = await callReadOperation(
+        const result = await callReadOperationParsed(
           'getGroupCalendarEvents',
           { groupId, monthDate: date },
           {
@@ -482,25 +481,17 @@ export async function listGroupEventsUpcoming(
             },
           },
         );
-        const data = Array.isArray(result.data)
-          ? result.data
-          : Array.isArray((result.data as { results?: unknown[] })?.results)
-            ? (result.data as { results?: unknown[] }).results ?? []
-            : [];
+        const data = result.data;
         const filtered = data.filter((event) => {
-          if (!event || typeof event !== 'object') return false;
-          const startsAt = (event as Record<string, unknown>).startsAt;
-          const ts = parseEventTime(startsAt);
+          const ts = parseEventTime(event.startsAt);
           if (ts === null) return false;
           return ts >= fromDate.getTime() && ts < toDate.getTime();
         });
         for (const event of filtered) {
-          if (event && typeof event === 'object') {
-            const id = (event as Record<string, unknown>).id;
-            if (typeof id === 'string') {
-              if (seenIds.has(id)) continue;
-              seenIds.add(id);
-            }
+          const id = event.id;
+          if (typeof id === 'string') {
+            if (seenIds.has(id)) continue;
+            seenIds.add(id);
           }
           collected.push(event);
         }
@@ -515,8 +506,8 @@ export async function listGroupEventsUpcoming(
       }
 
       collected.sort((a, b) => {
-        const aTime = parseEventTime((a as Record<string, unknown>)?.startsAt);
-        const bTime = parseEventTime((b as Record<string, unknown>)?.startsAt);
+        const aTime = parseEventTime(a?.startsAt);
+        const bTime = parseEventTime(b?.startsAt);
         if (aTime === null && bTime === null) return 0;
         if (aTime === null) return 1;
         if (bTime === null) return -1;
@@ -558,14 +549,12 @@ export async function getGroupInstancesOverview(
     cacheConfig.groupsStaleTtlMs,
     tags,
     async () => {
-      const result = await callOperation({
-        operationId: 'getGroupInstances',
-        params: { groupId },
-      });
-      const data = Array.isArray(result.data) ? result.data : [];
-      const instances = data
-        .map(mapGroupInstance)
-        .filter((instance): instance is GroupInstanceSummary => Boolean(instance));
+      const result = await callReadOperationParsed('getGroupInstances', { groupId });
+      const instances = result.data
+        .map(toGroupInstanceSummary)
+        .filter(
+          (instance): instance is GroupInstanceSummary => Boolean(instance),
+        );
       return { instances };
     },
   );

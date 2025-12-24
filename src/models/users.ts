@@ -38,7 +38,7 @@ export const DEFAULT_SELF_FIELDS = [
 ] as const;
 
 export const UserGroupsOutputSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   pageSize: z.number().int().min(1),
   maxPages: z.number().int().min(1),
   totalGroups: z.number().int().min(0),
@@ -49,7 +49,7 @@ export const UserGroupsOutputSchema = z.object({
 });
 
 export const UserProfileInputSchema = UserShapeSchema.extend({
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   username: z.string().optional(),
   includeGroups: z.boolean().optional(),
   groupPageSize: z.number().int().min(1).max(100).optional(),
@@ -58,7 +58,7 @@ export const UserProfileInputSchema = UserShapeSchema.extend({
 });
 
 export const UserProfileOutputSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   user: schemas.User.partial(),
   groups: UserGroupsOutputSchema.optional(),
 });
@@ -80,12 +80,12 @@ export const PROFILE_UPDATE_FIELDS = [
 ] as const;
 
 export const ProfileUpdateOutputSchema = z.object({
-  userId: z.string(),
+  userId: schemas.UserID,
   user: schemas.CurrentUser.partial(),
 });
 
 export const UserGroupsInputSchema = z.object({
-  userId: z.string().optional(),
+  userId: schemas.UserID.optional(),
   username: z.string().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
   maxPages: z.number().int().min(1).max(50).optional(),

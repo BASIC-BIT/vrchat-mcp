@@ -1,10 +1,12 @@
-import { callOperation } from '../../core/client.js';
-import type { InstanceCreateInput } from '../../models/instances.js';
+import type { InstanceCreateInput, InstanceCreateRequest } from '../../models/instances.js';
 import { checkGroupAllowed } from '../groups/allowlist.js';
+import { callWriteOperationParsed, type WriteOperationData } from '../api/client.js';
 
 export type InstanceCreatePreparation =
-  | { ok: true; request: Record<string, unknown> }
+  | { ok: true; request: InstanceCreateRequest }
   | { ok: false; reason: string };
+
+type InstanceRecord = WriteOperationData<'createInstance'>;
 
 export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreatePreparation {
   let ownerId: string | null = null;
@@ -25,7 +27,7 @@ export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreat
     if (input.ownerId) ownerId = input.ownerId;
   }
 
-  const request: Record<string, unknown> = {
+  const request: InstanceCreateRequest = {
     worldId: input.worldId,
     type: input.type,
     region: input.region,
@@ -53,10 +55,7 @@ export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreat
   return { ok: true, request };
 }
 
-export async function createInstance(request: Record<string, unknown>) {
-  const result = await callOperation({
-    operationId: 'createInstance',
-    body: request,
-  });
+export async function createInstance(request: InstanceCreateRequest): Promise<InstanceRecord | null> {
+  const result = await callWriteOperationParsed('createInstance', undefined, request);
   return result.data ?? null;
 }

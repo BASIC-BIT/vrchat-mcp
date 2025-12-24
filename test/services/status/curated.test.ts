@@ -1,25 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 vi.mock('../../../src/core/client.js', () => ({
   callOperation: vi.fn(),
 }));
-
+vi.mock('../../../src/core/readTools.js', () => ({
+  callReadOperation: vi.fn(),
+}));
 vi.mock('../../../src/services/users/index.js', () => ({
   resolveUserId: vi.fn(),
 }));
 
 import { callOperation } from '../../../src/core/client.js';
+import { callReadOperation } from '../../../src/core/readTools.js';
 import { resolveUserId } from '../../../src/services/users/index.js';
 import { getCurrentStatus, updateStatus } from '../../../src/services/status/curated.js';
 
 describe('status curated service', () => {
   beforeEach(() => {
     vi.mocked(callOperation).mockReset();
+    vi.mocked(callReadOperation).mockReset();
     vi.mocked(resolveUserId).mockReset();
   });
 
   it('maps current user status fields', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: { id: 'usr_1', status: 'active', statusDescription: 'Hello' },
     });
 

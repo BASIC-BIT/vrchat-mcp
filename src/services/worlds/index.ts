@@ -1,4 +1,5 @@
-import { callReadOperation } from '../../core/readTools.js';
+import type { z } from 'zod';
+import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import {
   buildWorldSummary,
@@ -9,6 +10,7 @@ import {
   type WorldSearchInput,
   type WorldSummary,
 } from '../../models/worlds.js';
+import type { schemas } from '../../generated/vrchat-schemas.js';
 
 const CACHE_TTL_MS = cacheConfig.groupsTtlMs;
 const CACHE_STALE_TTL_MS = cacheConfig.groupsStaleTtlMs;
@@ -17,6 +19,8 @@ const INSTANCE_STALE_TTL_MS = cacheConfig.notificationsStaleTtlMs;
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
+type WorldRecord = Partial<z.infer<typeof schemas.World>>;
+type FavoritedWorldRecord = Partial<z.infer<typeof schemas.FavoritedWorld>>;
 
 interface PageOptions {
   pageSize: number;
@@ -25,8 +29,24 @@ interface PageOptions {
   offset?: number;
 }
 
-interface CachedWorldList {
-  worlds: unknown[];
+interface WorldSearchParams extends Record<string, unknown> {
+  search?: string;
+  n?: number;
+  offset?: number;
+  featured?: boolean;
+  sort?: string;
+  order?: string;
+  tag?: string;
+  notag?: string;
+  releaseStatus?: string;
+  maxUnityVersion?: string;
+  minUnityVersion?: string;
+  platform?: string;
+  userId?: string;
+}
+
+interface CachedWorldList<T> {
+  worlds: T[];
   page?: {
     pages: number;
     items: number;
@@ -58,9 +78,9 @@ function readPageOptions(
 
 async function fetchWorldSearchCached(
   cacheKeyParams: Record<string, string | number | boolean | null | undefined>,
-  params: Record<string, unknown>,
+  params: WorldSearchParams,
   page: PageOptions,
-) {
+): Promise<{ value: CachedWorldList<WorldRecord>; stale: boolean }> {
   const cacheKey = buildCacheKey('worlds:search', cacheKeyParams);
   return await cacheManager.getOrSetStale(
     cacheKey,
@@ -68,7 +88,7 @@ async function fetchWorldSearchCached(
     CACHE_STALE_TTL_MS,
     ['worlds', 'worlds:search'],
     async () => {
-      const result = await callReadOperation('searchWorlds', params, {
+      const result = await callReadOperationParsed('searchWorlds', params, {
         page: {
           enabled: true,
           size: page.pageSize,
@@ -77,17 +97,19 @@ async function fetchWorldSearchCached(
           offset: page.offset,
         },
       });
-      const worlds = Array.isArray(result.data) ? result.data : [];
-      return { worlds, page: result.page };
+      return { worlds: result.data, page: result.page };
     },
   );
 }
 
 async function fetchWorldFavoritesCached(
   cacheKeyParams: Record<string, string | number | boolean | null | undefined>,
-  params: Record<string, unknown>,
+  params: WorldSearchParams,
   page: PageOptions,
-) {
+): Promise<{
+  value: CachedWorldList<FavoritedWorldRecord>;
+  stale: boolean;
+}> {
   const cacheKey = buildCacheKey('worlds:favorites', cacheKeyParams);
   return await cacheManager.getOrSetStale(
     cacheKey,
@@ -95,7 +117,7 @@ async function fetchWorldFavoritesCached(
     CACHE_STALE_TTL_MS,
     ['worlds', 'worlds:favorites'],
     async () => {
-      const result = await callReadOperation('getFavoritedWorlds', params, {
+      const result = await callReadOperationParsed('getFavoritedWorlds', params, {
         page: {
           enabled: true,
           size: page.pageSize,
@@ -104,8 +126,7 @@ async function fetchWorldFavoritesCached(
           offset: page.offset,
         },
       });
-      const worlds = Array.isArray(result.data) ? result.data : [];
-      return { worlds, page: result.page };
+      return { worlds: result.data, page: result.page };
     },
   );
 }
@@ -122,7 +143,7 @@ async function fetchWorldProfileCached(
     staleTtlMs,
     ['worlds', 'worlds:profile'],
     async () => {
-      const result = await callReadOperation('getWorld', { worldId });
+      const result = await callReadOperationParsed('getWorld', { worldId });
       return result.data;
     },
   );
@@ -147,7 +168,7 @@ function extractRegion(location: string | undefined): string | undefined {
   return match[1];
 }
 
-function summarizeInstances(raw: unknown): WorldInstancesSummary {
+function summarizeInstances(raw: WorldRecord['instances']): WorldInstancesSummary {
   if (!Array.isArray(raw)) {
     return {
       totalInstances: 0,
@@ -189,7 +210,7 @@ export async function searchWorlds(
   input: WorldSearchInput,
 ): Promise<{
   worlds: WorldSummary[];
-  page?: CachedWorldList['page'];
+  page?: CachedWorldList<WorldRecord>['page'];
   stale: boolean;
 }> {
   const page = readPageOptions(input, {
@@ -212,7 +233,7 @@ export async function searchWorlds(
     minUnityVersion: input.minUnityVersion,
     platform: input.platform,
   };
-  const params: Record<string, unknown> = {
+  const params: WorldSearchParams = {
     search: input.query,
     n: page.pageSize,
     offset: page.offset,
@@ -228,8 +249,8 @@ export async function searchWorlds(
   };
 
   const { value, stale } = await fetchWorldSearchCached(cacheKeyParams, params, page);
-  const summaries = (value.worlds as unknown[])
-    .map((world) => (world && typeof world === 'object' ? buildWorldSummary(world as Record<string, unknown>) : null))
+  const summaries = value.worlds
+    .map(buildWorldSummary)
     .filter((entry): entry is WorldSummary => Boolean(entry));
 
   return {
@@ -243,7 +264,7 @@ export async function listFavoriteWorlds(
   input: WorldFavoritesInput,
 ): Promise<{
   worlds: WorldSummary[];
-  page?: CachedWorldList['page'];
+  page?: CachedWorldList<FavoritedWorldRecord>['page'];
   stale: boolean;
 }> {
   const page = readPageOptions(input, {
@@ -267,7 +288,7 @@ export async function listFavoriteWorlds(
     platform: input.platform,
     userId: input.userId,
   };
-  const params: Record<string, unknown> = {
+  const params: WorldSearchParams = {
     search: typeof input.query === 'string' ? input.query : undefined,
     n: page.pageSize,
     offset: page.offset,
@@ -284,8 +305,8 @@ export async function listFavoriteWorlds(
   };
 
   const { value, stale } = await fetchWorldFavoritesCached(cacheKeyParams, params, page);
-  const summaries = (value.worlds as unknown[])
-    .map((world) => (world && typeof world === 'object' ? buildWorldSummary(world as Record<string, unknown>) : null))
+  const summaries = value.worlds
+    .map(buildWorldSummary)
     .filter((entry): entry is WorldSummary => Boolean(entry));
 
   return {
@@ -342,7 +363,7 @@ export async function getWorldProfile(
   worldId: string,
   ttlMs = CACHE_TTL_MS,
   staleTtlMs = CACHE_STALE_TTL_MS,
-): Promise<{ world: unknown; stale: boolean }> {
+): Promise<{ world: WorldRecord | null; stale: boolean }> {
   const result = await fetchWorldProfileCached(worldId, ttlMs, staleTtlMs);
   return { world: result.value, stale: result.stale };
 }
@@ -356,10 +377,6 @@ export async function getWorldInstancesOverview(
     INSTANCE_STALE_TTL_MS,
   );
   const world = result.value;
-  const instancesRaw =
-    world && typeof world === 'object'
-      ? (world as Record<string, unknown>).instances
-      : undefined;
-  const summary = summarizeInstances(instancesRaw);
+  const summary = summarizeInstances(world?.instances);
   return { summary, stale: result.stale };
 }

@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { cacheManager } from '../../../src/services/cache.js';
 import { fetchUserGroupsWithMeta } from '../../../src/services/users/groups.js';
-import { callOperation } from '../../../src/core/client.js';
+import { callReadOperation } from '../../../src/core/readTools.js';
 
-vi.mock('../../../src/core/client.js', () => ({
-  callOperation: vi.fn(),
+vi.mock('../../../src/core/readTools.js', () => ({
+  callReadOperation: vi.fn(),
 }));
 
 describe('fetchUserGroupsWithMeta', () => {
   beforeEach(() => {
     cacheManager.invalidateAll();
-    vi.mocked(callOperation).mockReset();
+    vi.mocked(callReadOperation).mockReset();
   });
 
   it('maps group summaries and paginates results', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [
         { groupId: 'grp_1', name: 'Alpha' },
         { groupId: 'grp_2', name: 'Beta' },
@@ -29,10 +29,7 @@ describe('fetchUserGroupsWithMeta', () => {
       offset: 0,
     });
 
-    expect(callOperation).toHaveBeenCalledWith({
-      operationId: 'getUserGroups',
-      params: { userId: 'usr_1' },
-    });
+    expect(callReadOperation).toHaveBeenCalledWith('getUserGroups', { userId: 'usr_1' }, undefined);
     expect(result.groups).toHaveLength(1);
     expect(result.groups[0]).toMatchObject({ groupId: 'grp_1', name: 'Alpha' });
     expect(result.meta.total).toBe(3);
@@ -41,13 +38,13 @@ describe('fetchUserGroupsWithMeta', () => {
   });
 
   it('reuses cached groups for repeat calls', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [{ groupId: 'grp_1', name: 'Alpha' }],
     });
 
     await fetchUserGroupsWithMeta({ userId: 'usr_1' });
     await fetchUserGroupsWithMeta({ userId: 'usr_1' });
 
-    expect(callOperation).toHaveBeenCalledTimes(1);
+    expect(callReadOperation).toHaveBeenCalledTimes(1);
   });
 });

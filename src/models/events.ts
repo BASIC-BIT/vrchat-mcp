@@ -60,56 +60,27 @@ export const EventsSearchOutputSchema = z.object({
   events: z.array(schemas.CalendarEvent.partial()),
 });
 
-export const CalendarEventCreateSchema = z.object({
-  groupId: z.string(),
-  title: z.string().min(1),
-  description: z.string().min(1),
-  category: z.string().min(1),
-  startsAt: z.string().min(1),
-  endsAt: z.string().min(1),
-  accessType: z.enum(['group', 'public']).optional(),
-  sendCreationNotification: z.boolean().optional(),
-  imageId: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  languages: z.array(z.string()).optional(),
-  platforms: z.array(z.string()).optional(),
-  roleIds: z.array(z.string()).optional(),
-  parentId: z.string().optional(),
-  isDraft: z.boolean().optional(),
-  featured: z.boolean().optional(),
-  guestEarlyJoinMinutes: z.number().int().optional(),
-  hostEarlyJoinMinutes: z.number().int().optional(),
-  closeInstanceAfterEndMinutes: z.number().int().optional(),
-  usesInstanceOverflow: z.boolean().optional(),
+export const CalendarEventCreateSchema = schemas.CreateCalendarEventRequest.extend({
+  groupId: schemas.GroupID,
+  accessType: schemas.CreateCalendarEventRequest.shape.accessType
+    .optional()
+    .default('group'),
+  sendCreationNotification:
+    schemas.CreateCalendarEventRequest.shape.sendCreationNotification
+      .optional()
+      .default(false),
 });
 
-export const CalendarEventUpdateSchema = z.object({
-  groupId: z.string(),
-  calendarId: z.string(),
-  title: z.string().min(1).optional(),
-  description: z.string().min(1).optional(),
-  category: z.string().min(1).optional(),
-  startsAt: z.string().min(1).optional(),
-  endsAt: z.string().min(1).optional(),
-  accessType: z.enum(['group', 'public']).optional(),
-  sendCreationNotification: z.boolean().optional(),
-  imageId: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  languages: z.array(z.string()).optional(),
-  platforms: z.array(z.string()).optional(),
-  roleIds: z.array(z.string()).optional(),
-  parentId: z.string().optional(),
-  isDraft: z.boolean().optional(),
-  featured: z.boolean().optional(),
-  guestEarlyJoinMinutes: z.number().int().optional(),
-  hostEarlyJoinMinutes: z.number().int().optional(),
-  closeInstanceAfterEndMinutes: z.number().int().optional(),
-  usesInstanceOverflow: z.boolean().optional(),
+export const CalendarEventUpdateSchema = schemas.UpdateCalendarEventRequest.extend({
+  groupId: schemas.GroupID,
+  calendarId: schemas.CalendarID,
+  sendCreationNotification:
+    schemas.UpdateCalendarEventRequest.shape.sendCreationNotification.optional(),
 });
 
 export const CalendarEventDeleteSchema = z.object({
-  groupId: z.string(),
-  calendarId: z.string(),
+  groupId: schemas.GroupID,
+  calendarId: schemas.CalendarID,
 });
 
 export const CalendarEventWriteOutputSchema = z.object({

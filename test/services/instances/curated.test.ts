@@ -129,17 +129,18 @@ describe('instances curated service', () => {
 
   it('creates instance via API', async () => {
     vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'inst_1' } });
-    const result = await createInstance({ worldId: 'wrld_1', type: 'private' });
+    const result = await createInstance({ worldId: 'wrld_1', type: 'private', region: 'us' });
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'createInstance',
-      body: { worldId: 'wrld_1', type: 'private' },
+      params: undefined,
+      body: { worldId: 'wrld_1', type: 'private', region: 'us' },
     });
-    expect(result).toEqual({ id: 'inst_1' });
+    expect(result).toMatchObject({ id: 'inst_1' });
   });
 
   it('returns null when createInstance has no data', async () => {
     vi.mocked(callOperation).mockResolvedValueOnce({ data: null });
-    const result = await createInstance({ worldId: 'wrld_1', type: 'private' });
+    const result = await createInstance({ worldId: 'wrld_1', type: 'private', region: 'us' });
     expect(result).toBeNull();
   });
 });

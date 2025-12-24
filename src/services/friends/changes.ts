@@ -1,5 +1,6 @@
 import { getConfig } from '../../config/index.js';
 import { cacheManager } from '../cache.js';
+import { isJsonObject, type JsonObject, type JsonValue } from '../../utils/json.js';
 import type { FriendRecord, FriendsFetchResult } from './fetch.js';
 
 export type FriendEventType =
@@ -13,7 +14,7 @@ export type FriendEventType =
 
 export interface FriendPipelineEvent {
   type: string;
-  content: unknown;
+  content: JsonValue;
   receivedAt: string;
 }
 
@@ -37,6 +38,17 @@ export interface FriendChangeSnapshot {
 }
 
 const MAX_BUFFER = getConfig().pipeline.changeBuffer;
+const FRIEND_STATUS_VALUES = new Set([
+  'active',
+  'offline',
+  'ask me',
+  'busy',
+  'join me',
+]);
+
+function isFriendStatus(value: string): value is NonNullable<FriendRecord['status']> {
+  return FRIEND_STATUS_VALUES.has(value);
+}
 
 function isFriendEventType(value: string): value is FriendEventType {
   return (
@@ -50,27 +62,92 @@ function isFriendEventType(value: string): value is FriendEventType {
   );
 }
 
-function extractUserId(content: Record<string, unknown>): string | undefined {
-  const userId = content.userId ?? content.userid ?? content.userID;
-  if (typeof userId === 'string' && userId.length > 0) return userId;
+function getStringField(record: JsonObject, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getBooleanField(record: JsonObject, key: string): boolean | undefined {
+  const value = record[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function getStringArrayField(record: JsonObject, key: string): string[] | undefined {
+  const value = record[key];
+  if (!Array.isArray(value)) return undefined;
+  const items = value.filter((entry): entry is string => typeof entry === 'string');
+  return items.length ? items : undefined;
+}
+
+function extractUserId(content: JsonObject): string | undefined {
+  const userId =
+    getStringField(content, 'userId') ??
+    getStringField(content, 'userid') ??
+    getStringField(content, 'userID');
+  if (userId) return userId;
   const user = content.user;
-  if (user && typeof user === 'object') {
-    const id = (user as Record<string, unknown>).id;
-    if (typeof id === 'string' && id.length > 0) return id;
+  if (isJsonObject(user)) {
+    const id = getStringField(user, 'id');
+    if (id) return id;
   }
   return undefined;
 }
 
-function extractUser(content: Record<string, unknown>): Record<string, unknown> | undefined {
+function extractUser(content: JsonObject): Partial<FriendRecord> | undefined {
   const user = content.user;
-  if (user && typeof user === 'object') return user as Record<string, unknown>;
-  return undefined;
+  if (!isJsonObject(user)) return undefined;
+  const payload: Partial<FriendRecord> = {};
+  const id = getStringField(user, 'id');
+  if (id) payload.id = id;
+  const displayName = getStringField(user, 'displayName');
+  if (displayName) payload.displayName = displayName;
+  const status = getStringField(user, 'status');
+  if (status && isFriendStatus(status)) payload.status = status;
+  const statusDescription = getStringField(user, 'statusDescription');
+  if (statusDescription) payload.statusDescription = statusDescription;
+  const statusEmoji = getStringField(user, 'statusEmoji');
+  if (statusEmoji) payload.statusEmoji = statusEmoji;
+  const location = getStringField(user, 'location');
+  if (location) payload.location = location;
+  const platform = getStringField(user, 'platform');
+  if (platform) payload.platform = platform;
+  const userIcon = getStringField(user, 'userIcon');
+  if (userIcon) payload.userIcon = userIcon;
+  const profilePicOverride = getStringField(user, 'profilePicOverride');
+  if (profilePicOverride) payload.profilePicOverride = profilePicOverride;
+  const currentAvatarImageUrl = getStringField(user, 'currentAvatarImageUrl');
+  if (currentAvatarImageUrl) payload.currentAvatarImageUrl = currentAvatarImageUrl;
+  const currentAvatarThumbnailImageUrl = getStringField(
+    user,
+    'currentAvatarThumbnailImageUrl',
+  );
+  if (currentAvatarThumbnailImageUrl) {
+    payload.currentAvatarThumbnailImageUrl = currentAvatarThumbnailImageUrl;
+  }
+  const last_login = getStringField(user, 'last_login');
+  if (last_login) payload.last_login = last_login;
+  const last_platform = getStringField(user, 'last_platform');
+  if (last_platform) payload.last_platform = last_platform;
+  const bio = getStringField(user, 'bio');
+  if (bio) payload.bio = bio;
+  const bioLinks = getStringArrayField(user, 'bioLinks');
+  if (bioLinks) payload.bioLinks = bioLinks;
+  const tags = getStringArrayField(user, 'tags');
+  if (tags) payload.tags = tags;
+  const friendKey = getStringField(user, 'friendKey');
+  if (friendKey) payload.friendKey = friendKey;
+  const imageUrl = getStringField(user, 'imageUrl');
+  if (imageUrl) payload.imageUrl = imageUrl;
+  const isFriend = getBooleanField(user, 'isFriend');
+  if (isFriend !== undefined) payload.isFriend = isFriend;
+  return Object.keys(payload).length > 0 ? payload : undefined;
 }
 
-function extractLocation(content: Record<string, unknown>): string | undefined {
-  const location = content.location ?? content.travelingToLocation;
-  if (typeof location === 'string' && location.length > 0) return location;
-  return undefined;
+function extractLocation(content: JsonObject): string | undefined {
+  const location =
+    getStringField(content, 'location') ??
+    getStringField(content, 'travelingToLocation');
+  return location;
 }
 
 function isOfflineFriend(record: FriendRecord): boolean {
@@ -83,7 +160,7 @@ function buildFriendRecord(
   existing: FriendRecord | undefined,
   userId: string,
   payload: {
-    user?: Record<string, unknown>;
+    user?: Partial<FriendRecord>;
     location?: string;
     platform?: string;
     canRequestInvite?: boolean;
@@ -101,10 +178,10 @@ function buildFriendRecord(
     base.location = payload.location;
   }
   if (payload.platform) {
-    (base as Record<string, unknown>).platform = payload.platform;
+    base.platform = payload.platform;
   }
   if (payload.canRequestInvite !== undefined) {
-    (base as Record<string, unknown>).canRequestInvite = payload.canRequestInvite;
+    base.canRequestInvite = payload.canRequestInvite;
   }
   if (type === 'friend-offline') {
     base.location = 'offline';
@@ -118,7 +195,7 @@ function applyFriendEventToList(
   type: FriendEventType,
   payload: {
     userId: string;
-    user?: Record<string, unknown>;
+    user?: Partial<FriendRecord>;
     location?: string;
     platform?: string;
     canRequestInvite?: boolean;
@@ -198,20 +275,15 @@ export const friendsChangeStore = new FriendsChangeStore();
 
 export function recordFriendChange(event: FriendPipelineEvent): FriendChange | null {
   if (!isFriendEventType(event.type)) return null;
-  const content =
-    event.content && typeof event.content === 'object'
-      ? (event.content as Record<string, unknown>)
-      : {};
+  const content: JsonObject = isJsonObject(event.content) ? event.content : {};
   const userId = extractUserId(content);
   if (!userId) return null;
   const user = extractUser(content);
   const location = extractLocation(content);
   const displayName =
     typeof user?.displayName === 'string' ? user.displayName : undefined;
-  const platform =
-    typeof content.platform === 'string' ? content.platform : undefined;
-  const canRequestInvite =
-    typeof content.canRequestInvite === 'boolean' ? content.canRequestInvite : undefined;
+  const platform = getStringField(content, 'platform');
+  const canRequestInvite = getBooleanField(content, 'canRequestInvite');
 
   return friendsChangeStore.record({
     type: event.type,
@@ -226,19 +298,15 @@ export function recordFriendChange(event: FriendPipelineEvent): FriendChange | n
 
 export function applyFriendEventToCache(event: FriendPipelineEvent): number {
   if (!isFriendEventType(event.type)) return 0;
-  const content =
-    event.content && typeof event.content === 'object'
-      ? (event.content as Record<string, unknown>)
-      : {};
+  const content: JsonObject = isJsonObject(event.content) ? event.content : {};
   const userId = extractUserId(content);
   if (!userId) return 0;
   const payload = {
     userId,
     user: extractUser(content),
     location: extractLocation(content),
-    platform: typeof content.platform === 'string' ? content.platform : undefined,
-    canRequestInvite:
-      typeof content.canRequestInvite === 'boolean' ? content.canRequestInvite : undefined,
+    platform: getStringField(content, 'platform'),
+    canRequestInvite: getBooleanField(content, 'canRequestInvite'),
   };
 
   const updateEntry =

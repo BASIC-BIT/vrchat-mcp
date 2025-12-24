@@ -1,13 +1,20 @@
 import { z } from 'zod';
+import { schemas } from '../generated/vrchat-schemas.js';
+import {
+  JsonValueSchema,
+  isJsonValue,
+  parseJsonText,
+  type JsonValue,
+} from '../utils/json.js';
 
 export const NotificationSummarySchema = z.object({
-  id: z.string(),
+  id: schemas.NotificationID,
   type: z.string().optional(),
   message: z.string().optional(),
   createdAt: z.string().optional(),
-  senderUserId: z.string().optional(),
+  senderUserId: schemas.UserID.optional(),
   seen: z.boolean().optional(),
-  details: z.any().optional(),
+  details: JsonValueSchema.optional(),
 });
 
 export const NotificationPageSchema = z.object({
@@ -39,28 +46,28 @@ export const NotificationsRecentOutputSchema = z.object({
 
 export type NotificationSummary = z.infer<typeof NotificationSummarySchema>;
 
-export function parseNotificationDetails(raw: unknown): unknown {
+export function parseNotificationDetails(raw: JsonValue): JsonValue {
   if (typeof raw !== 'string') return raw;
   const trimmed = raw.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return raw;
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return raw;
-  }
+  const parsed = parseJsonText(trimmed);
+  return parsed ?? raw;
 }
 
-export function mapNotification(entry: unknown): NotificationSummary | null {
-  if (!entry || typeof entry !== 'object') return null;
-  const record = entry as Record<string, unknown>;
-  const id = typeof record.id === 'string' ? record.id : '';
+export function mapNotification(
+  notification: Partial<z.infer<typeof schemas.Notification>>,
+): NotificationSummary | null {
+  const id = notification.id ?? '';
   if (!id) return null;
-  const type = typeof record.type === 'string' ? record.type : undefined;
-  const message = typeof record.message === 'string' ? record.message : undefined;
-  const createdAt = typeof record.created_at === 'string' ? record.created_at : undefined;
-  const senderUserId =
-    typeof record.senderUserId === 'string' ? record.senderUserId : undefined;
-  const seen = typeof record.seen === 'boolean' ? record.seen : undefined;
-  const details = parseNotificationDetails(record.details);
-  return { id, type, message, createdAt, senderUserId, seen, details };
+  return {
+    id,
+    type: notification.type ?? undefined,
+    message: notification.message ?? undefined,
+    createdAt: notification.created_at ?? undefined,
+    senderUserId: notification.senderUserId ?? undefined,
+    seen: notification.seen ?? undefined,
+    details: isJsonValue(notification.details)
+      ? parseNotificationDetails(notification.details)
+      : undefined,
+  };
 }

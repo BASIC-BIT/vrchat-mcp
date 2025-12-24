@@ -450,7 +450,12 @@ export async function createMockServer(
       sendJson(toResponse(res), 200, applyPagination(matches, query));
     },
     getUserGroups: (_c, _req, res) => {
-      sendJson(toResponse(res), 200, data.groups);
+      const groups = data.groups.map((group) => ({
+        groupId: group.id,
+        name: group.name,
+        shortCode: group.shortCode,
+      }));
+      sendJson(toResponse(res), 200, groups);
     },
     getUserGroupRequests: (_c, _req, res) => {
       sendJson(toResponse(res), 200, data.groups.slice(0, 1));

@@ -41,7 +41,7 @@ describe('worlds curated service', () => {
     });
 
     const result = await getWorldInstancesOverview('wrld_1');
-    expect(callReadOperation).toHaveBeenCalledWith('getWorld', { worldId: 'wrld_1' });
+    expect(callReadOperation).toHaveBeenCalledWith('getWorld', { worldId: 'wrld_1' }, undefined);
     expect(result.summary).toMatchObject({
       totalInstances: 2,
       totalOccupants: 17,

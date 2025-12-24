@@ -1,15 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 vi.mock('../../../src/core/readTools.js', () => ({
   callReadOperation: vi.fn(),
 }));
 
-vi.mock('../../../src/core/client.js', () => ({
-  callOperation: vi.fn(),
-}));
-
 import { callReadOperation } from '../../../src/core/readTools.js';
-import { callOperation } from '../../../src/core/client.js';
 import { cacheManager } from '../../../src/services/cache.js';
 import {
   getGroupProfile,
@@ -32,7 +26,6 @@ describe('groups curated service', () => {
   beforeEach(() => {
     cacheManager.invalidateAll();
     vi.mocked(callReadOperation).mockReset();
-    vi.mocked(callOperation).mockReset();
   });
 
   it('resolves group id by shortCode', async () => {
@@ -83,20 +76,17 @@ describe('groups curated service', () => {
   });
 
   it('loads group profile and caches data', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'grp_1', name: 'Group' } });
+    vi.mocked(callReadOperation).mockResolvedValueOnce({ data: { id: 'grp_1', name: 'Group' } });
 
     const result = await getGroupProfile('grp_1');
-    expect(callOperation).toHaveBeenCalledWith({
-      operationId: 'getGroup',
-      params: { groupId: 'grp_1' },
-    });
+    expect(callReadOperation).toHaveBeenCalledWith('getGroup', { groupId: 'grp_1' }, undefined);
     expect(result.group).toMatchObject({ id: 'grp_1', name: 'Group' });
   });
 
   it('rejects invalid group event dates', async () => {
-    await expect(
-      listGroupEvents('grp_1', { date: 'not-a-date' }),
-    ).rejects.toThrow('date must be a valid ISO date/time string.');
+    await expect(listGroupEvents('grp_1', { date: 'not-a-date' })).rejects.toThrow(
+      'date must be a valid ISO date/time string.',
+    );
   });
 
   it('passes paging and filters for members', async () => {
@@ -138,20 +128,17 @@ describe('groups curated service', () => {
   });
 
   it('loads group announcements', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: { id: 'ann_1', title: 'Update', text: 'Hello' },
     });
 
     const result = await getGroupAnnouncement('grp_1');
-    expect(callOperation).toHaveBeenCalledWith({
-      operationId: 'getGroupAnnouncements',
-      params: { groupId: 'grp_1' },
-    });
+    expect(callReadOperation).toHaveBeenCalledWith('getGroupAnnouncements', { groupId: 'grp_1' }, undefined);
     expect(result.announcement).toMatchObject({ id: 'ann_1', title: 'Update' });
   });
 
   it('returns null announcement when payload is empty', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({ data: {} });
+    vi.mocked(callReadOperation).mockResolvedValueOnce({ data: {} });
     const result = await getGroupAnnouncement('grp_1');
     expect(result.announcement).toBeNull();
   });
@@ -212,10 +199,7 @@ describe('groups curated service', () => {
     const result = await getGroupEvent('grp_1', { calendarId: 'evt_1' });
     expect(callReadOperation).toHaveBeenCalledWith(
       'getGroupCalendarEvent',
-      {
-        groupId: 'grp_1',
-        calendarId: 'evt_1',
-      },
+      { groupId: 'grp_1', calendarId: 'evt_1' },
       {},
     );
     expect(result.event).toMatchObject({ id: 'evt_1' });
@@ -245,9 +229,9 @@ describe('groups curated service', () => {
   });
 
   it('rejects invalid upcoming from date', async () => {
-    await expect(
-      listGroupEventsUpcoming('grp_1', { from: 'bad-date' }),
-    ).rejects.toThrow('from must be a valid ISO date/time string.');
+    await expect(listGroupEventsUpcoming('grp_1', { from: 'bad-date' })).rejects.toThrow(
+      'from must be a valid ISO date/time string.',
+    );
   });
 
   it('deduplicates upcoming events across months and truncates', async () => {
@@ -276,7 +260,7 @@ describe('groups curated service', () => {
   });
 
   it('summarizes group instances', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [
         {
           instanceId: 'i1',
@@ -304,7 +288,7 @@ describe('groups curated service', () => {
   });
 
   it('enforces minimum instance count of 1', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [
         {
           instanceId: 'i1',

@@ -1,11 +1,20 @@
+import {
+  isJsonObject,
+  parseJsonText,
+  type JsonObject,
+  type JsonValue,
+} from '../../utils/json.js';
+
 export interface PipelineEvent {
   type: string;
-  content: unknown;
-  raw: unknown;
+  content: JsonValue;
+  raw: JsonObject;
   receivedAt: string;
 }
 
-function normalizeMessageData(data: unknown): string | null {
+export type PipelineMessageData = string | ArrayBuffer | ArrayBufferView | Buffer;
+
+function normalizeMessageData(data: PipelineMessageData): string | null {
   if (typeof data === 'string') return data;
   if (data instanceof ArrayBuffer) return Buffer.from(data).toString('utf8');
   if (Buffer.isBuffer(data)) return data.toString('utf8');
@@ -15,28 +24,22 @@ function normalizeMessageData(data: unknown): string | null {
   return null;
 }
 
-export function parsePipelineMessage(data: unknown): PipelineEvent | null {
+export function parsePipelineMessage(
+  data: PipelineMessageData,
+): PipelineEvent | null {
   const text = normalizeMessageData(data);
   if (!text) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== 'object') return null;
-  const record = parsed as Record<string, unknown>;
-  const type = record.type;
+  const parsed = parseJsonText(text);
+  if (!parsed || !isJsonObject(parsed)) return null;
+  const type = parsed.type;
   if (typeof type !== 'string') return null;
-  let content: unknown = record.content;
+  let content: JsonValue =
+    typeof parsed.content === 'undefined' ? null : parsed.content;
   if (typeof content === 'string') {
     const trimmed = content.trim();
     if (trimmed) {
-      try {
-        content = JSON.parse(trimmed);
-      } catch {
-        // leave content as string
-      }
+      const parsedContent = parseJsonText(trimmed);
+      if (parsedContent !== null) content = parsedContent;
     }
   }
   return {
