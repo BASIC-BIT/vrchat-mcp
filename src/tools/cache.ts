@@ -1,6 +1,7 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { cacheConfig, cacheManager } from '../services/cache.js';
+import { writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
 import { textContent, toolError } from '../utils/toolResponses.js';
 
@@ -8,7 +9,7 @@ export function registerCacheTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.cache.invalidate'),
     {
-      description: 'Invalidate cached data (read-only).',
+      description: 'Invalidate cached data (local-only).',
       inputSchema: z.object({
         scope: z.enum(['all', 'area', 'key']).optional(),
         area: z.string().optional(),
@@ -21,6 +22,7 @@ export function registerCacheTools(server: McpServer): void {
         area: z.string().optional(),
         key: z.string().optional(),
       }),
+      annotations: writeToolAnnotations,
     },
     (args) => {
       const enabled = cacheConfig.enabled;

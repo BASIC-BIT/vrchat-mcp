@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 
-const SPEC_PATH = fileURLToPath(new URL('../fixtures/spec.yaml', import.meta.url));
+const SPEC_PATH = fileURLToPath(
+  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
+);
 
 describe('mcp e2e (mock)', () => {
   let server: MockServer | null = null;
@@ -34,15 +36,23 @@ describe('mcp e2e (mock)', () => {
       expect.arrayContaining([
         'vrchat_me',
         'vrchat_friends_search',
-        'vrchat_friend_location_details',
+        'vrchat_friend_details',
       ]),
     );
   });
 
   it('returns current user profile', async () => {
     const res = await harness!.client.callTool({ name: 'vrchat_me', arguments: {} });
-    const structured = res.structuredContent as { data?: unknown };
-    expect(structured.data).toMatchObject(server!.data.currentUser);
+    const structured = res.structuredContent as { user?: unknown; userId?: string };
+    expect(structured.userId).toBe(server!.data.currentUser.id);
+    expect(structured.user).toMatchObject({
+      id: server!.data.currentUser.id,
+      displayName: server!.data.currentUser.displayName,
+      username: server!.data.currentUser.username,
+      status: server!.data.currentUser.status,
+      statusDescription: server!.data.currentUser.statusDescription,
+      statusEmoji: server!.data.currentUser.statusEmoji,
+    });
   });
 
   it('searches friends by name', async () => {
@@ -58,17 +68,20 @@ describe('mcp e2e (mock)', () => {
     expect(structured.matches?.[0]?.displayName).toBe('Nakk');
   });
 
-  it('returns friend location details', async () => {
+  it('returns friend details', async () => {
     const res = await harness!.client.callTool({
-      name: 'vrchat_friend_location_details',
+      name: 'vrchat_friend_details',
       arguments: { name: 'Nakk' },
     });
     const structured = res.structuredContent as {
       friend?: { displayName?: string };
+      profile?: { id?: string };
       location?: { type?: string };
       world?: { name?: string };
     };
+    const nakkUser = server!.data.users.find((user) => user.displayName === 'Nakk');
     expect(structured.friend?.displayName).toBe('Nakk');
+    expect(structured.profile?.id).toBe(nakkUser?.id);
     expect(structured.location?.type).toBe('instance');
     expect(structured.world?.name).toBe('Mock World');
   });

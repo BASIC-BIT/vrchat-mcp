@@ -1,19 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerCuratedUserTools } from '../../../src/tools/curated/users.js';
+import { DEFAULT_SELF_FIELDS } from '../../../src/models/users.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 
 vi.mock('../../../src/services/users/index.js', () => ({
   resolveUserProfile: vi.fn(),
   resolveUserId: vi.fn(),
   listUserGroups: vi.fn(),
+  updateProfile: vi.fn(),
 }));
 
 vi.mock('../../../src/core/readTools.js', () => ({
   shapeReadData: vi.fn((value: unknown) => value),
 }));
 
-import { listUserGroups, resolveUserId, resolveUserProfile } from '../../../src/services/users/index.js';
+import { listUserGroups, resolveUserId, resolveUserProfile, updateProfile } from '../../../src/services/users/index.js';
+import { shapeReadData } from '../../../src/core/readTools.js';
 
 describe('curated user tools', () => {
   it('returns user groups with pagination meta', async () => {
@@ -78,6 +81,30 @@ describe('curated user tools', () => {
     });
   });
 
+  it('returns current user profile with default field selection', async () => {
+    vi.mocked(resolveUserProfile).mockResolvedValue({
+      ok: true,
+      user: { id: 'usr_1', displayName: 'Tester', friends: ['usr_2'] },
+      userId: 'usr_1',
+    });
+
+    const server = new FakeServer();
+    registerCuratedUserTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_me');
+    const result = await tool!.handler({});
+
+    expect(vi.mocked(shapeReadData)).toHaveBeenCalledWith(
+      { id: 'usr_1', displayName: 'Tester', friends: ['usr_2'] },
+      expect.objectContaining({ fields: DEFAULT_SELF_FIELDS }),
+    );
+    expect(result).toMatchObject({
+      structuredContent: {
+        userId: 'usr_1',
+        user: { id: 'usr_1', displayName: 'Tester', friends: ['usr_2'] },
+      },
+    });
+  });
+
   it('returns tool error when profile resolution fails', async () => {
     vi.mocked(resolveUserProfile).mockResolvedValue({
       ok: false,
@@ -109,6 +136,27 @@ describe('curated user tools', () => {
     expect(result).toMatchObject({
       isError: true,
       structuredContent: { error: 'Missing user' },
+    });
+  });
+
+  it('updates profile and returns shaped user', async () => {
+    vi.mocked(updateProfile).mockResolvedValue({
+      userId: 'usr_self',
+      user: { id: 'usr_self', bio: 'Hi' },
+    });
+
+    const server = new FakeServer();
+    registerCuratedUserTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_profile_update');
+    const result = await tool!.handler({ bio: 'Hi' });
+
+    expect(vi.mocked(updateProfile)).toHaveBeenCalledWith({ bio: 'Hi' });
+    expect(vi.mocked(shapeReadData)).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      structuredContent: {
+        userId: 'usr_self',
+        user: { id: 'usr_self', bio: 'Hi' },
+      },
     });
   });
 });

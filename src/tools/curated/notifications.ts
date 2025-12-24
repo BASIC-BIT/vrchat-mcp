@@ -4,6 +4,7 @@ import {
   NotificationsRecentOutputSchema,
 } from '../../models/notifications.js';
 import { listRecentNotifications } from '../../services/notifications/index.js';
+import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -14,6 +15,7 @@ export function registerCuratedNotificationTools(server: McpServer): void {
       description: 'List recent notifications (read-only).',
       inputSchema: NotificationsRecentInputSchema,
       outputSchema: NotificationsRecentOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {

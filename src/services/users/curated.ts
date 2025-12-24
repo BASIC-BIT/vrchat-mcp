@@ -1,5 +1,5 @@
 import { callOperation } from '../../core/client.js';
-import { type UserGroupsOutput } from '../../models/users.js';
+import { type ProfileUpdateInput, type ProfileUpdateOutput, type UserGroupsOutput } from '../../models/users.js';
 import { fetchUserGroupsWithMeta, type UserGroupSummary } from './groups.js';
 
 export type UserResolution =
@@ -122,4 +122,49 @@ export async function listUserGroups(input: {
   });
 
   return buildGroupsPayload(input.userId, groups, meta, input.pageSize, input.maxPages);
+}
+
+function buildProfileUpdateBody(input: ProfileUpdateInput, current: Record<string, unknown>) {
+  const body: Record<string, unknown> = {};
+  if (typeof input.bio === 'string') body.bio = input.bio;
+  if (Array.isArray(input.bioLinks)) body.bioLinks = input.bioLinks;
+  if (typeof input.pronouns === 'string') body.pronouns = input.pronouns;
+  if (typeof input.userIcon === 'string') body.userIcon = input.userIcon;
+  if (typeof input.isBoopingEnabled === 'boolean') body.isBoopingEnabled = input.isBoopingEnabled;
+  if (Array.isArray(input.contentFilters)) body.contentFilters = input.contentFilters;
+
+  const status = typeof current.status === 'string' ? current.status : undefined;
+  if (!status) {
+    throw new Error('Unable to resolve current status.');
+  }
+  body.status = status;
+  if (typeof current.statusDescription === 'string') {
+    body.statusDescription = current.statusDescription;
+  }
+
+  const profileKeys = Object.keys(body).filter(
+    (key) => key !== 'status' && key !== 'statusDescription',
+  );
+  if (profileKeys.length === 0) {
+    throw new Error('Provide at least one profile field to update.');
+  }
+  return body;
+}
+
+export async function updateProfile(input: ProfileUpdateInput): Promise<ProfileUpdateOutput> {
+  const currentResult = await callOperation({ operationId: 'getCurrentUser' });
+  const current = (currentResult.data ?? {}) as Record<string, unknown>;
+  const userId = typeof current.id === 'string' ? current.id : '';
+  if (!userId) {
+    throw new Error('Unable to resolve current user id.');
+  }
+
+  const body = buildProfileUpdateBody(input, current);
+  const result = await callOperation({
+    operationId: 'updateUser',
+    params: { userId },
+    body,
+  });
+  const user = (result.data ?? {}) as Record<string, unknown>;
+  return { userId, user };
 }

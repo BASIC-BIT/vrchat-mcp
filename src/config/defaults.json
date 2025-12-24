@@ -38,58 +38,16 @@
     "changeBuffer": 200,
     "userAgent": ""
   },
-  "confirmations": {
-    "ttlMs": 120000
-  },
   "groups": {
     "allowlist": []
   },
+  "rawTools": {
+    "enabled": false
+  },
   "generatedReadTools": {
-    "disable": false,
-    "skipOperationIds": [
-      "getCurrentUser",
-      "getFriends",
-      "getFriendStatus",
-      "getNotification",
-      "getNotifications",
-      "getConfig",
-      "getSystemTime",
-      "getUser",
-      "getUserByName",
-      "searchUsers",
-      "getWorld",
-      "searchWorlds",
-      "getActiveWorlds",
-      "getRecentWorlds",
-      "getFavoritedWorlds",
-      "getInstance",
-      "getInstanceByShortName",
-      "getRecentLocations",
-      "getGroup",
-      "getGroupMembers",
-      "getGroupMember",
-      "getGroupRoles",
-      "getGroupPermissions",
-      "getGroupAnnouncements",
-      "getGroupPosts",
-      "getGroupInstances",
-      "getUserGroups",
-      "getUserGroupRequests",
-      "getUserRepresentedGroup",
-      "getCalendarEvents",
-      "getFeaturedCalendarEvents",
-      "getFollowedCalendarEvents",
-      "searchCalendarEvents",
-      "getGroupCalendarEvents",
-      "getGroupCalendarEvent",
-      "getInviteMessages",
-      "getInviteMessage",
-      "getAvatar",
-      "searchAvatars",
-      "getFavoritedAvatars",
-      "getFavorites",
-      "getFavoriteGroups",
-      "getFavoriteLimits"
-    ]
+    "disable": false
+  },
+  "generatedWriteTools": {
+    "disable": false
   }
 }

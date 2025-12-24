@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 
-const SPEC_PATH = fileURLToPath(new URL('../fixtures/spec.yaml', import.meta.url));
+const SPEC_PATH = fileURLToPath(
+  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
+);
 
 describe('mcp e2e (mock writes)', () => {
   let server: MockServer | null = null;
@@ -29,14 +31,6 @@ describe('mcp e2e (mock writes)', () => {
     if (server) await server.close();
   }, 20000);
 
-  function readConfirmId(result: unknown): string | undefined {
-    if (!result || typeof result !== 'object') return undefined;
-    const structured = (result as { structuredContent?: unknown }).structuredContent;
-    if (!structured || typeof structured !== 'object') return undefined;
-    const confirmId = (structured as { confirmId?: unknown }).confirmId;
-    return typeof confirmId === 'string' ? confirmId : undefined;
-  }
-
   async function ensureGroupEvent(): Promise<{ groupId: string; calendarId: string }> {
     if (createdEventId) {
       return { groupId: server!.data.groups[0].id, calendarId: createdEventId };
@@ -45,7 +39,7 @@ describe('mcp e2e (mock writes)', () => {
     const groupId = server!.data.groups[0]?.id;
     expect(typeof groupId).toBe('string');
 
-    const first = await client.callTool({
+    const created = await client.callTool({
       name: 'vrchat_event_create',
       arguments: {
         groupId,
@@ -56,22 +50,7 @@ describe('mcp e2e (mock writes)', () => {
         endsAt: '2025-12-22T21:00:00Z',
       },
     });
-    const confirmId = readConfirmId(first);
-    expect(typeof confirmId).toBe('string');
-
-    const second = await client.callTool({
-      name: 'vrchat_event_create',
-      arguments: {
-        groupId,
-        title: 'Mock Event',
-        description: 'Mock description',
-        category: 'meetup',
-        startsAt: '2025-12-22T20:00:00Z',
-        endsAt: '2025-12-22T21:00:00Z',
-        confirmId,
-      },
-    });
-    const structured = second.structuredContent as { event?: unknown } | undefined;
+    const structured = created.structuredContent as { event?: unknown } | undefined;
     const event = structured?.event as { id?: unknown } | undefined;
     const calendarId = typeof event?.id === 'string' ? event.id : undefined;
     if (!calendarId) {
@@ -87,24 +66,11 @@ describe('mcp e2e (mock writes)', () => {
     const worldId = server!.data.worlds[0]?.id;
     expect(typeof worldId).toBe('string');
 
-    const first = await client.callTool({
+    const created = await client.callTool({
       name: 'vrchat_instance_create',
       arguments: { worldId, type: 'private', region: 'us', displayName: 'Mock Instance' },
     });
-    const confirmId = readConfirmId(first);
-    expect(typeof confirmId).toBe('string');
-
-    const second = await client.callTool({
-      name: 'vrchat_instance_create',
-      arguments: {
-        worldId,
-        type: 'private',
-        region: 'us',
-        displayName: 'Mock Instance',
-        confirmId,
-      },
-    });
-    const structured = second.structuredContent as { instance?: unknown } | undefined;
+    const structured = created.structuredContent as { instance?: unknown } | undefined;
     const instance = structured?.instance as { location?: unknown } | undefined;
     const location = typeof instance?.location === 'string' ? instance.location : undefined;
     if (!location) {
@@ -114,12 +80,12 @@ describe('mcp e2e (mock writes)', () => {
     return location;
   }
 
-  it('creates an instance with confirmation', async () => {
+  it('creates an instance', async () => {
     const location = await ensureInstanceLocation();
     expect(location.length).toBeGreaterThan(0);
   });
 
-  it('invites self without confirmation', async () => {
+  it('invites self', async () => {
     const client = harness!.client;
     const location = await ensureInstanceLocation();
     const result = await client.callTool({
@@ -129,24 +95,27 @@ describe('mcp e2e (mock writes)', () => {
     expect(result).toMatchObject({ structuredContent: { status: 'sent' } });
   });
 
-  it('invites a user with confirmation', async () => {
+  it('invites a user', async () => {
     const client = harness!.client;
     const location = await ensureInstanceLocation();
     const userId = server!.data.users[1]?.id ?? server!.data.users[0]?.id;
     expect(typeof userId).toBe('string');
 
-    const first = await client.callTool({
+    const result = await client.callTool({
       name: 'vrchat_invite_user',
       arguments: { userId, location },
     });
-    const confirmId = readConfirmId(first);
-    expect(typeof confirmId).toBe('string');
+    expect(result).toMatchObject({ structuredContent: { status: 'sent' } });
+  });
 
-    const second = await client.callTool({
-      name: 'vrchat_invite_user',
-      arguments: { userId, location, confirmId },
+  it('updates profile', async () => {
+    const client = harness!.client;
+    const result = await client.callTool({
+      name: 'vrchat_profile_update',
+      arguments: { bio: 'Mock bio update' },
     });
-    expect(second).toMatchObject({ structuredContent: { status: 'sent' } });
+    const structured = result.structuredContent as { user?: { bio?: string } } | undefined;
+    expect(structured?.user?.bio).toBe('Mock bio update');
   });
 
   it('lists upcoming group events', async () => {
@@ -157,7 +126,7 @@ describe('mcp e2e (mock writes)', () => {
       name: 'vrchat_group_events_upcoming',
       arguments: {
         groupId,
-        from: '2025-12-22T00:00:00Z',
+        from: '2025-12-30T00:00:00Z',
         windowHours: 48,
       },
     });
@@ -169,31 +138,17 @@ describe('mcp e2e (mock writes)', () => {
     const client = harness!.client;
     const { groupId, calendarId } = await ensureGroupEvent();
 
-    const updateFirst = await client.callTool({
+    const updateResult = await client.callTool({
       name: 'vrchat_event_update',
       arguments: { groupId, calendarId, title: 'Updated Event' },
     });
-    const updateConfirmId = readConfirmId(updateFirst);
-    expect(typeof updateConfirmId).toBe('string');
-
-    const updateSecond = await client.callTool({
-      name: 'vrchat_event_update',
-      arguments: { groupId, calendarId, title: 'Updated Event', confirmId: updateConfirmId },
-    });
-    const updated = updateSecond.structuredContent as { event?: { title?: string } };
+    const updated = updateResult.structuredContent as { event?: { title?: string } };
     expect(updated?.event?.title).toBe('Updated Event');
 
-    const deleteFirst = await client.callTool({
+    const deleteResult = await client.callTool({
       name: 'vrchat_event_delete',
       arguments: { groupId, calendarId },
     });
-    const deleteConfirmId = readConfirmId(deleteFirst);
-    expect(typeof deleteConfirmId).toBe('string');
-
-    const deleteSecond = await client.callTool({
-      name: 'vrchat_event_delete',
-      arguments: { groupId, calendarId, confirmId: deleteConfirmId },
-    });
-    expect(deleteSecond).toMatchObject({ structuredContent: { status: 'deleted' } });
+    expect(deleteResult).toMatchObject({ structuredContent: { status: 'deleted' } });
   });
 });

@@ -29,12 +29,18 @@ export interface CallInput {
   options?: CallOptions;
 }
 
-class CallError extends Error {
+export class CallError extends Error {
   status?: number;
-  constructor(message: string, status?: number) {
+  payload?: Record<string, unknown>;
+  constructor(
+    message: string,
+    status?: number,
+    payload?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = 'CallError';
     this.status = status;
+    this.payload = payload;
   }
 }
 
@@ -117,6 +123,39 @@ function buildHeaders(op: OperationDef, params: Record<string, unknown> = {}): H
   return headers;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function extractErrorMessage(data: unknown): string | undefined {
+  if (!isRecord(data)) return undefined;
+  const nestedError = data.error;
+  if (isRecord(nestedError)) {
+    const nestedMessage = nestedError.message;
+    if (typeof nestedMessage === 'string') return nestedMessage;
+  } else if (typeof nestedError === 'string') {
+    return nestedError;
+  }
+  const topMessage = data.message;
+  if (typeof topMessage === 'string') return topMessage;
+  return undefined;
+}
+
+function buildErrorPayload(params: {
+  status: number;
+  url: string;
+  data: unknown;
+  message?: string;
+}): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    status: params.status,
+    url: params.url,
+    error: params.data,
+  };
+  if (params.message) payload.message = params.message;
+  return payload;
+}
+
 export async function callOperation(input: CallInput): Promise<CallResult> {
   const { operationId, params = {}, body, options } = input;
   const index = await getSpecIndex();
@@ -184,7 +223,15 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
     }
 
     if (!res.ok) {
-      throw new CallError(`VRChat API returned ${res.status}`, res.status);
+      const isClientError = res.status >= 400 && res.status < 500;
+      const errorMessage = isClientError ? extractErrorMessage(data) : undefined;
+      const message = errorMessage
+        ? `VRChat API returned ${res.status}: ${errorMessage}`
+        : `VRChat API returned ${res.status}`;
+      const payload = isClientError
+        ? buildErrorPayload({ status: res.status, url, data, message: errorMessage })
+        : undefined;
+      throw new CallError(message, res.status, payload);
     }
 
     return { url, data };

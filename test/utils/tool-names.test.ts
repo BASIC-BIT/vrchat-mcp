@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toolName, readToolName } from '../../src/utils/toolNames.js';
+import { toolName, readToolName, writeToolName } from '../../src/utils/toolNames.js';
 
 describe('tool names', () => {
   it('converts dots to underscores', () => {
@@ -12,5 +12,9 @@ describe('tool names', () => {
 
   it('prefixes read tools', () => {
     expect(readToolName('getConfig')).toBe('vrchat_read_getConfig');
+  });
+
+  it('prefixes write tools', () => {
+    expect(writeToolName('updateUser')).toBe('vrchat_write_updateUser');
   });
 });

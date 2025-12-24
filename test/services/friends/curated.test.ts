@@ -31,10 +31,9 @@ import {
 import { getGroupProfile } from '../../../src/services/groups/index.js';
 import { getInstanceDetails } from '../../../src/services/instances/index.js';
 import {
-  getFriendLocationDetails,
+  getFriendDetails,
   getFriendsOverview,
-  listAllFriends,
-  listOnlineFriends,
+  listFriends,
   searchFriends,
 } from '../../../src/services/friends/curated.js';
 
@@ -54,7 +53,7 @@ describe('friends curated service', () => {
     vi.mocked(fetchFriends).mockResolvedValue([]);
     vi.mocked(findFriendByNameOrId).mockReturnValue(undefined);
 
-    const result = await getFriendLocationDetails({ name: 'Missing', includeOffline: true });
+    const result = await getFriendDetails({ name: 'Missing', includeOffline: true });
     expect(result).toMatchObject({
       ok: false,
       status: 'not_found',
@@ -62,7 +61,7 @@ describe('friends curated service', () => {
     });
   });
 
-  it('fetches instance details for friend location', async () => {
+  it('fetches friend profile + instance details', async () => {
     vi.mocked(fetchFriends).mockResolvedValue([{ id: 'u1', displayName: 'Test' }]);
     vi.mocked(findFriendByNameOrId).mockReturnValue({
       id: 'u1',
@@ -76,17 +75,19 @@ describe('friends curated service', () => {
       raw: 'wrld_1:inst',
     });
     vi.mocked(callReadOperation).mockResolvedValue({
-      data: { id: 'inst', world: { id: 'wrld_1' } },
+      data: { id: 'u1', displayName: 'Test' },
+    });
+    vi.mocked(getInstanceDetails).mockResolvedValue({
+      instance: { id: 'inst', world: { id: 'wrld_1' } },
+      stale: false,
     });
 
-    const result = await getFriendLocationDetails({ name: 'Test', includeOffline: true });
-    expect(callReadOperation).toHaveBeenCalledWith('getInstance', {
-      worldId: 'wrld_1',
-      instanceId: 'inst',
-    });
+    const result = await getFriendDetails({ name: 'Test', includeOffline: true });
+    expect(callReadOperation).toHaveBeenCalledWith('getUser', { userId: 'u1' });
     expect(result).toMatchObject({
       ok: true,
       friend: { id: 'u1' },
+      profile: { id: 'u1' },
       world: { id: 'wrld_1' },
     });
   });
@@ -108,15 +109,15 @@ describe('friends curated service', () => {
     expect(result.matches).toHaveLength(2);
   });
 
-  it('lists all friends with normalized paging', async () => {
+  it('lists friends with normalized paging', async () => {
     vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
       friends: [{ id: 'u1' }],
       meta: { segments: [], truncated: false, total: 1, stale: false },
     });
 
-    const result = await listAllFriends({ pageSize: 75.9, maxPages: 10.2 });
+    const result = await listFriends({ pageSize: 75.9, maxPages: 10.2 });
     expect(fetchFriendsWithMeta).toHaveBeenCalledWith({
-      includeOffline: true,
+      includeOffline: false,
       pageSize: 75,
       maxPages: 10,
     });
@@ -124,15 +125,15 @@ describe('friends curated service', () => {
     expect(result.maxPages).toBe(10);
   });
 
-  it('lists online friends only', async () => {
+  it('includes offline friends when requested', async () => {
     vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
       friends: [{ id: 'u1' }],
       meta: { segments: [], truncated: false, total: 1, stale: false },
     });
 
-    const result = await listOnlineFriends({ pageSize: 50, maxPages: 3 });
+    const result = await listFriends({ includeOffline: true, pageSize: 50, maxPages: 3 });
     expect(fetchFriendsWithMeta).toHaveBeenCalledWith({
-      includeOffline: false,
+      includeOffline: true,
       pageSize: 50,
       maxPages: 3,
     });

@@ -66,20 +66,24 @@ const ConfigBaseSchema = z
         userAgent: z.string(),
       })
       .strict(),
-    confirmations: z
-      .object({
-        ttlMs: z.number().int().positive(),
-      })
-      .strict(),
     groups: z
       .object({
         allowlist: z.array(z.string()),
       })
       .strict(),
+    rawTools: z
+      .object({
+        enabled: z.boolean(),
+      })
+      .strict(),
     generatedReadTools: z
       .object({
         disable: z.boolean(),
-        skipOperationIds: z.array(z.string()),
+      })
+      .strict(),
+    generatedWriteTools: z
+      .object({
+        disable: z.boolean(),
       })
       .strict(),
   })
@@ -161,20 +165,6 @@ const EnvAllowlist = z.preprocess(
   z.array(z.string()).optional(),
 );
 
-const EnvCsvList = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if (!trimmed) return [];
-    return trimmed
-      .split(/[,\n]/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-  },
-  z.array(z.string()).optional(),
-);
-
 const EnvSchema = z
   .object({
     VRCHAT_MCP_API_BASE: EnvString,
@@ -201,10 +191,10 @@ const EnvSchema = z
     VRCHAT_MCP_PIPELINE_URL: EnvString,
     VRCHAT_MCP_PIPELINE_RECONNECT_MS: EnvPositiveInt,
     VRCHAT_MCP_PIPELINE_CHANGE_BUFFER: EnvPositiveInt,
-    VRCHAT_MCP_CONFIRM_TTL_MS: EnvPositiveInt,
     VRCHAT_MCP_GROUP_ALLOWLIST: EnvAllowlist,
+    VRCHAT_MCP_ENABLE_RAW_CALL: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: EnvBoolean,
-    VRCHAT_MCP_GENERATED_READ_TOOL_SKIP: EnvCsvList,
+    VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS: EnvBoolean,
   })
   .strict();
 
@@ -275,7 +265,6 @@ function applyTemplate(value: string): string {
 
 function readEnvOverrides(): {
   overrides: DeepPartial<ConfigBase>;
-  generatedSkip?: string[];
 } {
   const envInput: Partial<Record<keyof EnvValues, string | undefined>> = {};
   for (const key of ENV_KEYS) {
@@ -367,12 +356,13 @@ function readEnvOverrides(): {
     overrides.pipeline = pipelineOverrides as ConfigBase['pipeline'];
   }
 
-  if (env.VRCHAT_MCP_CONFIRM_TTL_MS !== undefined) {
-    overrides.confirmations = { ttlMs: env.VRCHAT_MCP_CONFIRM_TTL_MS };
-  }
 
   if (env.VRCHAT_MCP_GROUP_ALLOWLIST !== undefined) {
     overrides.groups = { allowlist: env.VRCHAT_MCP_GROUP_ALLOWLIST };
+  }
+
+  if (env.VRCHAT_MCP_ENABLE_RAW_CALL !== undefined) {
+    overrides.rawTools = { enabled: env.VRCHAT_MCP_ENABLE_RAW_CALL };
   }
 
   if (env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS !== undefined) {
@@ -382,9 +372,15 @@ function readEnvOverrides(): {
     };
   }
 
+  if (env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS !== undefined) {
+    overrides.generatedWriteTools = {
+      ...overrides.generatedWriteTools,
+      disable: env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
+    };
+  }
+
   return {
     overrides,
-    generatedSkip: env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP,
   };
 }
 
@@ -399,21 +395,9 @@ function loadBaseConfig(): ConfigBase {
 
 export function getConfig(): Config {
   const base = loadBaseConfig();
-  const { overrides, generatedSkip } = readEnvOverrides();
+  const { overrides } = readEnvOverrides();
   const merged = mergeConfig(base, overrides);
-  let config = ConfigSchema.parse(merged);
-  if (generatedSkip && generatedSkip.length > 0) {
-    config = {
-      ...config,
-      generatedReadTools: {
-        ...config.generatedReadTools,
-        skipOperationIds: Array.from(
-          new Set([...config.generatedReadTools.skipOperationIds, ...generatedSkip]),
-        ),
-      },
-    };
-  }
-  return config;
+  return ConfigSchema.parse(merged);
 }
 
 export function resetConfigCacheForTest(): void {

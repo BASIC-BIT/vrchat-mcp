@@ -14,7 +14,7 @@ Guidance for coding agents:
   - The harness defaults cookie storage to `file`. Override via config JSON or env vars if needed.
   - Use `VRCHAT_MCP_SERVER_COMMAND` / `VRCHAT_MCP_SERVER_ARGS` to switch between `tsx src/index.ts` and built `dist/bin/cli.js`.
 - Default to read-only calls. Non-GET requests are blocked unless `writes.allow=true` in config (or env override).
-- Regenerate read-tool docs after spec updates: `npm run generate:read-tools`.  
+- Regenerate tool catalog docs after spec updates: `npm run generate:tools-docs`.
 - Regenerate VRChat OpenAPI schemas after spec updates: `npm run generate:schemas` (updates `src/generated/vrchat-schemas.ts`; do not edit manually).
 - Regenerate mock test schemas after spec tweaks: `npm run generate:test-schemas` (updates `test/generated/mock-schemas.ts`; do not edit manually).
 
@@ -31,9 +31,10 @@ Guidance for coding agents:
 - Avoid arbitrary sampling. Either return counts/aggregations, or return a compact snippet for every item (and mark truncation explicitly).
 - Use name-first search flows; include IDs in results so the agent can resolve detail views explicitly.
 - If we include potentially noisy fields (e.g., tags), note that they may be noisy and consider cleaning later.
+- Add argument descriptions for curated tools (especially include flags, filters, and paging knobs) so agents understand when to toggle them vs. use a different tool.
 
 ### Specific notes (current direction)
-- `vrchat_friend_location_details` should be KISS: accept `name` or `userId`, resolve directly, and either return the friend's location or a clear not-found error. No "match=exact" flag and no ambiguous candidate logic.
+- `vrchat_friend_details` should be KISS: accept `name` or `userId`, resolve directly, and either return the friend's details or a clear not-found error. No "match=exact" flag and no ambiguous candidate logic.
 - `vrchat_friends_search` is the explicit fuzzy lookup tool (agent should call it next after a not-found).
 
 ## Caching considerations (planned)

@@ -4,10 +4,9 @@ import { FakeServer } from '../../helpers/fake-server.js';
 
 vi.mock('../../../src/services/friends/index.js', () => ({
   searchFriends: vi.fn(),
-  listAllFriends: vi.fn(),
-  listOnlineFriends: vi.fn(),
+  listFriends: vi.fn(),
   getFriendsOverview: vi.fn(),
-  getFriendLocationDetails: vi.fn(),
+  getFriendDetails: vi.fn(),
 }));
 
 vi.mock('../../../src/core/readTools.js', () => ({
@@ -16,10 +15,9 @@ vi.mock('../../../src/core/readTools.js', () => ({
 
 import { registerCuratedFriendTools } from '../../../src/tools/curated/friends.js';
 import {
-  getFriendLocationDetails,
+  getFriendDetails,
   getFriendsOverview,
-  listAllFriends,
-  listOnlineFriends,
+  listFriends,
   searchFriends,
 } from '../../../src/services/friends/index.js';
 
@@ -51,9 +49,9 @@ describe('curated friend tools', () => {
     expect(result).toMatchObject({ isError: true });
   });
 
-  it('returns all friends with meta', async () => {
-    vi.mocked(listAllFriends).mockResolvedValue({
-      includeOffline: true,
+  it('returns friends list with meta', async () => {
+    vi.mocked(listFriends).mockResolvedValue({
+      includeOffline: false,
       pageSize: 100,
       maxPages: 200,
       friends: [{ id: 'u1', displayName: 'Test' }],
@@ -67,37 +65,13 @@ describe('curated friend tools', () => {
 
     const server = new FakeServer();
     registerCuratedFriendTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_friends_all');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_friends_list');
 
     const result = await Promise.resolve(tool!.handler({}));
     expect(result).toMatchObject({
-      structuredContent: { includeOffline: true, totalFriends: 1 },
+      structuredContent: { includeOffline: false, totalFriends: 1 },
     });
-    expect(listAllFriends).toHaveBeenCalledWith(expect.objectContaining({}));
-  });
-
-  it('returns online friends only', async () => {
-    vi.mocked(listOnlineFriends).mockResolvedValue({
-      pageSize: 100,
-      maxPages: 50,
-      friends: [{ id: 'u1', displayName: 'Test' }],
-      meta: {
-        segments: [{ offline: false }],
-        truncated: false,
-        total: 1,
-        stale: false,
-      },
-    });
-
-    const server = new FakeServer();
-    registerCuratedFriendTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_friends_online');
-
-    const result = await Promise.resolve(tool!.handler({}));
-    expect(result).toMatchObject({
-      structuredContent: { totalFriends: 1 },
-    });
-    expect(listOnlineFriends).toHaveBeenCalledWith(expect.objectContaining({}));
+    expect(listFriends).toHaveBeenCalledWith(expect.objectContaining({}));
   });
 
   it('returns overview counts', async () => {
@@ -156,10 +130,11 @@ describe('curated friend tools', () => {
     });
   });
 
-  it('returns location details for a friend', async () => {
-    vi.mocked(getFriendLocationDetails).mockResolvedValue({
+  it('returns friend details', async () => {
+    vi.mocked(getFriendDetails).mockResolvedValue({
       ok: true,
       friend: { id: 'u1', displayName: 'Test' },
+      profile: { id: 'u1', displayName: 'Test' },
       location: {
         type: 'instance',
         worldId: 'wrld_1',
@@ -168,27 +143,30 @@ describe('curated friend tools', () => {
       },
       instance: { id: 'inst' },
       world: { id: 'wrld_1' },
+      group: null,
     });
 
     const server = new FakeServer();
     registerCuratedFriendTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_location_details');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_details');
 
     const result = await Promise.resolve(tool!.handler({ name: 'Test' }));
-    expect(result).toMatchObject({ structuredContent: { friend: { id: 'u1' } } });
+    expect(result).toMatchObject({
+      structuredContent: { friend: { id: 'u1' }, profile: { id: 'u1' } },
+    });
   });
 
-  it('requires name or userId for location details', async () => {
+  it('requires name or userId for friend details', async () => {
     const server = new FakeServer();
     registerCuratedFriendTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_location_details');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_details');
 
     const result = await Promise.resolve(tool!.handler({}));
     expect(result).toMatchObject({ isError: true });
   });
 
   it('returns not-found payload when friend is missing', async () => {
-    vi.mocked(getFriendLocationDetails).mockResolvedValue({
+    vi.mocked(getFriendDetails).mockResolvedValue({
       ok: false,
       reason: 'No friend found with displayName "Missing".',
       status: 'not_found',
@@ -197,7 +175,7 @@ describe('curated friend tools', () => {
 
     const server = new FakeServer();
     registerCuratedFriendTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_location_details');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_friend_details');
 
     const result = await Promise.resolve(tool!.handler({ name: 'Missing' }));
     expect(result).toMatchObject({ isError: true });

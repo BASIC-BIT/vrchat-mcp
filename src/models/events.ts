@@ -81,7 +81,6 @@ export const CalendarEventCreateSchema = z.object({
   hostEarlyJoinMinutes: z.number().int().optional(),
   closeInstanceAfterEndMinutes: z.number().int().optional(),
   usesInstanceOverflow: z.boolean().optional(),
-  confirmId: z.string().optional(),
 });
 
 export const CalendarEventUpdateSchema = z.object({
@@ -106,19 +105,15 @@ export const CalendarEventUpdateSchema = z.object({
   hostEarlyJoinMinutes: z.number().int().optional(),
   closeInstanceAfterEndMinutes: z.number().int().optional(),
   usesInstanceOverflow: z.boolean().optional(),
-  confirmId: z.string().optional(),
 });
 
 export const CalendarEventDeleteSchema = z.object({
   groupId: z.string(),
   calendarId: z.string(),
-  confirmId: z.string().optional(),
 });
 
 export const CalendarEventWriteOutputSchema = z.object({
-  status: z.enum(['confirm_required', 'created', 'updated', 'deleted']),
-  confirmId: z.string().optional(),
-  expiresAt: z.string().optional(),
+  status: z.enum(['created', 'updated', 'deleted']),
   event: schemas.CalendarEvent.optional(),
   result: schemas.Success.optional(),
 });

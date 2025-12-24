@@ -2,10 +2,21 @@ import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
 import { InstanceSummarySchema } from './instances.js';
 
-export const FriendListShapeSchema = z.object({
-  fields: z.array(z.string()).optional(),
-  compact: z.boolean().optional(),
-  maxArrayLength: z.number().int().positive().optional(),
+export const FriendListDetailLevelSchema = z.enum(['summary', 'full']);
+
+export const FriendListEntrySchema = z.object({
+  userId: z.string().optional(),
+  displayName: z.string().optional(),
+  status: z.string().optional(),
+  statusDescription: z.string().optional(),
+  statusEmoji: z.string().optional(),
+  location: z.string().optional(),
+  userIcon: z.string().optional(),
+  profilePicOverride: z.string().optional(),
+  currentAvatarImageUrl: z.string().optional(),
+  currentAvatarThumbnailImageUrl: z.string().optional(),
+  last_login: z.string().optional(),
+  last_platform: z.string().optional(),
 });
 
 export const FriendSearchInputSchema = z.object({
@@ -43,18 +54,14 @@ export const FriendsSegmentSchema = z.object({
   page: FriendsPageSchema.optional(),
 });
 
-export const FriendsListAllInputSchema = FriendListShapeSchema.extend({
+export const FriendsListInputSchema = z.object({
   includeOffline: z.boolean().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
   maxPages: z.number().int().min(1).max(500).optional(),
+  detailLevel: FriendListDetailLevelSchema.optional(),
 });
 
-export const FriendsListOnlineInputSchema = FriendListShapeSchema.extend({
-  pageSize: z.number().int().min(1).max(100).optional(),
-  maxPages: z.number().int().min(1).max(500).optional(),
-});
-
-export const FriendsListAllOutputSchema = z.object({
+const FriendsListBaseSchema = z.object({
   includeOffline: z.boolean(),
   pageSize: z.number().int().min(1),
   maxPages: z.number().int().min(1),
@@ -62,16 +69,10 @@ export const FriendsListAllOutputSchema = z.object({
   truncated: z.boolean(),
   stale: z.boolean(),
   segments: z.array(FriendsSegmentSchema),
-  friends: z.array(z.any()),
 });
 
-export const FriendsListOnlineOutputSchema = z.object({
-  pageSize: z.number().int().min(1),
-  maxPages: z.number().int().min(1),
-  totalFriends: z.number().int().min(0),
-  truncated: z.boolean(),
-  stale: z.boolean(),
-  segments: z.array(FriendsSegmentSchema),
+export const FriendsListOutputSchema = FriendsListBaseSchema.extend({
+  detailLevel: FriendListDetailLevelSchema,
   friends: z.array(z.any()),
 });
 
@@ -142,22 +143,23 @@ export const FriendsOverviewOutputSchema = z.object({
   segments: z.array(FriendsSegmentSchema),
 });
 
-export const FriendLocationDetailsInputSchema = z.object({
+export const FriendDetailsInputSchema = z.object({
   name: z.string().optional(),
   userId: z.string().optional(),
   includeOffline: z.boolean().optional(),
 });
 
-export const FriendLocationDetailsOutputSchema = z.object({
-  friend: z.any(),
+export const FriendDetailsOutputSchema = z.object({
+  friend: schemas.LimitedUserFriend.partial(),
+  profile: schemas.User.partial(),
   location: FriendLocationInfoSchema,
   instance: InstanceSummarySchema.nullable(),
   world: schemas.World.partial().nullable(),
+  group: schemas.Group.partial().nullable(),
 });
 
 export type FriendSearchInput = z.infer<typeof FriendSearchInputSchema>;
 export type FriendSearchOutput = z.infer<typeof FriendSearchOutputSchema>;
-export type FriendsListAllInput = z.infer<typeof FriendsListAllInputSchema>;
-export type FriendsListOnlineInput = z.infer<typeof FriendsListOnlineInputSchema>;
+export type FriendsListInput = z.infer<typeof FriendsListInputSchema>;
 export type FriendsOverviewInput = z.infer<typeof FriendsOverviewInputSchema>;
-export type FriendLocationDetailsInput = z.infer<typeof FriendLocationDetailsInputSchema>;
+export type FriendDetailsInput = z.infer<typeof FriendDetailsInputSchema>;

@@ -32,6 +32,7 @@ import {
   resolveGroupId,
   searchGroups,
 } from '../../services/groups/index.js';
+import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -44,6 +45,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'Search groups by name or shortCode (read-only).',
       inputSchema: GroupSearchInputSchema,
       outputSchema: GroupSearchOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -78,6 +80,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'Get a group profile by groupId or shortCode (read-only).',
       inputSchema: GroupProfileInputSchema,
       outputSchema: GroupProfileOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -122,6 +125,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'List group members by userId + displayName (read-only).',
       inputSchema: GroupMembersInputSchema,
       outputSchema: GroupMembersOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -163,6 +167,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'Get the current group announcement (read-only).',
       inputSchema: GroupAnnouncementInputSchema,
       outputSchema: GroupAnnouncementOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -201,6 +206,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'List recent posts for a group (read-only).',
       inputSchema: GroupPostsRecentInputSchema,
       outputSchema: GroupPostsRecentOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -244,6 +250,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'List group calendar events (read-only).',
       inputSchema: GroupEventsListInputSchema,
       outputSchema: GroupEventsListOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -294,6 +301,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'Get a single group calendar event (read-only).',
       inputSchema: GroupEventGetInputSchema,
       outputSchema: GroupEventGetOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -338,6 +346,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'List upcoming group events in a time window (read-only).',
       inputSchema: GroupEventsUpcomingInputSchema,
       outputSchema: GroupEventsUpcomingOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -390,6 +399,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
       description: 'Summarize active group instances (read-only).',
       inputSchema: GroupInstancesOverviewInputSchema,
       outputSchema: GroupInstancesOverviewOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {

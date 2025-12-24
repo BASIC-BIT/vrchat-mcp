@@ -5,7 +5,9 @@ import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 import { loadEvalConfig } from '../helpers/eval-config.js';
 import { gradeWithOpenAI } from '../helpers/llm-grader.js';
 
-const SPEC_PATH = fileURLToPath(new URL('../fixtures/spec.yaml', import.meta.url));
+const SPEC_PATH = fileURLToPath(
+  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
+);
 const EVAL_TIMEOUT_MS = 120_000;
 
 const evalConfig = loadEvalConfig();
@@ -25,8 +27,8 @@ const evalCases: EvalCase[] = [
     tool: 'vrchat_me',
     args: {},
     expectedFacts: [
-      'data.id is "usr_test_1".',
-      'data.displayName is "TestUser".',
+      'user.id is "usr_11111111-1111-1111-1111-111111111111".',
+      'user.displayName is "TestUser".',
     ],
     expectPass: true,
   },
@@ -41,7 +43,7 @@ const evalCases: EvalCase[] = [
     name: 'system time returns mock timestamp',
     tool: 'vrchat_system_time',
     args: {},
-    expectedFacts: ['data.time is "2025-12-22T00:00:00Z".'],
+    expectedFacts: ['data is "2025-12-22T00:00:00Z".'],
     expectPass: true,
   },
   {
@@ -56,40 +58,41 @@ const evalCases: EvalCase[] = [
   },
   {
     name: 'friend location details include Mock World',
-    tool: 'vrchat_friend_location_details',
+    tool: 'vrchat_friend_details',
     args: { name: 'Nakk' },
     expectedFacts: [
       'friend.displayName is "Nakk".',
       'world.name is "Mock World".',
       'location.type is "instance".',
+      'profile.id is "usr_22222222-2222-2222-2222-222222222222".',
     ],
     expectPass: true,
   },
   {
     name: 'world get returns Mock World',
-    tool: 'vrchat_worlds_get',
-    args: { worldId: 'wrld_mock' },
-    expectedFacts: ['data.name is "Mock World".'],
+    tool: 'vrchat_world_profile',
+    args: { worldId: 'wrld_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+    expectedFacts: ['world.name is "Mock World".'],
     expectPass: true,
   },
   {
     name: 'favorites list includes mock world',
-    tool: 'vrchat_favorites_list',
+    tool: 'vrchat_worlds_favorites',
     args: {},
-    expectedFacts: ['At least one item has favoriteId "wrld_mock".'],
+    expectedFacts: ['At least one item has name "Mock World".'],
     expectPass: true,
   },
   {
     name: 'groups get returns Mock Group',
-    tool: 'vrchat_groups_get',
-    args: { groupId: 'grp_1' },
-    expectedFacts: ['data.name is "Mock Group".'],
+    tool: 'vrchat_group_profile',
+    args: { groupId: 'grp_11111111-1111-1111-1111-111111111111' },
+    expectedFacts: ['group.name is "Mock Group".'],
     expectPass: true,
   },
   {
     name: 'calendar events list includes Public Event',
-    tool: 'vrchat_calendar_events_list',
-    args: {},
+    tool: 'vrchat_events_search',
+    args: { searchTerm: 'Public Event' },
     expectedFacts: ['At least one item has title "Public Event".'],
     expectPass: true,
   },

@@ -13,6 +13,8 @@ export interface OperationParam {
   name: string;
   in: ParameterLocation;
   required: boolean;
+  description?: string;
+  schema?: unknown;
 }
 
 export interface OperationDef {
@@ -21,6 +23,9 @@ export interface OperationDef {
   path: string;
   parameters: OperationParam[];
   hasRequestBody: boolean;
+  requestBodySchema?: unknown;
+  requestBodyRequired?: boolean;
+  requestBodyDescription?: string;
 }
 
 export interface SpecIndex {
@@ -56,6 +61,21 @@ function derefParameter(param: any, componentsParams: Record<string, any> | unde
   return param;
 }
 
+function extractParamSchema(param: any): unknown {
+  if (!param || typeof param !== 'object') return undefined;
+  if (param.schema) return param.schema;
+  const content = param.content;
+  if (content && typeof content === 'object') {
+    const json =
+      content['application/json'] ??
+      Object.values(content as Record<string, unknown>)[0];
+    if (json && typeof json === 'object' && 'schema' in json) {
+      return (json as { schema?: unknown }).schema;
+    }
+  }
+  return undefined;
+}
+
 function collectParameters(op: any, pathItem: any, componentsParams: Record<string, any> | undefined): OperationParam[] {
   const params: OperationParam[] = [];
   const seen = new Set<string>();
@@ -66,7 +86,14 @@ function collectParameters(op: any, pathItem: any, componentsParams: Record<stri
       const key = `${rp.in}:${rp.name}`;
       if (seen.has(key)) return;
       seen.add(key);
-      params.push({ name: rp.name, in: rp.in, required: Boolean(rp.required) });
+      const required = rp.in === 'path' ? true : Boolean(rp.required);
+      params.push({
+        name: rp.name,
+        in: rp.in,
+        required,
+        description: typeof rp.description === 'string' ? rp.description : undefined,
+        schema: extractParamSchema(rp),
+      });
     });
   };
   add(pathItem?.parameters);
@@ -74,17 +101,50 @@ function collectParameters(op: any, pathItem: any, componentsParams: Record<stri
   return params;
 }
 
+function derefRequestBody(
+  requestBody: any,
+  componentsBodies: Record<string, any> | undefined,
+) {
+  if (!requestBody) return null;
+  if (requestBody.$ref && componentsBodies) {
+    const key = String(requestBody.$ref).split('/').pop() ?? '';
+    return componentsBodies[key] ?? requestBody;
+  }
+  return requestBody;
+}
+
+function extractRequestBody(
+  requestBody: any,
+  componentsBodies: Record<string, any> | undefined,
+): { schema?: unknown; required: boolean; description?: string } {
+  const body = derefRequestBody(requestBody, componentsBodies);
+  if (!body || typeof body !== 'object') return { required: false };
+  const required = Boolean((body as { required?: unknown }).required);
+  const descriptionValue = (body as { description?: unknown }).description;
+  const description: string | undefined =
+    typeof descriptionValue === 'string' ? descriptionValue : undefined;
+  const content = (body as { content?: Record<string, unknown> }).content ?? {};
+  const json = content['application/json'] ?? Object.values(content)[0];
+  const schema =
+    json && typeof json === 'object' && 'schema' in json
+      ? (json as { schema?: unknown }).schema
+      : undefined;
+  return { schema, required, description };
+}
+
 function buildIndex(spec: any): SpecIndex {
   const operations = new Map<string, OperationDef>();
   const paths = spec?.paths ?? {};
   const componentsParams = spec?.components?.parameters ?? undefined;
+  const componentsBodies = spec?.components?.requestBodies ?? undefined;
   for (const [pathKey, pathItem] of Object.entries<any>(paths)) {
     for (const [method, op] of Object.entries<any>(pathItem)) {
       const m = method.toLowerCase();
       if (!['get', 'post', 'put', 'delete', 'patch'].includes(m)) continue;
-      const operationId = op.operationId as string | undefined;
+      const operationId = typeof op.operationId === 'string' ? op.operationId : undefined;
       if (!operationId) continue;
       const parameters = collectParameters(op, pathItem, componentsParams);
+      const requestBody = extractRequestBody(op.requestBody, componentsBodies);
       const hasRequestBody = Boolean(op.requestBody);
       operations.set(operationId, {
         operationId,
@@ -92,6 +152,9 @@ function buildIndex(spec: any): SpecIndex {
         path: pathKey,
         parameters,
         hasRequestBody,
+        requestBodySchema: requestBody.schema,
+        requestBodyRequired: requestBody.required,
+        requestBodyDescription: requestBody.description,
       });
     }
   }

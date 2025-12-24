@@ -1,9 +1,8 @@
 import { callReadOperation } from '../../core/readTools.js';
 import type {
-  FriendLocationDetailsInput,
+  FriendDetailsInput,
   FriendSearchInput,
-  FriendsListAllInput,
-  FriendsListOnlineInput,
+  FriendsListInput,
   FriendsOverviewInput,
 } from '../../models/friends.js';
 import { fetchFriends, fetchFriendsWithMeta, type FriendRecord } from './fetch.js';
@@ -16,13 +15,15 @@ import {
 import { getGroupProfile } from '../groups/index.js';
 import { getInstanceDetails } from '../instances/index.js';
 
-export type FriendLocationDetailsResult =
+export type FriendDetailsResult =
   | {
       ok: true;
       friend: FriendRecord;
+      profile: unknown;
       location: LocationInfo;
       instance: unknown;
       world: unknown;
+      group: unknown;
     }
   | {
       ok: false;
@@ -191,10 +192,13 @@ export async function searchFriends(input: FriendSearchInput) {
   };
 }
 
-export async function listAllFriends(input: FriendsListAllInput) {
-  const includeOffline = input.includeOffline !== false;
+export async function listFriends(input: FriendsListInput) {
+  const includeOffline = input.includeOffline === true;
   const pageSize = normalizePageSize(input.pageSize, DEFAULT_LIST_PAGE_SIZE);
-  const maxPages = normalizeMaxPages(input.maxPages, DEFAULT_ALL_MAX_PAGES);
+  const maxPages = normalizeMaxPages(
+    input.maxPages,
+    includeOffline ? DEFAULT_ALL_MAX_PAGES : DEFAULT_ONLINE_MAX_PAGES,
+  );
 
   const { friends, meta } = await fetchFriendsWithMeta({
     includeOffline,
@@ -204,24 +208,6 @@ export async function listAllFriends(input: FriendsListAllInput) {
 
   return {
     includeOffline,
-    pageSize,
-    maxPages,
-    friends,
-    meta,
-  };
-}
-
-export async function listOnlineFriends(input: FriendsListOnlineInput) {
-  const pageSize = normalizePageSize(input.pageSize, DEFAULT_LIST_PAGE_SIZE);
-  const maxPages = normalizeMaxPages(input.maxPages, DEFAULT_ONLINE_MAX_PAGES);
-
-  const { friends, meta } = await fetchFriendsWithMeta({
-    includeOffline: false,
-    pageSize,
-    maxPages,
-  });
-
-  return {
     pageSize,
     maxPages,
     friends,
@@ -456,9 +442,9 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
   };
 }
 
-export async function getFriendLocationDetails(
-  input: FriendLocationDetailsInput,
-): Promise<FriendLocationDetailsResult> {
+export async function getFriendDetails(
+  input: FriendDetailsInput,
+): Promise<FriendDetailsResult> {
   const name = typeof input.name === 'string' ? input.name : undefined;
   const userId = typeof input.userId === 'string' ? input.userId : undefined;
   const includeOffline = input.includeOffline !== false;
@@ -483,23 +469,74 @@ export async function getFriendLocationDetails(
   );
   let instance: unknown = null;
   let world: unknown = null;
+  let group: unknown = null;
+
+  const resolvedUserId =
+    typeof target.id === 'string' ? target.id : userId ? String(userId) : '';
+  if (!resolvedUserId) {
+    return {
+      ok: false,
+      reason: 'Unable to resolve friend userId.',
+      status: 'not_found',
+      nextSteps: ['vrchat_friends_search'],
+    };
+  }
+
+  const profileResult = await callReadOperation('getUser', {
+    userId: resolvedUserId,
+  });
+  const profile =
+    profileResult.data && typeof profileResult.data === 'object'
+      ? profileResult.data
+      : {};
 
   if (location.type === 'instance' && location.worldId && location.instanceId) {
-    const instanceResult = await callReadOperation('getInstance', {
-      worldId: location.worldId,
-      instanceId: location.instanceId,
-    });
-    instance = instanceResult.data ?? null;
-    if (instance && typeof instance === 'object' && 'world' in (instance as Record<string, unknown>)) {
-      world = (instance as Record<string, unknown>).world ?? null;
+    const { instance: instanceResult } = await getInstanceDetails(
+      location.worldId,
+      location.instanceId,
+    );
+    if (instanceResult) {
+      instance = buildInstanceSummary(instanceResult) ?? instanceResult;
+      if (instanceResult && typeof instanceResult === 'object') {
+        const record = instanceResult as Record<string, unknown>;
+        if (record.world && typeof record.world === 'object') {
+          world = record.world ?? null;
+          const worldRecord = record.world as Record<string, unknown>;
+          const worldName = worldRecord.name;
+          if (typeof worldName === 'string' && worldName) {
+            (location as EnrichedLocationInfo).worldName = worldName;
+          }
+        }
+        const region =
+          typeof record.region === 'string'
+            ? record.region
+            : typeof record.photonRegion === 'string'
+              ? record.photonRegion
+              : undefined;
+        if (region) (location as EnrichedLocationInfo).region = region;
+        const typeValue = typeof record.type === 'string' ? record.type : undefined;
+        if (typeValue) (location as EnrichedLocationInfo).accessType = typeValue;
+      }
+    }
+  }
+
+  if (location.groupId) {
+    const groupResult = await getGroupProfile(location.groupId);
+    group = groupResult.group ?? null;
+    const groupInfo = extractGroupInfo(group);
+    if (groupInfo) {
+      (location as EnrichedLocationInfo).groupName = groupInfo.name;
+      (location as EnrichedLocationInfo).groupShortCode = groupInfo.shortCode;
     }
   }
 
   return {
     ok: true,
     friend: target,
+    profile,
     location,
     instance,
     world,
+    group,
   };
 }

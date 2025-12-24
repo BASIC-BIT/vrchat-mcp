@@ -51,7 +51,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
 
     const result = await callReadOperation(
       'getCalendarEvents',
-      { date },
+      { monthDate: date },
       {
         fields: input.fields,
         compact: input.compact,
@@ -65,7 +65,11 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
       },
     );
 
-    const batch = Array.isArray(result.data) ? result.data : [];
+    const batch = Array.isArray(result.data)
+      ? result.data
+      : Array.isArray((result.data as { results?: unknown[] })?.results)
+        ? (result.data as { results?: unknown[] }).results ?? []
+        : [];
     const filtered = batch.filter((event) => {
       if (!event || typeof event !== 'object') return false;
       const startsAt = (event as Record<string, unknown>).startsAt;
@@ -145,7 +149,11 @@ export async function searchEvents(input: EventsSearchInput) {
     },
   });
 
-  const events = Array.isArray(result.data) ? result.data : [];
+  const events = Array.isArray(result.data)
+    ? result.data
+    : Array.isArray((result.data as { results?: unknown[] })?.results)
+      ? (result.data as { results?: unknown[] }).results ?? []
+      : [];
   return {
     searchTerm,
     utcOffset: typeof input.utcOffset === 'number' ? Math.floor(input.utcOffset) : undefined,

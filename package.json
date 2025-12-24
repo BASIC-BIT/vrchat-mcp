@@ -27,9 +27,10 @@
     "mcp:logout": "tsx scripts/mcp-client.ts logout",
     "mcp:list-tools": "tsx scripts/mcp-client.ts list-tools",
     "mcp:call": "tsx scripts/mcp-client.ts call",
-    "generate:read-tools": "tsx scripts/generate-read-tools.ts",
     "generate:schemas": "openapi-zod-client specs/vrchat-openapi.yaml -o src/generated/vrchat-schemas.ts -t scripts/templates/openapi-schemas.hbs --export-schemas -p .prettierrc.json && tsx scripts/postprocess-schemas.ts src/generated/vrchat-schemas.ts",
     "generate:test-schemas": "openapi-zod-client test/fixtures/spec.yaml -o test/generated/mock-schemas.ts -t scripts/templates/openapi-schemas.hbs --export-schemas -p .prettierrc.json && tsx scripts/postprocess-schemas.ts test/generated/mock-schemas.ts",
+    "generate:tools-docs": "tsx scripts/generate-tools-docs.ts",
+    "mcpo": "uvx mcpo --port 8000 --api-key \"top-secret\" -- npx tsx src/index.ts",
     "start": "node dist/index.js"
   },
   "engines": {
@@ -43,13 +44,16 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^11.9.3",
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
+    "ajv-formats": "^3.0.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.5.0",
+    "mock-json-schema": "^1.1.2",
     "openapi-backend": "^5.15.0",
     "openapi-zod-client": "^1.18.3",
     "prettier": "^3.7.4",

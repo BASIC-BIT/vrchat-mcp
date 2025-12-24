@@ -8,23 +8,22 @@ without wading through hundreds of low-level endpoints.
 - Small and explicit: each tool has a single, obvious purpose.
 - Human-input friendly: accept names or natural inputs where reasonable.
 - Composable: outputs include IDs and metadata for follow-ups.
-- Safe by default: write tools are limited and risk-tiered.
+- Safe by default: write tools are opt-in via `writes.allow`, with group allowlists for group-scoped writes.
 
-## Risk tiers
-- Read-only: safe, always enabled.
-- Low-risk write: enabled by default (no confirmation).
-- Medium-risk write: enabled, but require confirmation token.
-- High-risk: disabled by default (require explicit opt-in).
+## Write safety
+- Read-only tools are always enabled.
+- Write tools require `writes.allow = true`.
+- Group-scoped writes additionally honor `groups.allowlist`.
 
 ## Current curated tools (implemented)
 Friends and social (read):
 - `vrchat_friends_search`
-- `vrchat_friend_location_details`
-- `vrchat_friends_all`
-- `vrchat_friends_online`
+- `vrchat_friend_details`
+- `vrchat_friends_list`
 - `vrchat_friends_overview`
 
 Users and groups (read):
+- `vrchat_me`
 - `vrchat_user_profile`
 - `vrchat_user_groups`
 
@@ -48,6 +47,7 @@ Worlds (read):
 Status and presence:
 - `vrchat_status_get` (read)
 - `vrchat_status_set` (low-risk write)
+- `vrchat_profile_update` (profile write; status preserved automatically)
 
 Notifications (read):
 - `vrchat_notifications_recent`
@@ -56,12 +56,12 @@ Events and calendar (read):
 - `vrchat_events_upcoming`
 - `vrchat_events_search`
 
-Events and calendar (write, medium-risk):
+Events and calendar (write):
 - `vrchat_event_create`
 - `vrchat_event_update`
 - `vrchat_event_delete`
 
-Instances and invites (write, medium-risk):
+Instances and invites (write):
 - `vrchat_instance_create`
 - `vrchat_invite_user`
 
@@ -85,13 +85,11 @@ Automation hooks:
 - `vrchat_status_guard` (periodic check + corrective update)
 
 ## Toolset toggles (planned)
-We intend to default to curated tools only. Low-level curated and auto-generated tools will
-become opt-in via environment flags. Not implemented yet.
-
-## Confirmation pattern
-Medium-risk tools are two-step:
-1) call returns a `confirmId`
-2) re-call with same args + `confirmId` to execute
+Auto-generated read tools are enabled by default (`vrchat_read_<operationId>`).
+Auto-generated write tools are enabled by default (`vrchat_write_<operationId>`, gated by `writes.allow`).
+The raw tool (`vrchat_call`) is disabled by default and can be enabled via config/environment flags.
 
 ## Group allowlist guard
 Use `groups.allowlist` in the config file to limit group write operations to specific group IDs.
+
+

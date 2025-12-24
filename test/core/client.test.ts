@@ -107,6 +107,42 @@ describe('callOperation behavior', () => {
     ).rejects.toThrow('VRChat API returned 500');
   });
 
+  it('includes error details for 4xx responses', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const headers = new Headers();
+    const errorBody = {
+      error: {
+        message: 'Current Password required',
+        status_code: 400,
+      },
+    };
+    vi.mocked(undiciFetch).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      headers,
+      text: () => Promise.resolve(JSON.stringify(errorBody)),
+    } as Response);
+
+    const callOperation = await loadCallOperation();
+    let captured: unknown;
+    try {
+      await callOperation({ operationId: 'getConfig' });
+    } catch (err) {
+      captured = err;
+    }
+
+    expect(captured).toBeInstanceOf(Error);
+    expect((captured as Error).message).toBe(
+      'VRChat API returned 400: Current Password required',
+    );
+    expect(captured && typeof captured === 'object').toBe(true);
+    const payload = (captured as { payload?: unknown }).payload as
+      | { status?: number; error?: unknown }
+      | undefined;
+    expect(payload?.status).toBe(400);
+    expect(payload?.error).toEqual(errorBody);
+  });
+
   it('throws on write operations when writes are disabled', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'false';
     const callOperation = await loadCallOperation();

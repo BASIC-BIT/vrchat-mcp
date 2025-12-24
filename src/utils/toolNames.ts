@@ -9,3 +9,7 @@ export function toolName(name: string): string {
 export function readToolName(operationId: string): string {
   return sanitize(`vrchat_read_${operationId}`);
 }
+
+export function writeToolName(operationId: string): string {
+  return sanitize(`vrchat_write_${operationId}`);
+}

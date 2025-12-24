@@ -8,8 +8,7 @@ Date: 2025-12-22
 - Keep cache behavior clear, predictable, and safe by default.
 
 ## Decisions (defaults we will use)
-- "All friends" tool includes offline friends by default.
-- Online-only tool is separate and defaults to online only.
+- Friends list tool defaults to online-only; `includeOffline=true` includes offline friends.
 - Cache TTL: keep existing friends TTL (120s) for now; revisit after realtime is wired.
 - Staleness behavior: stale-while-revalidate for friends (configurable).
 - Pagination defaults for "all friends": pageSize 100, maxPages 200 (up to ~20k).
@@ -18,9 +17,8 @@ Date: 2025-12-22
 - Fuzzy search: use existing contains-style friend search behavior.
 
 ## Phase 1 (start now)
-- Add curated tools:
-  - vrchat_friends_all (all friends, cache-backed, pagination controls)
-  - vrchat_friends_online (online friends only, cache-backed)
+- Add curated tool:
+  - vrchat_friends_list (cache-backed, pagination controls, `includeOffline` flag)
 - Extend friends fetch service to return pagination meta for tools.
 - Keep cache storage in-memory and reuse existing cache manager.
 - Update docs and tests.
@@ -39,7 +37,7 @@ Date: 2025-12-22
 
 ### Progress log
 - Added `fetchFriendsWithMeta` and cache storage for friends list + meta.
-- Added `vrchat_friends_all`, `vrchat_friends_online`, and `vrchat_friends_overview` curated tools.
+- Added `vrchat_friends_list` and `vrchat_friends_overview` curated tools.
 - Added stale-while-revalidate support for friends cache (configurable via env).
 - Updated docs and unit tests for new tools.
 - Added pipeline websocket ingestion to update friends cache and emit delta resource updates.

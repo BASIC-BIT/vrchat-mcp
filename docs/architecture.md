@@ -10,14 +10,15 @@ This server is organized by responsibility so each file stays small and focused.
 - `client.ts` executes API operations with auth + headers and enforces write gating.
 - `readTools.ts` provides read-only helpers (pagination, field selection, shaping).
 - `readToolRegistry.ts` registers auto-generated GET tools from the spec.
+- `writeToolRegistry.ts` registers auto-generated non-GET tools from the spec.
 
 ## Tool registration (`src/tools/`)
 - `registerAllTools.ts` is the single place that wires up all tools.
-- `raw.ts` exposes `vrchat_call` for direct operationId invocation.
+- `raw.ts` exposes `vrchat_call` for direct operationId invocation (disabled by default; enable via `rawTools.enabled`).
 - `auth.ts` exposes login/status/logout.
 - `cache.ts` exposes cache invalidation.
 - `curated/` contains high-signal, agent-friendly tools.
-- `read/` contains curated read tools grouped by API domain.
+- `read/` contains system read utilities (config/time).
 
 ## Schemas (`src/schemas/`)
 - Shared Zod schemas for tool inputs/outputs.

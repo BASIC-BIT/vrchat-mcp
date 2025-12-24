@@ -5,6 +5,10 @@ import {
   StatusSetOutputSchema,
 } from '../../models/status.js';
 import { getCurrentStatus, updateStatus } from '../../services/status/index.js';
+import {
+  readOnlyToolAnnotations,
+  writeToolAnnotations,
+} from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -14,6 +18,7 @@ export function registerCuratedStatusTools(server: McpServer): void {
     {
       description: 'Get your current status + description (read-only).',
       outputSchema: StatusGetOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async () => {
       try {
@@ -36,6 +41,7 @@ export function registerCuratedStatusTools(server: McpServer): void {
         'Set your status + description (write). Accepts status or color (blue/green/orange/red). Defaults to current user.',
       inputSchema: StatusSetInputSchema,
       outputSchema: StatusSetOutputSchema,
+      annotations: writeToolAnnotations,
     },
     async (args) => {
       try {

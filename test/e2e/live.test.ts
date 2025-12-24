@@ -40,9 +40,9 @@ describeLive('mcp e2e (live)', () => {
 
       const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
       const meStructured = me.structuredContent as {
-        data?: { id?: string; displayName?: string };
+        user?: { id?: string; displayName?: string };
       };
-      const profile = meStructured.data ?? {};
+      const profile = meStructured.user ?? {};
       expect(typeof profile.id).toBe('string');
       expect(profile.id?.length).toBeGreaterThan(0);
       expect(typeof profile.displayName).toBe('string');
@@ -108,14 +108,6 @@ describeLiveWrites('mcp e2e (live writes)', () => {
     await harness?.close();
   }, E2E_TIMEOUT_MS);
 
-  function readConfirmId(result: unknown): string | undefined {
-    if (!result || typeof result !== 'object') return undefined;
-    const structured = (result as { structuredContent?: unknown }).structuredContent;
-    if (!structured || typeof structured !== 'object') return undefined;
-    const confirmId = (structured as { confirmId?: unknown }).confirmId;
-    return typeof confirmId === 'string' ? confirmId : undefined;
-  }
-
   async function ensureInstanceLocation(): Promise<string> {
     if (instanceLocation) return instanceLocation;
     if (!writeConfig?.worldId) {
@@ -128,20 +120,11 @@ describeLiveWrites('mcp e2e (live writes)', () => {
     const region = writeConfig.region ?? 'us';
     const displayName = `mcp-e2e-${Date.now()}`;
 
-    const first = await client.callTool({
+    const created = await client.callTool({
       name: 'vrchat_instance_create',
       arguments: { worldId: writeConfig.worldId, type, region, displayName },
     });
-    const confirmId = readConfirmId(first);
-    if (!confirmId) {
-      throw new Error('Expected confirmId for instance creation.');
-    }
-
-    const second = await client.callTool({
-      name: 'vrchat_instance_create',
-      arguments: { worldId: writeConfig.worldId, type, region, displayName, confirmId },
-    });
-    const structured = second.structuredContent as { instance?: unknown } | undefined;
+    const structured = created.structuredContent as { instance?: unknown } | undefined;
     const instance = structured?.instance as { location?: unknown } | undefined;
     const location = typeof instance?.location === 'string' ? instance.location : undefined;
     if (!location?.includes(':')) {
@@ -152,7 +135,7 @@ describeLiveWrites('mcp e2e (live writes)', () => {
   }
 
   it(
-    'creates an instance (confirmation flow)',
+    'creates an instance',
     async () => {
       const location = await ensureInstanceLocation();
       expect(typeof location).toBe('string');
@@ -178,29 +161,22 @@ describeLiveWrites('mcp e2e (live writes)', () => {
 
   if (writeConfig?.inviteUserId) {
     it(
-      'invites a user to the created instance (confirmation flow)',
+      'invites a user to the created instance',
       async () => {
         const location = await ensureInstanceLocation();
         const client = harness!.client;
         await ensureLoggedIn(client, liveConfig);
 
-        const first = await client.callTool({
+        const result = await client.callTool({
           name: 'vrchat_invite_user',
           arguments: { userId: writeConfig.inviteUserId, location },
         });
-        const confirmId = readConfirmId(first);
-        expect(typeof confirmId).toBe('string');
-
-        const second = await client.callTool({
-          name: 'vrchat_invite_user',
-          arguments: { userId: writeConfig.inviteUserId, location, confirmId },
-        });
-        expect(second).toMatchObject({ structuredContent: { status: 'sent' } });
+        expect(result).toMatchObject({ structuredContent: { status: 'sent' } });
       },
       E2E_TIMEOUT_MS,
     );
   } else {
-    it.skip('invites a user to the created instance (confirmation flow)', () => {
+    it.skip('invites a user to the created instance', () => {
       expect(true).toBe(true);
     });
   }

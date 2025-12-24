@@ -2,7 +2,7 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { readToolName } from '../../src/utils/toolNames.js';
+import { readToolName, writeToolName } from '../../src/utils/toolNames.js';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 
@@ -17,6 +17,7 @@ interface SpecParameter {
 interface SpecOperation {
   operationId?: string;
   parameters?: SpecParameter[];
+  requestBody?: { required?: boolean };
 }
 
 interface Spec {
@@ -32,14 +33,14 @@ describe('mcp e2e (mock generated tools)', () => {
   let spec: Spec | null = null;
 
   beforeAll(async () => {
-    server = await createMockServer();
+    server = await createMockServer({ specPath: SPEC_PATH });
     harness = await createMcpHarness({
       env: {
         VRCHAT_MCP_API_BASE: server.baseUrl,
         VRCHAT_MCP_SPEC_URL: SPEC_PATH,
         VRCHAT_MCP_COOKIE_STORE: 'memory',
         VRCHAT_MCP_USER_AGENT: 'vrchat-mcp-e2e',
-        VRCHAT_MCP_ALLOW_WRITES: 'false',
+        VRCHAT_MCP_ALLOW_WRITES: 'true',
       },
     });
     const raw = await readFile(SPEC_PATH, 'utf8');
@@ -51,10 +52,19 @@ describe('mcp e2e (mock generated tools)', () => {
     if (server) await server.close();
   }, 20000);
 
-  function getParamValue(name: string): string | number {
+  function getParamValue(name: string, operationId?: string): string | number {
     const data = server!.data;
     switch (name) {
       case 'userId':
+        if (operationId === 'getGroupMember') {
+          const groupId = Object.keys(data.groupMembers ?? {})[0];
+          const member = groupId ? data.groupMembers[groupId]?.[0] : undefined;
+          if (member?.userId) return member.userId;
+        }
+        if (operationId === 'getInviteMessage' || operationId === 'getInviteMessages') {
+          const inviteUserId = data.inviteMessages[0]?.userId;
+          if (inviteUserId) return inviteUserId;
+        }
         return data.users[0].id;
       case 'username':
         return data.users[0].username ?? data.users[0].displayName;
@@ -68,13 +78,23 @@ describe('mcp e2e (mock generated tools)', () => {
       case 'shortName':
         return Object.keys(data.instancesByShortName)[0];
       case 'groupId':
-        return data.groups[0].id;
+        {
+          const groupId = data.groups[0]?.id;
+          if (groupId) return groupId;
+          throw new Error('Missing fixture for required param: groupId');
+        }
       case 'notificationId':
         return data.notifications[0].id;
       case 'avatarId':
         return data.avatars[0].id;
       case 'calendarId':
-        return data.calendarGroupEvents[data.groups[0].id][0].id;
+        {
+          const groupId = data.groups[0]?.id ?? Object.keys(data.calendarGroupEvents)[0];
+          const groupEvents = groupId ? data.calendarGroupEvents[groupId] : undefined;
+          const eventId = groupEvents?.[0]?.id ?? data.calendarEvents[0]?.id;
+          if (eventId) return eventId;
+          throw new Error('Missing fixture for required param: calendarId');
+        }
       case 'searchTerm':
         return 'Event';
       case 'search':
@@ -96,14 +116,17 @@ describe('mcp e2e (mock generated tools)', () => {
     return param;
   }
 
-  function buildParams(params: SpecParameter[] | undefined): Record<string, unknown> {
+  function buildParams(
+    params: SpecParameter[] | undefined,
+    operationId?: string,
+  ): Record<string, unknown> {
     const args: Record<string, unknown> = {};
     for (const param of params ?? []) {
       const resolved = resolveParam(param);
       const name = resolved.name;
       if (!name) continue;
       if (resolved.required) {
-        args[name] = getParamValue(name);
+        args[name] = getParamValue(name, operationId);
       }
     }
     return args;
@@ -124,8 +147,50 @@ describe('mcp e2e (mock generated tools)', () => {
     for (const op of operations) {
       const tool = readToolName(op.operationId);
       if (!available.has(tool)) continue;
-      const params = buildParams(op.params);
+      const params = buildParams(op.params, op.operationId);
       const args = Object.keys(params).length ? { params } : {};
+      try {
+        const result = await harness!.client.callTool({ name: tool, arguments: args });
+        const structured = result as {
+          isError?: boolean;
+          structuredContent?: { data?: unknown; error?: string };
+        };
+        if (structured.isError) {
+          throw new Error(structured.structuredContent?.error ?? 'unknown');
+        }
+        expect(structured.structuredContent?.data).toBeDefined();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Generated tool ${tool} failed: ${message}`);
+      }
+    }
+  });
+
+  it('invokes every generated write tool for non-GET operations', async () => {
+    const listed = await harness!.client.listTools();
+    const available = new Set((listed.tools ?? []).map((tool) => tool.name));
+    const operations: { operationId: string; params?: SpecParameter[]; requestBody?: SpecOperation['requestBody'] }[] = [];
+    for (const pathItem of Object.values(spec!.paths)) {
+      for (const [method, op] of Object.entries(pathItem)) {
+        if (method.toLowerCase() === 'get') continue;
+        if (!op.operationId) continue;
+        operations.push({
+          operationId: op.operationId,
+          params: op.parameters,
+          requestBody: op.requestBody,
+        });
+      }
+    }
+
+    for (const op of operations) {
+      const tool = writeToolName(op.operationId);
+      if (!available.has(tool)) continue;
+      const params = buildParams(op.params, op.operationId);
+      const body = op.requestBody?.required ? {} : undefined;
+      const args = {
+        ...(Object.keys(params).length ? { params } : {}),
+        ...(body !== undefined ? { body } : {}),
+      };
       try {
         const result = await harness!.client.callTool({ name: tool, arguments: args });
         const structured = result as {

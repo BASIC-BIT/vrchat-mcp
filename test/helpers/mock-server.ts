@@ -5,160 +5,18 @@ import OpenAPIBackend, {
 } from 'openapi-backend';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { pathToFileURL } from 'node:url';
 import { readFile } from 'node:fs/promises';
-import type { z } from 'zod';
+import { z, type ZodType } from 'zod';
 import YAML from 'yaml';
-import { schemas } from '../generated/mock-schemas.js';
+import addFormats from 'ajv-formats';
+import type Ajv from 'ajv';
+import { schemas } from '../../src/generated/vrchat-schemas.js';
+import { mockData } from '../fixtures/mock-data/index.js';
+import { mockSchema } from '../fixtures/mock-data/builders.js';
+import type * as MockTypes from './mock-types.js';
 
-interface MockConfig {
-  clientApiKey: string;
-}
-
-interface MockSystemTime {
-  time: string;
-}
-
-interface MockUser {
-  id: string;
-  displayName: string;
-  username?: string;
-}
-
-interface MockFriend {
-  id: string;
-  displayName: string;
-  location?: string;
-  status?: string;
-}
-
-interface MockFriendStatus {
-  status: string;
-}
-
-interface MockNotification {
-  id: string;
-  type: string;
-  message?: string;
-}
-
-interface MockInviteMessage {
-  id: string;
-  userId: string;
-  messageType: string;
-  slot: number;
-  message?: string;
-}
-
-interface MockWorld {
-  id: string;
-  name: string;
-}
-
-interface MockInstance {
-  id: string;
-  world?: MockWorld;
-}
-
-interface MockAvatar {
-  id: string;
-  name: string;
-}
-
-interface MockFavorite {
-  id: string;
-  type: string;
-  favoriteId: string;
-}
-
-interface MockFavoriteGroup {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface MockFavoriteLimits {
-  maxFavorites: number;
-  maxFavoriteGroups: number;
-}
-
-interface MockGroup {
-  id: string;
-  name: string;
-}
-
-interface MockGroupMember {
-  userId: string;
-  displayName: string;
-  roleId?: string;
-}
-
-interface MockGroupRole {
-  id: string;
-  name: string;
-}
-
-interface MockGroupPermission {
-  id: string;
-  name: string;
-}
-
-interface MockGroupAnnouncement {
-  id: string;
-  title: string;
-}
-
-interface MockGroupPost {
-  id: string;
-  title: string;
-}
-
-interface MockGroupInstance {
-  id: string;
-  worldId: string;
-  instanceId: string;
-}
-
-interface MockCalendarEvent {
-  id: string;
-  title: string;
-  groupId?: string;
-}
-
-export interface MockData {
-  config: MockConfig;
-  systemTime: MockSystemTime;
-  currentUser: MockUser;
-  users: MockUser[];
-  friends: MockFriend[];
-  friendStatuses: Record<string, MockFriendStatus>;
-  notifications: MockNotification[];
-  inviteMessages: MockInviteMessage[];
-  worlds: MockWorld[];
-  avatars: MockAvatar[];
-  favorites: MockFavorite[];
-  favoriteGroups: MockFavoriteGroup[];
-  favoriteLimits: MockFavoriteLimits;
-  instances: Record<string, MockInstance>;
-  instancesByShortName: Record<string, string>;
-  recentLocations: string[];
-  groups: MockGroup[];
-  groupMembers: Record<string, MockGroupMember[]>;
-  groupRoles: Record<string, MockGroupRole[]>;
-  groupPermissions: Record<string, MockGroupPermission[]>;
-  groupAnnouncements: Record<string, MockGroupAnnouncement[]>;
-  groupPosts: Record<string, MockGroupPost[]>;
-  groupInstances: Record<string, MockGroupInstance[]>;
-  calendarEvents: MockCalendarEvent[];
-  calendarFeatured: MockCalendarEvent[];
-  calendarFollowed: MockCalendarEvent[];
-  calendarGroupEvents: Record<string, MockCalendarEvent[]>;
-}
-
-export interface MockServer {
-  baseUrl: string;
-  data: MockData;
-  close: () => Promise<void>;
-}
+export type { MockServer } from './mock-types.js';
 
 type MockContext = Context<
   unknown,
@@ -168,35 +26,47 @@ type MockContext = Context<
   Record<string, string>
 >;
 
-type ZodSchema<T> = z.ZodType<T>;
+type ZodSchema<T> = ZodType<T>;
 
-const ConfigSchema = schemas.Config as ZodSchema<MockConfig>;
-const SystemTimeSchema = schemas.SystemTime as ZodSchema<MockSystemTime>;
-const UserSchema = schemas.User as ZodSchema<MockUser>;
-const FriendSchema = schemas.Friend as ZodSchema<MockFriend>;
-const FriendStatusSchema = schemas.FriendStatus as ZodSchema<MockFriendStatus>;
-const NotificationSchema = schemas.Notification as ZodSchema<MockNotification>;
-const InviteMessageSchema = schemas.InviteMessage as ZodSchema<MockInviteMessage>;
-const WorldSchema = schemas.World as ZodSchema<MockWorld>;
-const InstanceSchema = schemas.Instance as ZodSchema<MockInstance>;
-const AvatarSchema = schemas.Avatar as ZodSchema<MockAvatar>;
-const FavoriteSchema = schemas.Favorite as ZodSchema<MockFavorite>;
-const FavoriteGroupSchema = schemas.FavoriteGroup as ZodSchema<MockFavoriteGroup>;
-const FavoriteLimitsSchema = schemas.FavoriteLimits as ZodSchema<MockFavoriteLimits>;
-const GroupSchema = schemas.Group as ZodSchema<MockGroup>;
-const GroupMemberSchema = schemas.GroupMember as ZodSchema<MockGroupMember>;
-const GroupRoleSchema = schemas.GroupRole as ZodSchema<MockGroupRole>;
-const GroupPermissionSchema = schemas.GroupPermission as ZodSchema<MockGroupPermission>;
-const GroupAnnouncementSchema = schemas.GroupAnnouncement as ZodSchema<MockGroupAnnouncement>;
-const GroupPostSchema = schemas.GroupPost as ZodSchema<MockGroupPost>;
-const GroupInstanceSchema = schemas.GroupInstance as ZodSchema<MockGroupInstance>;
-const CalendarEventSchema = schemas.CalendarEvent as ZodSchema<MockCalendarEvent>;
+const ConfigSchema = schemas.APIConfig as ZodSchema<MockTypes.MockConfig>;
+const SystemTimeSchema = z.string() as ZodSchema<MockTypes.MockSystemTime>;
+const UserSchema = schemas.User as ZodSchema<MockTypes.MockUser>;
+const CurrentUserSchema = schemas.CurrentUser as ZodSchema<MockTypes.MockCurrentUser>;
+const FriendSchema = schemas.LimitedUserFriend as ZodSchema<MockTypes.MockFriend>;
+const FriendStatusSchema = schemas.FriendStatus as ZodSchema<MockTypes.MockFriendStatus>;
+const NotificationSchema = schemas.Notification as ZodSchema<MockTypes.MockNotification>;
+const InviteMessageSchema = schemas.InviteMessage as ZodSchema<MockTypes.MockInviteMessage>;
+const WorldSchema = schemas.World as ZodSchema<MockTypes.MockWorld>;
+const FavoritedWorldSchema = schemas.FavoritedWorld as ZodSchema<MockTypes.MockFavoritedWorld>;
+const InstanceSchema = schemas.Instance as ZodSchema<MockTypes.MockInstance>;
+const AvatarSchema = schemas.Avatar as ZodSchema<MockTypes.MockAvatar>;
+const FavoriteSchema = schemas.Favorite as ZodSchema<MockTypes.MockFavorite>;
+const FavoriteGroupSchema = schemas.FavoriteGroup as ZodSchema<MockTypes.MockFavoriteGroup>;
+const FavoriteLimitsSchema = schemas.FavoriteLimits as ZodSchema<MockTypes.MockFavoriteLimits>;
+const GroupSchema = schemas.Group as ZodSchema<MockTypes.MockGroup>;
+const GroupMemberSchema = schemas.GroupMember as ZodSchema<MockTypes.MockGroupMember>;
+const GroupRoleSchema = schemas.GroupRole as ZodSchema<MockTypes.MockGroupRole>;
+const GroupPermissionSchema = schemas.GroupPermission as ZodSchema<MockTypes.MockGroupPermission>;
+const GroupAnnouncementSchema = schemas.GroupAnnouncement as ZodSchema<MockTypes.MockGroupAnnouncement>;
+const GroupPostSchema = schemas.GroupPost as ZodSchema<MockTypes.MockGroupPost>;
+const GroupInstanceSchema = schemas.GroupInstance as ZodSchema<MockTypes.MockGroupInstance>;
+const CalendarEventSchema = schemas.CalendarEvent as ZodSchema<MockTypes.MockCalendarEvent>;
 
-const SPEC_URL = new URL('../fixtures/spec.yaml', import.meta.url);
-const DATA_URL = new URL('../fixtures/mock-data.json', import.meta.url);
+const DEFAULT_SPEC_URL = new URL('../../specs/vrchat-openapi.yaml', import.meta.url);
 
-async function loadSpec(): Promise<unknown> {
-  const text = await readFile(SPEC_URL, 'utf8');
+type ResponseCarrier = ServerResponse & {
+  __mockPayload?: unknown;
+  __mockStatus?: number;
+};
+
+async function loadSpec(specPath?: string | URL): Promise<unknown> {
+  const target =
+    specPath === undefined
+      ? DEFAULT_SPEC_URL
+      : typeof specPath === 'string'
+        ? pathToFileURL(specPath)
+        : specPath;
+  const text = await readFile(target, 'utf8');
   return YAML.parse(text);
 }
 
@@ -219,7 +89,7 @@ function parseRecordArray<T>(schema: ZodSchema<T>, value: unknown, label: string
   return out;
 }
 
-function parseMockData(raw: unknown): MockData {
+function parseMockData(raw: unknown): MockTypes.MockData {
   if (!raw || typeof raw !== 'object') {
     throw new Error('Mock data is missing or invalid.');
   }
@@ -227,17 +97,22 @@ function parseMockData(raw: unknown): MockData {
 
   const config = ConfigSchema.parse(record.config);
   const systemTime = SystemTimeSchema.parse(record.systemTime);
-  const currentUser = UserSchema.parse(record.currentUser);
+  const currentUser = CurrentUserSchema.parse(record.currentUser);
   const users = parseArray(UserSchema, record.users, 'users');
   const friends = parseArray(FriendSchema, record.friends, 'friends');
   const friendStatuses = (record.friendStatuses ?? {}) as Record<string, unknown>;
-  const parsedFriendStatuses: Record<string, MockFriendStatus> = {};
+  const parsedFriendStatuses: Record<string, MockTypes.MockFriendStatus> = {};
   for (const [key, value] of Object.entries(friendStatuses)) {
     parsedFriendStatuses[key] = FriendStatusSchema.parse(value);
   }
   const notifications = parseArray(NotificationSchema, record.notifications, 'notifications');
   const inviteMessages = parseArray(InviteMessageSchema, record.inviteMessages, 'inviteMessages');
   const worlds = parseArray(WorldSchema, record.worlds, 'worlds');
+  const favoritedWorlds = parseArray(
+    FavoritedWorldSchema,
+    record.favoritedWorlds,
+    'favoritedWorlds',
+  );
   const avatars = parseArray(AvatarSchema, record.avatars, 'avatars');
   const favorites = parseArray(FavoriteSchema, record.favorites, 'favorites');
   const favoriteGroups = parseArray(FavoriteGroupSchema, record.favoriteGroups, 'favoriteGroups');
@@ -247,7 +122,7 @@ function parseMockData(raw: unknown): MockData {
   if (!instancesRaw || typeof instancesRaw !== 'object') {
     throw new Error('Mock instances are missing or invalid.');
   }
-  const instances: Record<string, MockInstance> = {};
+  const instances: Record<string, MockTypes.MockInstance> = {};
   for (const [key, value] of Object.entries(instancesRaw as Record<string, unknown>)) {
     instances[key] = InstanceSchema.parse(value);
   }
@@ -294,6 +169,7 @@ function parseMockData(raw: unknown): MockData {
     notifications,
     inviteMessages,
     worlds,
+    favoritedWorlds,
     avatars,
     favorites,
     favoriteGroups,
@@ -313,12 +189,6 @@ function parseMockData(raw: unknown): MockData {
     calendarFollowed,
     calendarGroupEvents,
   };
-}
-
-async function loadMockData(): Promise<MockData> {
-  const text = await readFile(DATA_URL, 'utf8');
-  const raw = JSON.parse(text) as unknown;
-  return parseMockData(raw);
 }
 
 function toContext(value: unknown): MockContext {
@@ -381,15 +251,18 @@ function parseQuery(url: URL): Record<string, string | string[]> | undefined {
   return Object.keys(result).length ? result : undefined;
 }
 
-function firstValue(value: unknown): string | undefined {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
-  return undefined;
+function firstValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value[0];
+  return value;
 }
 
 function parseNumber(value: unknown): number | undefined {
   const candidate = firstValue(value);
-  if (candidate === undefined) return undefined;
+  if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+    return Math.floor(candidate);
+  }
+  if (candidate === undefined || candidate === null) return undefined;
+  if (typeof candidate !== 'string') return undefined;
   const parsed = Number(candidate);
   if (!Number.isFinite(parsed)) return undefined;
   return Math.floor(parsed);
@@ -397,7 +270,9 @@ function parseNumber(value: unknown): number | undefined {
 
 function parseBoolean(value: unknown): boolean | undefined {
   const candidate = firstValue(value);
-  if (candidate === undefined) return undefined;
+  if (typeof candidate === 'boolean') return candidate;
+  if (candidate === undefined || candidate === null) return undefined;
+  if (typeof candidate !== 'string') return undefined;
   const normalized = candidate.toLowerCase();
   if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
   if (['false', '0', 'no', 'off'].includes(normalized)) return false;
@@ -417,13 +292,33 @@ function getParamValue(params: unknown, key: string): string | undefined {
 
 function applyPagination<T>(items: T[], query: unknown): T[] {
   const offset = parseNumber(getQueryValue(query, 'offset')) ?? 0;
-  const limit = parseNumber(getQueryValue(query, 'n')) ?? items.length;
+  const limit =
+    parseNumber(getQueryValue(query, 'n')) ??
+    parseNumber(getQueryValue(query, 'number')) ??
+    items.length;
   return items.slice(offset, offset + limit);
+}
+
+function applyPaginatedList<T>(
+  items: T[],
+  query: unknown,
+): { results: T[]; totalCount: number; hasNext: boolean } {
+  const offset = parseNumber(getQueryValue(query, 'offset')) ?? 0;
+  const limit =
+    parseNumber(getQueryValue(query, 'n')) ??
+    parseNumber(getQueryValue(query, 'number')) ??
+    items.length;
+  const results = items.slice(offset, offset + limit);
+  return {
+    results,
+    totalCount: items.length,
+    hasNext: offset + limit < items.length,
+  };
 }
 
 function applySearch<T>(items: T[], query: unknown, keys: (keyof T)[], param = 'search'): T[] {
   const term = firstValue(getQueryValue(query, param));
-  if (!term) return items;
+  if (typeof term !== 'string' || !term) return items;
   const normalized = term.toLowerCase();
   return items.filter((item) =>
     keys.some((key) => {
@@ -435,13 +330,33 @@ function applySearch<T>(items: T[], query: unknown, keys: (keyof T)[], param = '
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  const carrier = res as ResponseCarrier;
+  carrier.__mockPayload = payload;
+  carrier.__mockStatus = status;
   res.statusCode = status;
   res.setHeader('content-type', 'application/json');
   res.end(JSON.stringify(payload));
 }
 
-export async function createMockServer(): Promise<MockServer> {
-  const [spec, data] = await Promise.all([loadSpec(), loadMockData()]);
+function buildError(status: number, message: string) {
+  return { error: { message, status_code: status } };
+}
+
+function sendError(res: ServerResponse, status: number, message: string, details?: unknown) {
+  const base = buildError(status, message);
+  const payload = details === undefined ? base : { ...base, details };
+  sendJson(res, status, payload);
+}
+
+export interface MockServerOptions {
+  specPath?: string | URL;
+}
+
+export async function createMockServer(
+  options: MockServerOptions = {},
+): Promise<MockTypes.MockServer> {
+  const spec = await loadSpec(options.specPath);
+  const data = parseMockData(mockData);
   let instanceCounter = Object.keys(data.instances).length;
   let notificationCounter = data.notifications.length;
   let calendarCounter = data.calendarEvents.length
@@ -455,8 +370,19 @@ export async function createMockServer(): Promise<MockServer> {
   const api = new OpenAPIBackend({
     definition: spec,
     strict: false,
-    validate: false,
+    validate: true,
+    // Skip OpenAPI definition validation; VRChat spec fails schema validation.
+    quick: true,
+    coerceTypes: true,
+    customizeAjv: (ajv: Ajv): Ajv => {
+      addFormats(ajv);
+      return ajv;
+    },
   }) as OpenAPIBackendType;
+
+  api.registerSecurityHandler('authCookie', () => true);
+  api.registerSecurityHandler('authHeader', () => true);
+  api.registerSecurityHandler('twoFactorAuthCookie', () => true);
 
   api.register({
     getConfig: (_c, _req, res) => {
@@ -473,7 +399,7 @@ export async function createMockServer(): Promise<MockServer> {
       const userId = getParamValue(context.request.params, 'userId');
       const user = data.users.find((entry) => entry.id === userId);
       if (!user) {
-        sendJson(toResponse(res), 404, { error: 'User not found' });
+        sendError(toResponse(res), 404, 'User not found');
         return;
       }
       sendJson(toResponse(res), 200, user);
@@ -483,15 +409,44 @@ export async function createMockServer(): Promise<MockServer> {
       const username = getParamValue(context.request.params, 'username');
       const user = data.users.find((entry) => entry.username === username);
       if (!user) {
-        sendJson(toResponse(res), 404, { error: 'User not found' });
+        sendError(toResponse(res), 404, 'User not found');
         return;
       }
       sendJson(toResponse(res), 200, user);
+    },
+    updateUser: (c, _req, res) => {
+      const context = toContext(c);
+      const userId = getParamValue(context.request.params, 'userId');
+      const body = context.request.body as Record<string, unknown> | undefined;
+      if (!userId) {
+        sendError(toResponse(res), 400, 'Missing userId');
+        return;
+      }
+      if (!body || typeof body !== 'object') {
+        sendError(toResponse(res), 400, 'Missing body');
+        return;
+      }
+      if (data.currentUser.id !== userId) {
+        sendError(toResponse(res), 403, 'Forbidden');
+        return;
+      }
+      Object.assign(data.currentUser, body);
+      const userIndex = data.users.findIndex((entry) => entry.id === userId);
+      if (userIndex >= 0) {
+        Object.assign(data.users[userIndex], body);
+      }
+      sendJson(toResponse(res), 200, data.currentUser);
     },
     searchUsers: (c, _req, res) => {
       const context = toContext(c);
       const query = context.request.query;
       const matches = applySearch(data.users, query, ['displayName', 'username']);
+      sendJson(toResponse(res), 200, applyPagination(matches, query));
+    },
+    searchGroups: (c, _req, res) => {
+      const context = toContext(c);
+      const query = context.request.query;
+      const matches = applySearch(data.groups, query, ['name'], 'query');
       sendJson(toResponse(res), 200, applyPagination(matches, query));
     },
     getUserGroups: (_c, _req, res) => {
@@ -503,7 +458,7 @@ export async function createMockServer(): Promise<MockServer> {
     getUserRepresentedGroup: (_c, _req, res) => {
       const group = data.groups[0];
       if (!group) {
-        sendJson(toResponse(res), 404, { error: 'Group not found' });
+        sendError(toResponse(res), 404, 'Group not found');
         return;
       }
       sendJson(toResponse(res), 200, group);
@@ -511,17 +466,25 @@ export async function createMockServer(): Promise<MockServer> {
     getFriends: (c, _req, res) => {
       const context = toContext(c);
       const query = context.request.query;
-      const includeOffline = parseBoolean(getQueryValue(query, 'offline')) ?? false;
-      const filtered = includeOffline
-        ? data.friends
-        : data.friends.filter((friend) => friend.location !== 'offline');
+      const offlineOnly = parseBoolean(getQueryValue(query, 'offline')) ?? false;
+      const filtered = offlineOnly
+        ? data.friends.filter((friend) => {
+            const location = typeof friend.location === 'string' ? friend.location : '';
+            const status = typeof friend.status === 'string' ? friend.status : '';
+            return location === 'offline' || status === 'offline';
+          })
+        : data.friends.filter((friend) => {
+            const location = typeof friend.location === 'string' ? friend.location : '';
+            const status = typeof friend.status === 'string' ? friend.status : '';
+            return location !== 'offline' && status !== 'offline';
+          });
       sendJson(toResponse(res), 200, applyPagination(filtered, query));
     },
     getFriendStatus: (c, _req, res) => {
       const context = toContext(c);
       const userId = getParamValue(context.request.params, 'userId');
       if (!userId) {
-        sendJson(toResponse(res), 400, { error: 'Missing userId' });
+        sendError(toResponse(res), 400, 'Missing userId');
         return;
       }
       const status = data.friendStatuses[userId] ?? { status: 'unknown' };
@@ -540,7 +503,7 @@ export async function createMockServer(): Promise<MockServer> {
       const notificationId = getParamValue(context.request.params, 'notificationId');
       const notification = data.notifications.find((entry) => entry.id === notificationId);
       if (!notification) {
-        sendJson(toResponse(res), 404, { error: 'Notification not found' });
+        sendError(toResponse(res), 404, 'Notification not found');
         return;
       }
       sendJson(toResponse(res), 200, notification);
@@ -550,7 +513,7 @@ export async function createMockServer(): Promise<MockServer> {
       const worldId = getParamValue(context.request.params, 'worldId');
       const world = data.worlds.find((entry) => entry.id === worldId);
       if (!world) {
-        sendJson(toResponse(res), 404, { error: 'World not found' });
+        sendError(toResponse(res), 404, 'World not found');
         return;
       }
       sendJson(toResponse(res), 200, world);
@@ -571,7 +534,11 @@ export async function createMockServer(): Promise<MockServer> {
     },
     getFavoritedWorlds: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPagination(data.worlds, context.request.query));
+      sendJson(
+        toResponse(res),
+        200,
+        applyPagination(data.favoritedWorlds, context.request.query),
+      );
     },
     getInstance: (c, _req, res) => {
       const context = toContext(c);
@@ -580,7 +547,7 @@ export async function createMockServer(): Promise<MockServer> {
       const key = worldId && instanceId ? `${worldId}:${instanceId}` : '';
       const instance = key ? data.instances[key] : undefined;
       if (!instance) {
-        sendJson(toResponse(res), 404, { error: 'Instance not found' });
+        sendError(toResponse(res), 404, 'Instance not found');
         return;
       }
       sendJson(toResponse(res), 200, instance);
@@ -591,7 +558,7 @@ export async function createMockServer(): Promise<MockServer> {
       const key = shortName ? data.instancesByShortName[shortName] : undefined;
       const instance = key ? data.instances[key] : undefined;
       if (!instance) {
-        sendJson(toResponse(res), 404, { error: 'Instance not found' });
+        sendError(toResponse(res), 404, 'Instance not found');
         return;
       }
       sendJson(toResponse(res), 200, instance);
@@ -609,14 +576,14 @@ export async function createMockServer(): Promise<MockServer> {
       const body = context.request.body as Record<string, unknown> | undefined;
       const worldId = typeof body?.worldId === 'string' ? body.worldId : undefined;
       if (!worldId) {
-        sendJson(toResponse(res), 400, { error: 'Missing worldId' });
+        sendError(toResponse(res), 400, 'Missing worldId');
         return;
       }
       instanceCounter += 1;
       const instanceId = `inst_mock_${instanceCounter}`;
       const location = `${worldId}:${instanceId}`;
       const world = data.worlds.find((entry) => entry.id === worldId);
-      const instance = {
+      const instance = mockSchema<MockTypes.MockInstance>('Instance', {
         id: location,
         instanceId,
         location,
@@ -626,7 +593,7 @@ export async function createMockServer(): Promise<MockServer> {
         type: typeof body?.type === 'string' ? body.type : undefined,
         region: typeof body?.region === 'string' ? body.region : undefined,
         displayName: typeof body?.displayName === 'string' ? body.displayName : undefined,
-      };
+      });
       data.instances[location] = instance;
       sendJson(toResponse(res), 200, instance);
     },
@@ -635,17 +602,25 @@ export async function createMockServer(): Promise<MockServer> {
       const worldId = getParamValue(context.request.params, 'worldId');
       const instanceId = getParamValue(context.request.params, 'instanceId');
       if (!worldId || !instanceId) {
-        sendJson(toResponse(res), 400, { error: 'Missing worldId or instanceId' });
+        sendError(toResponse(res), 400, 'Missing worldId or instanceId');
         return;
       }
       notificationCounter += 1;
-      const notification = {
-        id: `notif_mock_${notificationCounter}`,
+      const id = `not_${notificationCounter.toString().padStart(4, '0')}`;
+      const message = `Invite myself to ${worldId}:${instanceId}`;
+      const storedNotification = mockSchema<MockTypes.MockNotification>('Notification', {
+        id,
         type: 'invite',
-        message: `Invite myself to ${worldId}:${instanceId}`,
-      };
-      data.notifications.push(notification);
-      sendJson(toResponse(res), 200, notification);
+        message,
+      });
+      const sentNotification = mockSchema<MockTypes.MockSentNotification>('SentNotification', {
+        id,
+        type: 'invite',
+        message,
+        details: {},
+      });
+      data.notifications.push(storedNotification);
+      sendJson(toResponse(res), 200, sentNotification);
     },
     inviteUser: (c, _req, res) => {
       const context = toContext(c);
@@ -653,24 +628,32 @@ export async function createMockServer(): Promise<MockServer> {
       const body = context.request.body as Record<string, unknown> | undefined;
       const instanceId = typeof body?.instanceId === 'string' ? body.instanceId : undefined;
       if (!userId || !instanceId) {
-        sendJson(toResponse(res), 400, { error: 'Missing userId or instanceId' });
+        sendError(toResponse(res), 400, 'Missing userId or instanceId');
         return;
       }
       notificationCounter += 1;
-      const notification = {
-        id: `notif_mock_${notificationCounter}`,
+      const id = `not_${notificationCounter.toString().padStart(4, '0')}`;
+      const message = `Invite ${userId} to ${instanceId}`;
+      const storedNotification = mockSchema<MockTypes.MockNotification>('Notification', {
+        id,
         type: 'invite',
-        message: `Invite ${userId} to ${instanceId}`,
-      };
-      data.notifications.push(notification);
-      sendJson(toResponse(res), 200, notification);
+        message,
+      });
+      const sentNotification = mockSchema<MockTypes.MockSentNotification>('SentNotification', {
+        id,
+        type: 'invite',
+        message,
+        details: {},
+      });
+      data.notifications.push(storedNotification);
+      sendJson(toResponse(res), 200, sentNotification);
     },
     getAvatar: (c, _req, res) => {
       const context = toContext(c);
       const avatarId = getParamValue(context.request.params, 'avatarId');
       const avatar = data.avatars.find((entry) => entry.id === avatarId);
       if (!avatar) {
-        sendJson(toResponse(res), 404, { error: 'Avatar not found' });
+        sendError(toResponse(res), 404, 'Avatar not found');
         return;
       }
       sendJson(toResponse(res), 200, avatar);
@@ -706,7 +689,7 @@ export async function createMockServer(): Promise<MockServer> {
       const groupId = getParamValue(context.request.params, 'groupId');
       const group = data.groups.find((entry) => entry.id === groupId);
       if (!group) {
-        sendJson(toResponse(res), 404, { error: 'Group not found' });
+        sendError(toResponse(res), 404, 'Group not found');
         return;
       }
       sendJson(toResponse(res), 200, group);
@@ -724,7 +707,7 @@ export async function createMockServer(): Promise<MockServer> {
       const members = data.groupMembers[groupId] ?? [];
       const member = members.find((entry) => entry.userId === userId);
       if (!member) {
-        sendJson(toResponse(res), 404, { error: 'Group member not found' });
+        sendError(toResponse(res), 404, 'Group member not found');
         return;
       }
       sendJson(toResponse(res), 200, member);
@@ -742,7 +725,12 @@ export async function createMockServer(): Promise<MockServer> {
     getGroupAnnouncements: (c, _req, res) => {
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
-      sendJson(toResponse(res), 200, data.groupAnnouncements[groupId] ?? []);
+      const announcements = data.groupAnnouncements[groupId] ?? [];
+      sendJson(
+        toResponse(res),
+        200,
+        applyPagination(announcements, context.request.query),
+      );
     },
     getGroupPosts: (c, _req, res) => {
       const context = toContext(c);
@@ -757,7 +745,11 @@ export async function createMockServer(): Promise<MockServer> {
     },
     getCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPagination(data.calendarEvents, context.request.query));
+      sendJson(
+        toResponse(res),
+        200,
+        applyPagination(data.calendarEvents, context.request.query),
+      );
     },
     getFeaturedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
@@ -779,13 +771,13 @@ export async function createMockServer(): Promise<MockServer> {
       const context = toContext(c);
       const query = context.request.query;
       const matches = applySearch(data.calendarEvents, query, ['title'], 'searchTerm');
-      sendJson(toResponse(res), 200, applyPagination(matches, query));
+      sendJson(toResponse(res), 200, applyPaginatedList(matches, query));
     },
     getGroupCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const events = data.calendarGroupEvents[groupId] ?? [];
-      sendJson(toResponse(res), 200, applyPagination(events, context.request.query));
+      sendJson(toResponse(res), 200, applyPaginatedList(events, context.request.query));
     },
     getGroupCalendarEvent: (c, _req, res) => {
       const context = toContext(c);
@@ -794,7 +786,7 @@ export async function createMockServer(): Promise<MockServer> {
       const events = data.calendarGroupEvents[groupId] ?? [];
       const event = events.find((entry) => entry.id === calendarId);
       if (!event) {
-        sendJson(toResponse(res), 404, { error: 'Calendar event not found' });
+        sendError(toResponse(res), 404, 'Calendar event not found');
         return;
       }
       sendJson(toResponse(res), 200, event);
@@ -804,14 +796,14 @@ export async function createMockServer(): Promise<MockServer> {
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const body = context.request.body as Record<string, unknown> | undefined;
       if (!groupId) {
-        sendJson(toResponse(res), 400, { error: 'Missing groupId' });
+        sendError(toResponse(res), 400, 'Missing groupId');
         return;
       }
       calendarCounter += 1;
       const eventId = `cal_grp_mock_${calendarCounter}`;
       const startsAt = typeof body?.startsAt === 'string' ? body.startsAt : '2025-12-22T20:00:00Z';
       const endsAt = typeof body?.endsAt === 'string' ? body.endsAt : '2025-12-22T21:00:00Z';
-      const event = {
+      const event = mockSchema<MockTypes.MockCalendarEvent>('CalendarEvent', {
         id: eventId,
         groupId,
         title: typeof body?.title === 'string' ? body.title : 'Mock Group Event',
@@ -820,7 +812,7 @@ export async function createMockServer(): Promise<MockServer> {
         startsAt,
         endsAt,
         accessType: typeof body?.accessType === 'string' ? body.accessType : 'group',
-      };
+      });
       if (!data.calendarGroupEvents[groupId]) {
         data.calendarGroupEvents[groupId] = [];
       }
@@ -835,7 +827,7 @@ export async function createMockServer(): Promise<MockServer> {
       const events = data.calendarGroupEvents[groupId] ?? [];
       const event = events.find((entry) => entry.id === calendarId);
       if (!event) {
-        sendJson(toResponse(res), 404, { error: 'Calendar event not found' });
+        sendError(toResponse(res), 404, 'Calendar event not found');
         return;
       }
       if (typeof body?.title === 'string') event.title = body.title;
@@ -852,7 +844,7 @@ export async function createMockServer(): Promise<MockServer> {
       const events = data.calendarGroupEvents[groupId] ?? [];
       const index = events.findIndex((entry) => entry.id === calendarId);
       if (index === -1) {
-        sendJson(toResponse(res), 404, { error: 'Calendar event not found' });
+        sendError(toResponse(res), 404, 'Calendar event not found');
         return;
       }
       events.splice(index, 1);
@@ -880,7 +872,7 @@ export async function createMockServer(): Promise<MockServer> {
           entry.slot === slot,
       );
       if (!match) {
-        sendJson(toResponse(res), 404, { error: 'Invite message not found' });
+        sendError(toResponse(res), 404, 'Invite message not found');
         return;
       }
       sendJson(toResponse(res), 200, match);
@@ -889,14 +881,25 @@ export async function createMockServer(): Promise<MockServer> {
       sendJson(toResponse(res), 200, { ok: true });
     },
     notFound: (_c, _req, res) => {
-      sendJson(toResponse(res), 404, { error: 'Not found' });
+      sendError(toResponse(res), 404, 'Not found');
     },
     validationFail: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 400, {
-        error: 'Validation failed',
-        details: context.validation.errors,
-      });
+      sendError(toResponse(res), 400, 'Validation failed', context.validation.errors);
+    },
+    postResponseHandler: (c, _req, res: ServerResponse) => {
+      const response = res as ResponseCarrier;
+      const payload: unknown = response.__mockPayload ?? (c.response as unknown);
+      const statusCode = response.__mockStatus ?? response.statusCode;
+      if (payload !== undefined && c.operation) {
+        const validation = c.api.validateResponse(payload, c.operation, statusCode);
+        if (validation.errors?.length) {
+          console.warn(
+            `[mock] Response validation failed for ${c.operation.operationId} (${statusCode})`,
+            validation.errors,
+          );
+        }
+      }
     },
   });
 

@@ -1,10 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FakeServer } from '../helpers/fake-server.js';
+import type * as ClientModule from '../../src/core/client.js';
 
-vi.mock('../../src/core/client.js', () => ({
-  callOperation: vi.fn(),
-}));
+vi.mock('../../src/core/client.js', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const actual = (await vi.importActual('../../src/core/client.js')) as ClientModule;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return {
+    ...actual,
+    callOperation: vi.fn(),
+  };
+});
 
 import { registerRawTools } from '../../src/tools/raw.js';
 import { callOperation } from '../../src/core/client.js';

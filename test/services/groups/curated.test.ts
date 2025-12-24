@@ -199,8 +199,10 @@ describe('groups curated service', () => {
     const result = await listGroupEvents('grp_1', { date: '2025-12-01', pageSize: 5, maxPages: 1 });
     expect(callReadOperation).toHaveBeenCalledWith(
       'getGroupCalendarEvents',
-      { groupId: 'grp_1', date: '2025-12-01' },
-      expect.any(Object),
+      { groupId: 'grp_1', monthDate: '2025-12-01' },
+      expect.objectContaining({
+        page: expectPage({ size: 5, maxPages: 1, maxItems: 5 }),
+      }),
     );
     expect(result.date).toBe('2025-12-01');
   });

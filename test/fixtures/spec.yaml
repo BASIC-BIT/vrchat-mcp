@@ -108,11 +108,7 @@ components:
           type: string
       required: [clientApiKey]
     SystemTime:
-      type: object
-      properties:
-        time:
-          type: string
-      required: [time]
+      type: string
     User:
       type: object
       properties:
@@ -123,6 +119,29 @@ components:
         username:
           type: string
       required: [id, displayName]
+    UpdateUserRequest:
+      type: object
+      properties:
+        bio:
+          type: string
+        bioLinks:
+          type: array
+          items:
+            type: string
+        pronouns:
+          type: string
+        userIcon:
+          type: string
+        isBoopingEnabled:
+          type: boolean
+        contentFilters:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        statusDescription:
+          type: string
     Friend:
       type: object
       properties:
@@ -209,14 +228,34 @@ components:
         type:
           type: string
       required: [id, name, type]
+    FavoriteGroupLimits:
+      type: object
+      properties:
+        avatar:
+          type: integer
+        friend:
+          type: integer
+        world:
+          type: integer
+      required: [avatar, friend, world]
     FavoriteLimits:
       type: object
       properties:
-        maxFavorites:
+        defaultMaxFavoriteGroups:
+          type: integer
+        defaultMaxFavoritesPerGroup:
           type: integer
         maxFavoriteGroups:
-          type: integer
-      required: [maxFavorites, maxFavoriteGroups]
+          $ref: '#/components/schemas/FavoriteGroupLimits'
+        maxFavoritesPerGroup:
+          $ref: '#/components/schemas/FavoriteGroupLimits'
+      required:
+        [
+          defaultMaxFavoriteGroups,
+          defaultMaxFavoritesPerGroup,
+          maxFavoriteGroups,
+          maxFavoritesPerGroup,
+        ]
     Group:
       type: object
       properties:
@@ -323,6 +362,23 @@ paths:
       operationId: getUser
       parameters:
         - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200':
           description: ok
@@ -717,6 +773,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+  /groups:
+    get:
+      operationId: searchGroups
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
   /groups/{groupId}/members:
     get:
       operationId: getGroupMembers

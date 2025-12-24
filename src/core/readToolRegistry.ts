@@ -3,8 +3,16 @@ import { z } from 'zod';
 import { getConfig } from '../config/index.js';
 import { getSpecIndex } from './spec.js';
 import { callReadOperation } from './readTools.js';
+import { CallError } from './client.js';
+import { buildParamsSchema } from './operationSchemas.js';
 import { readToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
+import { readOnlyToolAnnotations } from '../utils/toolAnnotations.js';
+import {
+  getCuratedReadToolName,
+  getGeneratedReadToolDescription,
+} from './generatedToolOverrides.js';
+import { GENERATED_READ_SKIP_IDS } from './generatedToolSkips.js';
 
 export type ReadToolResponder = (result: { data: unknown; url?: string }, includeMeta?: boolean) => {
   content: { type: 'text'; text: string }[];
@@ -22,11 +30,12 @@ export async function registerGeneratedReadTools(
 ): Promise<number> {
   const config = getConfig();
   if (config.generatedReadTools.disable) return 0;
-  const skipOperationIds = new Set(config.generatedReadTools.skipOperationIds);
+  const skipOperationIds = new Set(GENERATED_READ_SKIP_IDS);
 
   const index = await getSpecIndex();
   const spec = index.raw ?? {};
   const paths = spec.paths ?? {};
+  const componentsSchemas = spec?.components?.schemas;
   let count = 0;
 
   for (const pathItem of Object.values(paths)) {
@@ -37,15 +46,29 @@ export async function registerGeneratedReadTools(
       if (skipOperationIds.has(operationId)) continue;
       const toolName = readToolName(operationId);
       const summary = op.summary ?? op.description ?? '';
-      const description = summary
-        ? `Read-only: ${String(summary).split('\n')[0]}`
-        : `Read-only: ${operationId}`;
+      const summaryLine = String(summary).split('\n')[0].trim();
+      const curated = getCuratedReadToolName(operationId);
+      const override = getGeneratedReadToolDescription(operationId);
+      const fallback = summaryLine
+        ? `Auto-generated read tool. ${summaryLine}`
+        : `Auto-generated read tool for ${operationId}.`;
+      const description =
+        override ?? (curated ? `${fallback} Prefer curated tool: ${curated}.` : `${fallback} Prefer curated tools when available.`);
 
+      const opDef = index.operations.get(operationId);
+      const paramsInfo = buildParamsSchema(opDef?.parameters ?? [], componentsSchemas, {
+        aliasNumberForN: true,
+      });
+      const shape: Record<string, z.ZodTypeAny> = {};
+      if (paramsInfo.schema) {
+        shape.params = paramsInfo.required
+          ? paramsInfo.schema
+          : paramsInfo.schema.optional();
+      }
       const inputSchema = z
-        .object({
-          params: z.record(z.string(), z.any()).optional(),
-        })
-        .merge(options.readOptionsSchema);
+        .object(shape)
+        .merge(options.readOptionsSchema)
+        .passthrough();
 
       server.registerTool(
         toolName,
@@ -53,6 +76,7 @@ export async function registerGeneratedReadTools(
           description,
           inputSchema,
           outputSchema: options.readOutputSchema,
+          annotations: readOnlyToolAnnotations,
         },
         async (args: any) => {
           try {
@@ -65,6 +89,9 @@ export async function registerGeneratedReadTools(
             });
             return options.respond(result, includeMeta);
           } catch (err) {
+            if (err instanceof CallError && err.payload) {
+              return toolError(err.message, err.payload);
+            }
             const message = err instanceof Error ? err.message : 'Unknown error';
             return toolError(message);
           }

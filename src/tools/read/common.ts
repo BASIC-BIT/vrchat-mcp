@@ -3,6 +3,7 @@ import type { ZodTypeAny } from 'zod';
 import { callReadOperation } from '../../core/readTools.js';
 import { ReadToolOutputSchema } from '../../schemas/read.js';
 import { toolName } from '../../utils/toolNames.js';
+import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
 export interface ReadToolOptions {
@@ -80,6 +81,7 @@ export function registerReadTool(options: {
       description,
       inputSchema,
       outputSchema: ReadToolOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {

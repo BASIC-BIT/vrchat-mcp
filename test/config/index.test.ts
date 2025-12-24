@@ -53,7 +53,6 @@ describe('config loader', () => {
       JSON.stringify(
         {
           pipeline: { userAgent: 'pipeline/{version}' },
-          generatedReadTools: { skipOperationIds: ['customOp'] },
         },
         null,
         2,
@@ -67,7 +66,6 @@ describe('config loader', () => {
     const config = getConfig();
     expect(config.pipeline.userAgent).toContain('pipeline/');
     expect(config.pipeline.userAgent).not.toContain('{version}');
-    expect(config.generatedReadTools.skipOperationIds).toEqual(['customOp']);
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
@@ -94,15 +92,6 @@ describe('config loader', () => {
     expect(config.pipeline.userAgent).toBe(config.api.userAgent);
 
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('merges generated read tool skip list from env', () => {
-    setEnv('VRCHAT_MCP_GENERATED_READ_TOOL_SKIP', 'getConfig,customOp');
-
-    const config = getConfig();
-    expect(config.generatedReadTools.skipOperationIds).toContain('customOp');
-    const deduped = new Set(config.generatedReadTools.skipOperationIds);
-    expect(deduped.size).toBe(config.generatedReadTools.skipOperationIds.length);
   });
 
   it('parses allowlist env values', () => {

@@ -1,5 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { z } from 'zod';
+const mockConfig = {
+  generatedReadTools: { disable: false },
+  logging: { level: 'info' },
+};
+
+vi.mock('../../src/core/generatedToolSkips.js', () => ({
+  GENERATED_READ_SKIP_IDS: ['getConfig'],
+}));
+
+vi.mock('../../src/config/index.js', () => ({
+  getConfig: () => mockConfig,
+}));
+vi.mock('../../src/core/client.js', () => {
+  class CallError extends Error {
+    payload?: Record<string, unknown>;
+  }
+  return { CallError };
+});
+
 vi.mock('../../src/core/spec.js', () => {
   return {
     getSpecIndex: () =>
@@ -8,6 +27,9 @@ vi.mock('../../src/core/spec.js', () => {
         paths: {
           '/config': { get: { operationId: 'getConfig', summary: 'Get Config' } },
           '/widgets': { get: { operationId: 'getWidget', summary: 'Get Widget' } },
+          '/users/{userId}': {
+            get: { operationId: 'getUser', summary: 'Get User' },
+          },
           '/me': { post: { operationId: 'updateUser', summary: 'Update User' } },
         },
       },
@@ -19,6 +41,23 @@ vi.mock('../../src/core/spec.js', () => {
         [
           'getWidget',
           { operationId: 'getWidget', method: 'GET', path: '/widgets', parameters: [], hasRequestBody: false },
+        ],
+        [
+          'getUser',
+          {
+            operationId: 'getUser',
+            method: 'GET',
+            path: '/users/{userId}',
+            parameters: [
+              {
+                name: 'userId',
+                in: 'path',
+                required: true,
+                schema: { type: 'string' },
+              },
+            ],
+            hasRequestBody: false,
+          },
         ],
         [
           'updateUser',
@@ -33,30 +72,16 @@ vi.mock('../../src/core/readTools.js', () => ({
 }));
 
 describe('read tool registry', () => {
-  const prevDisable = process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS;
-  const prevSkip = process.env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP;
-
   beforeEach(() => {
-    delete process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS;
-    delete process.env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP;
+    mockConfig.generatedReadTools = { disable: false };
     vi.resetModules();
   });
 
   afterEach(() => {
-    if (prevDisable === undefined) {
-      delete process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS;
-    } else {
-      process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS = prevDisable;
-    }
-    if (prevSkip === undefined) {
-      delete process.env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP;
-    } else {
-      process.env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP = prevSkip;
-    }
+    mockConfig.generatedReadTools = { disable: false };
   });
 
   it('skips tools in skip list and only registers GET', async () => {
-    process.env.VRCHAT_MCP_GENERATED_READ_TOOL_SKIP = 'getConfig';
     const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
 
     const registered: string[] = [];
@@ -72,12 +97,33 @@ describe('read tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_read_getWidget']);
+    expect(count).toBe(2);
+    expect(registered).toEqual(['vrchat_read_getWidget', 'vrchat_read_getUser']);
+  });
+
+  it('marks required params as required in the schema', async () => {
+    const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
+    const metas: Record<string, { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }> = {};
+    const server = {
+      registerTool: (name: string, meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }) => {
+        metas[name] = meta;
+      },
+    };
+
+    await registerGeneratedReadTools(server as never, {
+      readOptionsSchema: z.object({}),
+      readOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    const schema = metas.vrchat_read_getUser?.inputSchema;
+    expect(schema).toBeDefined();
+    expect(schema?.safeParse({}).success).toBe(false);
+    expect(schema?.safeParse({ params: { userId: 'usr_123' } }).success).toBe(true);
   });
 
   it('can be disabled entirely', async () => {
-    process.env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS = 'true';
+    mockConfig.generatedReadTools = { disable: true };
     const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
     const server = { registerTool: vi.fn() };
 

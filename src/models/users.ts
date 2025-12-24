@@ -8,6 +8,35 @@ export const UserShapeSchema = z.object({
   maxArrayLength: z.number().int().positive().optional(),
 });
 
+export const CurrentUserProfileInputSchema = UserShapeSchema.extend({
+  includeGroups: z.boolean().optional(),
+  groupPageSize: z.number().int().min(1).max(100).optional(),
+  groupMaxPages: z.number().int().min(1).max(50).optional(),
+  groupOffset: z.number().int().min(0).optional(),
+});
+
+export const DEFAULT_SELF_FIELDS = [
+  'id',
+  'displayName',
+  'username',
+  'status',
+  'statusDescription',
+  'statusEmoji',
+  'location',
+  'last_login',
+  'last_platform',
+  'userIcon',
+  'profilePicOverride',
+  'currentAvatarImageUrl',
+  'currentAvatarThumbnailImageUrl',
+  'bio',
+  'bioLinks',
+  'tags',
+  'developerType',
+  'state',
+  'twoFactorAuthEnabled',
+] as const;
+
 export const UserGroupsOutputSchema = z.object({
   userId: z.string(),
   pageSize: z.number().int().min(1),
@@ -34,6 +63,27 @@ export const UserProfileOutputSchema = z.object({
   groups: UserGroupsOutputSchema.optional(),
 });
 
+export const ProfileUpdateInputSchema = schemas.UpdateUserRequest.pick({
+  bio: true,
+  bioLinks: true,
+  pronouns: true,
+  userIcon: true,
+  isBoopingEnabled: true,
+  contentFilters: true,
+}).strict();
+
+export const PROFILE_UPDATE_FIELDS = [
+  ...DEFAULT_SELF_FIELDS,
+  'pronouns',
+  'isBoopingEnabled',
+  'contentFilters',
+] as const;
+
+export const ProfileUpdateOutputSchema = z.object({
+  userId: z.string(),
+  user: schemas.CurrentUser.partial(),
+});
+
 export const UserGroupsInputSchema = z.object({
   userId: z.string().optional(),
   username: z.string().optional(),
@@ -43,3 +93,6 @@ export const UserGroupsInputSchema = z.object({
 });
 
 export type UserGroupsOutput = z.infer<typeof UserGroupsOutputSchema>;
+export type CurrentUserProfileInput = z.infer<typeof CurrentUserProfileInputSchema>;
+export type ProfileUpdateInput = z.infer<typeof ProfileUpdateInputSchema>;
+export type ProfileUpdateOutput = z.infer<typeof ProfileUpdateOutputSchema>;

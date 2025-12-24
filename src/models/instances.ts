@@ -22,7 +22,6 @@ export const InstanceCreateSchema = z.object({
   closedAt: z.string().optional(),
   hardClose: z.boolean().optional(),
   contentSettings: z.record(z.string(), z.boolean()).optional(),
-  confirmId: z.string().optional(),
 });
 
 export const InstanceSummarySchema = schemas.Instance.pick({
@@ -50,9 +49,7 @@ export const InstanceSummarySchema = schemas.Instance.pick({
 }).partial();
 
 export const InstanceCreateOutputSchema = z.object({
-  status: z.enum(['confirm_required', 'created']),
-  confirmId: z.string().optional(),
-  expiresAt: z.string().optional(),
+  status: z.literal('created'),
   instance: InstanceSummarySchema.nullable().optional(),
 });
 

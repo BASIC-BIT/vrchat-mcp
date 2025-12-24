@@ -21,12 +21,10 @@ describe('registerAllTools', () => {
     expect(unique.size).toBe(names.length);
 
     const required = [
-      'vrchat_call',
       'vrchat_friends_search',
-      'vrchat_friends_all',
-      'vrchat_friends_online',
+      'vrchat_friends_list',
       'vrchat_friends_overview',
-      'vrchat_friend_location_details',
+      'vrchat_friend_details',
       'vrchat_user_profile',
       'vrchat_user_groups',
       'vrchat_groups_search',
@@ -55,16 +53,8 @@ describe('registerAllTools', () => {
       'vrchat_event_delete',
       'vrchat_cache_invalidate',
       'vrchat_me',
-      'vrchat_friends_list',
-      'vrchat_worlds_get',
-      'vrchat_instances_get',
-      'vrchat_groups_get',
-      'vrchat_notifications_list',
-      'vrchat_calendar_events_list',
-      'vrchat_avatars_get',
-      'vrchat_favorites_list',
-      'vrchat_invite_messages_list',
       'vrchat_config_get',
+      'vrchat_system_time',
       'vrchat_auth_begin',
       'vrchat_auth_status',
       'vrchat_auth_logout',
@@ -73,6 +63,8 @@ describe('registerAllTools', () => {
     for (const name of required) {
       expect(names).toContain(name);
     }
+
+    expect(names).not.toContain('vrchat_call');
 
     expect(registerGeneratedTools).toHaveBeenCalledTimes(1);
   });

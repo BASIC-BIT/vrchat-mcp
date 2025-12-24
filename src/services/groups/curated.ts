@@ -18,7 +18,7 @@ import {
   type GroupSearchInput,
   type GroupSummary,
 } from '../../models/groups.js';
-import { getMonthKeys, parseEventTime, parseIsoDate } from '../events/utils.js';
+import { getMonthKeys, parseEventTime, parseIsoDate, toMonthKey } from '../events/utils.js';
 
 interface PageInfo {
   pages: number;
@@ -77,7 +77,11 @@ export async function searchGroups(
           },
         },
       );
-      const data = Array.isArray(result.data) ? result.data : [];
+      const data = Array.isArray(result.data)
+        ? result.data
+        : Array.isArray((result.data as { posts?: unknown[] })?.posts)
+          ? (result.data as { posts?: unknown[] }).posts ?? []
+          : [];
       const groups = data
         .map(mapGroupSummary)
         .filter((group): group is GroupSummary => Boolean(group));
@@ -235,7 +239,8 @@ export async function getGroupAnnouncement(
         operationId: 'getGroupAnnouncements',
         params: { groupId },
       });
-      return { announcement: mapGroupAnnouncement(result.data) };
+      const payload = Array.isArray(result.data) ? result.data[0] : result.data;
+      return { announcement: mapGroupAnnouncement(payload) };
     },
   );
 
@@ -317,9 +322,11 @@ export async function listGroupEvents(
   date?: string;
 }> {
   const dateInput = typeof input.date === 'string' ? input.date : undefined;
-  if (dateInput && !parseIsoDate(dateInput)) {
+  const parsedDate = dateInput ? parseIsoDate(dateInput) : null;
+  if (dateInput && !parsedDate) {
     throw new Error('date must be a valid ISO date/time string.');
   }
+  const monthDate = parsedDate ? toMonthKey(parsedDate) : undefined;
   const pageSize =
     typeof input.pageSize === 'number' ? Math.floor(input.pageSize) : DEFAULT_GROUP_EVENT_PAGE_SIZE;
   const maxPages =
@@ -343,7 +350,7 @@ export async function listGroupEvents(
     async () => {
       const result = await callReadOperation(
         'getGroupCalendarEvents',
-        { groupId, date: dateInput },
+        { groupId, monthDate },
         {
           page: {
             enabled: true,
@@ -353,7 +360,11 @@ export async function listGroupEvents(
           },
         },
       );
-      const events = Array.isArray(result.data) ? result.data : [];
+      const events = Array.isArray(result.data)
+        ? result.data
+        : Array.isArray((result.data as { results?: unknown[] })?.results)
+          ? (result.data as { results?: unknown[] }).results ?? []
+          : [];
       return {
         events,
         page: result.page as PageInfo | undefined,
@@ -461,7 +472,7 @@ export async function listGroupEventsUpcoming(
         }
         const result = await callReadOperation(
           'getGroupCalendarEvents',
-          { groupId, date },
+          { groupId, monthDate: date },
           {
             page: {
               enabled: true,
@@ -471,7 +482,11 @@ export async function listGroupEventsUpcoming(
             },
           },
         );
-        const data = Array.isArray(result.data) ? result.data : [];
+        const data = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray((result.data as { results?: unknown[] })?.results)
+            ? (result.data as { results?: unknown[] }).results ?? []
+            : [];
         const filtered = data.filter((event) => {
           if (!event || typeof event !== 'object') return false;
           const startsAt = (event as Record<string, unknown>).startsAt;

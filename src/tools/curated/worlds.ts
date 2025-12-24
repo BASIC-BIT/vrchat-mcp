@@ -17,6 +17,7 @@ import {
   resolveWorldId,
   searchWorlds,
 } from '../../services/worlds/index.js';
+import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -27,6 +28,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
       description: 'Search worlds by name and return compact results (read-only).',
       inputSchema: WorldSearchInputSchema,
       outputSchema: WorldSearchOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -64,6 +66,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
       description: 'List favorited worlds with compact results (read-only).',
       inputSchema: WorldFavoritesInputSchema,
       outputSchema: WorldFavoritesOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -96,6 +99,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
       description: 'Get a world profile by worldId or name (read-only).',
       inputSchema: WorldProfileInputSchema,
       outputSchema: WorldProfileOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {
@@ -141,6 +145,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
       description: 'Summarize world instances by access type and region (read-only).',
       inputSchema: WorldInstancesInputSchema,
       outputSchema: WorldInstancesOverviewOutputSchema,
+      annotations: readOnlyToolAnnotations,
     },
     async (args) => {
       try {

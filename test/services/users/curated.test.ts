@@ -10,7 +10,7 @@ vi.mock('../../../src/services/users/groups.js', () => ({
 
 import { callOperation } from '../../../src/core/client.js';
 import { fetchUserGroupsWithMeta } from '../../../src/services/users/groups.js';
-import { listUserGroups, resolveUserId, resolveUserProfile } from '../../../src/services/users/curated.js';
+import { listUserGroups, resolveUserId, resolveUserProfile, updateProfile } from '../../../src/services/users/curated.js';
 
 describe('users curated service', () => {
   beforeEach(() => {
@@ -121,5 +121,42 @@ describe('users curated service', () => {
     vi.mocked(callOperation).mockResolvedValueOnce({ data: { displayName: 'NoId' } });
     const result = await resolveUserProfile(undefined);
     expect(result).toMatchObject({ ok: false, reason: 'Unable to resolve current user id.' });
+  });
+
+  it('updates profile while preserving current status', async () => {
+    vi.mocked(callOperation)
+      .mockResolvedValueOnce({
+        data: {
+          id: 'usr_self',
+          status: 'ask me',
+          statusDescription: 'busy',
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { id: 'usr_self', bio: 'Hello', status: 'ask me' },
+      });
+
+    const result = await updateProfile({ bio: 'Hello' });
+    expect(callOperation).toHaveBeenNthCalledWith(1, { operationId: 'getCurrentUser' });
+    expect(callOperation).toHaveBeenNthCalledWith(2, {
+      operationId: 'updateUser',
+      params: { userId: 'usr_self' },
+      body: {
+        bio: 'Hello',
+        status: 'ask me',
+        statusDescription: 'busy',
+      },
+    });
+    expect(result).toMatchObject({ userId: 'usr_self' });
+  });
+
+  it('rejects profile update when no fields are provided', async () => {
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'usr_self', status: 'ask me', statusDescription: '' },
+    });
+
+    await expect(updateProfile({})).rejects.toThrow(
+      'Provide at least one profile field to update.',
+    );
   });
 });

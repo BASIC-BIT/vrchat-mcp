@@ -51,8 +51,8 @@ describeLive('llm evals (live)', () => {
     const client = harness.client;
     await ensureLoggedIn(client, liveConfig);
     const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
-    const structured = me.structuredContent as { data?: unknown } | undefined;
-    const data = asRecord(structured?.data);
+    const structured = me.structuredContent as { user?: unknown } | undefined;
+    const data = asRecord(structured?.user);
     currentUser = {
       id: typeof data.id === 'string' ? data.id : undefined,
       displayName: typeof data.displayName === 'string' ? data.displayName : undefined,
@@ -75,14 +75,14 @@ describeLive('llm evals (live)', () => {
           name: 'current user profile matches expected',
           tool: 'vrchat_me',
           args: {},
-          expectedFacts: [`data.displayName is "${currentUser.displayName}".`],
+          expectedFacts: [`user.displayName is "${currentUser.displayName}".`],
           expectPass: true,
         });
         cases.push({
           name: 'get user by id returns same displayName',
-          tool: 'vrchat_users_get',
+          tool: 'vrchat_user_profile',
           args: { userId: currentUser.id },
-          expectedFacts: [`data.displayName is "${currentUser.displayName}".`],
+          expectedFacts: [`user.displayName is "${currentUser.displayName}".`],
           expectPass: true,
         });
       }
@@ -116,7 +116,7 @@ describeLive('llm evals (live)', () => {
 
         cases.push({
           name: 'friend location details returns friend profile',
-          tool: 'vrchat_friend_location_details',
+          tool: 'vrchat_friend_details',
           args: { name: friendName },
           expectedFacts: [`friend.displayName is "${friendName}".`],
           expectPass: true,
@@ -126,11 +126,11 @@ describeLive('llm evals (live)', () => {
       if (expectations?.worldId) {
         cases.push({
           name: 'world get returns expected world',
-          tool: 'vrchat_worlds_get',
+          tool: 'vrchat_world_profile',
           args: { worldId: expectations.worldId },
           expectedFacts: expectations.worldName
-            ? [`data.name is "${expectations.worldName}".`]
-            : [`data.id is "${expectations.worldId}".`],
+            ? [`world.name is "${expectations.worldName}".`]
+            : [`world.id is "${expectations.worldId}".`],
           expectPass: true,
         });
       }
@@ -140,7 +140,7 @@ describeLive('llm evals (live)', () => {
         const avatarNameContains = expectations.avatarName?.trim();
         cases.push({
           name: 'avatar get returns expected avatar',
-          tool: 'vrchat_avatars_get',
+          tool: 'vrchat_read_getAvatar',
           args: { avatarId: expectations.avatarId },
           expectedFacts: avatarNameExact
             ? [`data.name is "${avatarNameExact}".`]
@@ -154,7 +154,7 @@ describeLive('llm evals (live)', () => {
       if (expectations?.favoriteWorldId) {
         cases.push({
           name: 'favorites list includes expected world',
-          tool: 'vrchat_favorites_list',
+          tool: 'vrchat_worlds_favorites',
           args: {},
           expectedFacts: [
             `At least one item has favoriteId "${expectations.favoriteWorldId}".`,
@@ -166,11 +166,11 @@ describeLive('llm evals (live)', () => {
       if (expectations?.groupId) {
         cases.push({
           name: 'group get returns expected group',
-          tool: 'vrchat_groups_get',
+          tool: 'vrchat_group_profile',
           args: { groupId: expectations.groupId },
           expectedFacts: expectations.groupName
-            ? [`data.name is "${expectations.groupName}".`]
-            : [`data.id is "${expectations.groupId}".`],
+            ? [`group.name is "${expectations.groupName}".`]
+            : [`group.id is "${expectations.groupId}".`],
           expectPass: true,
         });
       }
@@ -178,7 +178,7 @@ describeLive('llm evals (live)', () => {
       if (expectations?.groupId && expectations.groupMemberName) {
         cases.push({
           name: 'group members list includes expected member',
-          tool: 'vrchat_groups_members_list',
+          tool: 'vrchat_group_members',
           args: { groupId: expectations.groupId },
           expectedFacts: [
             `At least one item has displayName "${expectations.groupMemberName}".`,

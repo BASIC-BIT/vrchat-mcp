@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 
-const SPEC_PATH = fileURLToPath(new URL('../fixtures/spec.yaml', import.meta.url));
+const SPEC_PATH = fileURLToPath(
+  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
+);
 
 describe('mcp e2e (mock tools)', () => {
   let server: MockServer | null = null;
@@ -27,38 +29,66 @@ describe('mcp e2e (mock tools)', () => {
     if (server) await server.close();
   }, 20000);
 
-  function expectDataArray(result: unknown) {
-    const structured = result as { structuredContent?: { data?: unknown } };
-    const data = structured.structuredContent?.data;
-    expect(Array.isArray(data)).toBe(true);
-    expect((data as unknown[]).length).toBeGreaterThan(0);
-    return data as unknown[];
+  function getStructured(result: unknown): Record<string, unknown> {
+    const record = result as {
+      isError?: boolean;
+      content?: { text?: string }[];
+      structuredContent?: { error?: string; message?: string };
+    };
+    if (record.isError) {
+      const text =
+        record.structuredContent?.error ??
+        record.structuredContent?.message ??
+        record.content?.map((item) => item.text ?? '').join('\n') ??
+        'Unknown error';
+      throw new Error(`Tool error: ${text}`);
+    }
+    const structured = (result as { structuredContent?: unknown }).structuredContent;
+    if (structured && typeof structured === 'object') {
+      return structured as Record<string, unknown>;
+    }
+    const text = (result as { content?: { text?: string }[] }).content?.[0]?.text;
+    if (text) {
+      try {
+        const parsed = JSON.parse(text) as unknown;
+        if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>;
+      } catch {
+        // ignore
+      }
+    }
+    return {};
   }
 
-  function expectDataObject(result: unknown) {
-    const structured = result as { structuredContent?: { data?: unknown } };
-    const data = structured.structuredContent?.data;
-    expect(data).toBeTruthy();
-    expect(typeof data).toBe('object');
-    return data as Record<string, unknown>;
+  function expectArrayField(result: unknown, field: string) {
+    const structured = getStructured(result);
+    const value = structured[field];
+    expect(Array.isArray(value)).toBe(true);
+    return value as unknown[];
   }
 
-  function expectWorldList(result: unknown) {
-    const structured = result as { structuredContent?: { worlds?: unknown } };
-    const worlds = structured.structuredContent?.worlds;
-    expect(Array.isArray(worlds)).toBe(true);
-    expect((worlds as unknown[]).length).toBeGreaterThan(0);
-    return worlds as unknown[];
+  function expectObjectField(result: unknown, field: string) {
+    const structured = getStructured(result);
+    const value = structured[field];
+    expect(value).toBeTruthy();
+    expect(typeof value).toBe('object');
+    return value as Record<string, unknown>;
+  }
+
+  function expectDefinedField(result: unknown, field: string) {
+    const structured = getStructured(result);
+    expect(structured).toHaveProperty(field);
+    return structured[field];
   }
 
   it('core + auth + cache tools respond', async () => {
     const client = harness!.client;
 
     const config = await client.callTool({ name: 'vrchat_config_get', arguments: {} });
-    expectDataObject(config);
+    expectObjectField(config, 'data');
 
     const systemTime = await client.callTool({ name: 'vrchat_system_time', arguments: {} });
-    expectDataObject(systemTime);
+    const systemTimeValue = expectDefinedField(systemTime, 'data');
+    expect(typeof systemTimeValue).toBe('string');
 
     const status = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
     expect(status).toMatchObject({ structuredContent: { loggedIn: false } });
@@ -79,163 +109,156 @@ describe('mcp e2e (mock tools)', () => {
     const client = harness!.client;
     const data = server!.data;
     const userId = data.users[0].id;
-    const username = data.users[0].username ?? data.users[0].displayName;
-    const friendId = data.friends[0].id;
+    const friend = data.friends[0];
+    const friendId = friend.id;
+    const friendName = friend.displayName ?? friend.username ?? friend.id;
 
-    expectDataObject(await client.callTool({ name: 'vrchat_me', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_friends_list', arguments: {} }));
-    expectDataObject(await client.callTool({ name: 'vrchat_friends_status', arguments: { userId: friendId } }));
-    expectDataObject(await client.callTool({ name: 'vrchat_users_get', arguments: { userId } }));
-    expectDataObject(
-      await client.callTool({ name: 'vrchat_users_getByName', arguments: { username } }),
-    );
-    expectDataArray(await client.callTool({ name: 'vrchat_users_search', arguments: { search: 'na' } }));
+    const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
+    expectObjectField(me, 'user');
 
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_users_groups_list', arguments: { userId } }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_users_groups_requests', arguments: { userId } }),
-    );
-    expectDataObject(
-      await client.callTool({ name: 'vrchat_users_groups_represented', arguments: { userId } }),
-    );
+    const friendsList = await client.callTool({ name: 'vrchat_friends_list', arguments: {} });
+    const friends = expectArrayField(friendsList, 'friends');
+    expect(friends.length).toBeGreaterThan(0);
+
+    const search = await client.callTool({
+      name: 'vrchat_friends_search',
+      arguments: { query: friendName.slice(0, 3) },
+    });
+    expectArrayField(search, 'matches');
+
+    const friendDetails = await client.callTool({
+      name: 'vrchat_friend_details',
+      arguments: { userId: friendId },
+    });
+    expectObjectField(friendDetails, 'friend');
+    expectObjectField(friendDetails, 'profile');
+
+    const profile = await client.callTool({
+      name: 'vrchat_user_profile',
+      arguments: { userId },
+    });
+    expectObjectField(profile, 'user');
+
+    const groups = await client.callTool({
+      name: 'vrchat_user_groups',
+      arguments: { userId },
+    });
+    expectArrayField(groups, 'groups');
   });
 
-  it('notifications + invite messages respond', async () => {
+  it('notifications tools respond', async () => {
     const client = harness!.client;
-    const data = server!.data;
-    const notificationId = data.notifications[0].id;
-    const invite = data.inviteMessages[0];
-
-    expectDataArray(await client.callTool({ name: 'vrchat_notifications_list', arguments: {} }));
-    expectDataObject(
-      await client.callTool({ name: 'vrchat_notifications_get', arguments: { notificationId } }),
-    );
-
-    expectDataArray(
-      await client.callTool({
-        name: 'vrchat_invite_messages_list',
-        arguments: { userId: invite.userId, messageType: invite.messageType },
-      }),
-    );
-    expectDataObject(
-      await client.callTool({
-        name: 'vrchat_invite_messages_get',
-        arguments: {
-          userId: invite.userId,
-          messageType: invite.messageType,
-          slot: invite.slot,
-        },
-      }),
-    );
+    const recent = await client.callTool({ name: 'vrchat_notifications_recent', arguments: {} });
+    expectArrayField(recent, 'notifications');
   });
 
-  it('world + instance tools respond', async () => {
+  it('world tools respond', async () => {
     const client = harness!.client;
     const data = server!.data;
     const worldId = data.worlds[0].id;
-    const instanceKey = Object.keys(data.instances)[0];
-    const [instanceWorldId, instanceId] = instanceKey.split(':');
-    const shortName = Object.keys(data.instancesByShortName)[0];
 
-    expectDataObject(await client.callTool({ name: 'vrchat_worlds_get', arguments: { worldId } }));
-    expectWorldList(await client.callTool({ name: 'vrchat_worlds_search', arguments: { query: 'Mock' } }));
-    expectDataArray(await client.callTool({ name: 'vrchat_worlds_active', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_worlds_recent', arguments: {} }));
-    expectWorldList(await client.callTool({ name: 'vrchat_worlds_favorites', arguments: {} }));
+    const profile = await client.callTool({
+      name: 'vrchat_world_profile',
+      arguments: { worldId },
+    });
+    expectObjectField(profile, 'world');
 
-    expectDataObject(
-      await client.callTool({
-        name: 'vrchat_instances_get',
-        arguments: { worldId: instanceWorldId ?? worldId, instanceId: instanceId ?? 'inst_1' },
-      }),
-    );
-    expectDataObject(
-      await client.callTool({ name: 'vrchat_instances_getByShortName', arguments: { shortName } }),
-    );
-    expectDataArray(await client.callTool({ name: 'vrchat_instances_recent', arguments: {} }));
-  });
+    const search = await client.callTool({
+      name: 'vrchat_worlds_search',
+      arguments: { query: 'Mock' },
+    });
+    expectArrayField(search, 'worlds');
 
-  it('avatar + favorite tools respond', async () => {
-    const client = harness!.client;
-    const data = server!.data;
-    const avatarId = data.avatars[0].id;
+    const favorites = await client.callTool({ name: 'vrchat_worlds_favorites', arguments: {} });
+    expectArrayField(favorites, 'worlds');
 
-    expectDataObject(await client.callTool({ name: 'vrchat_avatars_get', arguments: { avatarId } }));
-    expectDataArray(await client.callTool({ name: 'vrchat_avatars_search', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_avatars_favorites', arguments: {} }));
-
-    expectDataArray(await client.callTool({ name: 'vrchat_favorites_list', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_favorite_groups_list', arguments: {} }));
-    expectDataObject(await client.callTool({ name: 'vrchat_favorites_limits', arguments: {} }));
+    const overview = await client.callTool({
+      name: 'vrchat_world_instances_overview',
+      arguments: { worldId },
+    });
+    expectObjectField(overview, 'instances');
   });
 
   it('group tools respond', async () => {
     const client = harness!.client;
     const data = server!.data;
-    const groupId = data.groups[0].id;
-    const member = data.groupMembers[groupId][0];
+    const groupId = data.groups[0]?.id;
+    if (!groupId) {
+      throw new Error('Missing group fixture');
+    }
 
-    expectDataObject(await client.callTool({ name: 'vrchat_groups_get', arguments: { groupId } }));
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_members_list', arguments: { groupId } }),
-    );
-    expectDataObject(
-      await client.callTool({
-        name: 'vrchat_groups_members_get',
-        arguments: { groupId, userId: member.userId },
-      }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_roles_list', arguments: { groupId } }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_permissions_list', arguments: { groupId } }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_announcements_get', arguments: { groupId } }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_posts_list', arguments: { groupId } }),
-    );
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_groups_instances_list', arguments: { groupId } }),
-    );
+    const search = await client.callTool({
+      name: 'vrchat_groups_search',
+      arguments: { query: data.groups[0].name ?? 'Mock' },
+    });
+    expectArrayField(search, 'groups');
+
+    const profile = await client.callTool({
+      name: 'vrchat_group_profile',
+      arguments: { groupId },
+    });
+    expectObjectField(profile, 'group');
+
+    const members = await client.callTool({
+      name: 'vrchat_group_members',
+      arguments: { groupId },
+    });
+    expectArrayField(members, 'members');
+
+    const announcement = await client.callTool({
+      name: 'vrchat_group_announcement',
+      arguments: { groupId },
+    });
+    expectDefinedField(announcement, 'announcement');
+
+    const posts = await client.callTool({
+      name: 'vrchat_group_posts_recent',
+      arguments: { groupId },
+    });
+    expectArrayField(posts, 'posts');
+
+    const events = await client.callTool({
+      name: 'vrchat_group_events_list',
+      arguments: { groupId },
+    });
+    expectArrayField(events, 'events');
+
+    const calendarId =
+      data.calendarGroupEvents[groupId]?.[0]?.id ?? data.calendarEvents[0]?.id;
+    if (!calendarId) {
+      throw new Error('Missing group calendar event fixture');
+    }
+    const event = await client.callTool({
+      name: 'vrchat_group_event_get',
+      arguments: { groupId, calendarId },
+    });
+    expectObjectField(event, 'event');
+
+    const upcoming = await client.callTool({
+      name: 'vrchat_group_events_upcoming',
+      arguments: { groupId },
+    });
+    expectArrayField(upcoming, 'events');
+
+    const instances = await client.callTool({
+      name: 'vrchat_group_instances_overview',
+      arguments: { groupId },
+    });
+    expectArrayField(instances, 'instances');
   });
 
   it('calendar tools respond', async () => {
     const client = harness!.client;
-    const data = server!.data;
-    const groupId = data.groups[0].id;
-    const calendarId = data.calendarGroupEvents[groupId][0].id;
-
-    expectDataArray(await client.callTool({ name: 'vrchat_calendar_events_list', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_calendar_featured_list', arguments: {} }));
-    expectDataArray(await client.callTool({ name: 'vrchat_calendar_followed_list', arguments: {} }));
-    expectDataArray(
-      await client.callTool({ name: 'vrchat_calendar_search', arguments: { searchTerm: 'Event' } }),
-    );
-    const groupEvents = await client.callTool({
-      name: 'vrchat_group_events_list',
-      arguments: { groupId },
+    const events = await client.callTool({
+      name: 'vrchat_events_upcoming',
+      arguments: {},
     });
-    const groupEventsStructured = groupEvents.structuredContent as { events?: unknown[] };
-    expect(Array.isArray(groupEventsStructured.events)).toBe(true);
-    expect(groupEventsStructured.events?.length ?? 0).toBeGreaterThan(0);
+    expectArrayField(events, 'events');
 
-    const groupEvent = await client.callTool({
-      name: 'vrchat_group_event_get',
-      arguments: { groupId, calendarId },
+    const search = await client.callTool({
+      name: 'vrchat_events_search',
+      arguments: { searchTerm: 'Event' },
     });
-    const groupEventStructured = groupEvent.structuredContent as { event?: unknown };
-    expect(groupEventStructured.event).toBeTruthy();
-  });
-
-  it('raw tool responds', async () => {
-    const client = harness!.client;
-    const res = await client.callTool({ name: 'vrchat_call', arguments: { operationId: 'getConfig' } });
-    const structured = res.structuredContent as { data?: unknown };
-    expect(structured.data).toBeTruthy();
+    expectArrayField(search, 'events');
   });
 });

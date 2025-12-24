@@ -31,7 +31,6 @@ import {
   updateCalendarEvent,
 } from '../../../src/services/events/curated.js';
 import { checkGroupAllowed } from '../../../src/services/groups/index.js';
-import { resetConfirmationsForTest } from '../../../src/services/confirmations.js';
 
 describe('curated event tools', () => {
   beforeEach(() => {
@@ -41,16 +40,7 @@ describe('curated event tools', () => {
     vi.mocked(updateCalendarEvent).mockReset();
     vi.mocked(deleteCalendarEvent).mockReset();
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
-    resetConfirmationsForTest();
   });
-
-  function readConfirmId(result: unknown): string | undefined {
-    if (!result || typeof result !== 'object') return undefined;
-    const structured = (result as { structuredContent?: unknown }).structuredContent;
-    if (!structured || typeof structured !== 'object') return undefined;
-    const confirmId = (structured as { confirmId?: unknown }).confirmId;
-    return typeof confirmId === 'string' ? confirmId : undefined;
-  }
 
   it('fetches upcoming events with default window', async () => {
     vi.mocked(listUpcomingEvents).mockResolvedValue({
@@ -103,32 +93,20 @@ describe('curated event tools', () => {
     });
   });
 
-  it('requires confirmation before creating events', async () => {
+  it('creates events', async () => {
     vi.mocked(createCalendarEvent).mockResolvedValue({ id: 'evt_2' });
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
     const tool = server.tools.find((entry) => entry.name === 'vrchat_event_create');
 
-    const first = await tool!.handler({
+    const result = await tool!.handler({
       groupId: 'grp_1',
       title: 'Test',
       description: 'Desc',
       category: 'performance',
       startsAt: '2025-12-25T00:00:00Z',
       endsAt: '2025-12-25T01:00:00Z',
-    });
-    const confirmId = readConfirmId(first);
-    expect(confirmId).toBeTruthy();
-
-    const second = await tool!.handler({
-      groupId: 'grp_1',
-      title: 'Test',
-      description: 'Desc',
-      category: 'performance',
-      startsAt: '2025-12-25T00:00:00Z',
-      endsAt: '2025-12-25T01:00:00Z',
-      confirmId,
     });
 
     const request = buildCalendarCreateRequest({
@@ -140,7 +118,7 @@ describe('curated event tools', () => {
       endsAt: '2025-12-25T01:00:00Z',
     });
     expect(createCalendarEvent).toHaveBeenCalledWith('grp_1', expect.objectContaining(request));
-    expect(second).toMatchObject({
+    expect(result).toMatchObject({
       structuredContent: { status: 'created' },
     });
   });
@@ -163,26 +141,17 @@ describe('curated event tools', () => {
     expect(result).toMatchObject({ isError: true });
   });
 
-  it('updates events after confirmation', async () => {
+  it('updates events', async () => {
     vi.mocked(updateCalendarEvent).mockResolvedValue({ id: 'evt_9' });
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
     const tool = server.tools.find((entry) => entry.name === 'vrchat_event_update');
 
-    const first = await tool!.handler({
+    const result = await tool!.handler({
       groupId: 'grp_1',
       calendarId: 'evt_9',
       title: 'Updated',
-    });
-    const confirmId = readConfirmId(first);
-    expect(confirmId).toBeTruthy();
-
-    const second = await tool!.handler({
-      groupId: 'grp_1',
-      calendarId: 'evt_9',
-      title: 'Updated',
-      confirmId,
     });
 
     const request = buildCalendarUpdateRequest({
@@ -195,30 +164,21 @@ describe('curated event tools', () => {
       'evt_9',
       expect.objectContaining(request),
     );
-    expect(second).toMatchObject({
+    expect(result).toMatchObject({
       structuredContent: { status: 'updated' },
     });
   });
 
-  it('deletes events after confirmation', async () => {
+  it('deletes events', async () => {
     vi.mocked(deleteCalendarEvent).mockResolvedValue({ ok: true });
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
     const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
 
-    const first = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
-    const confirmId = readConfirmId(first);
-    expect(confirmId).toBeTruthy();
-
-    const second = await tool!.handler({
-      groupId: 'grp_1',
-      calendarId: 'evt_1',
-      confirmId,
-    });
-
+    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
     expect(deleteCalendarEvent).toHaveBeenCalledWith('grp_1', 'evt_1');
-    expect(second).toMatchObject({
+    expect(result).toMatchObject({
       structuredContent: { status: 'deleted' },
     });
   });

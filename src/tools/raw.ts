@@ -1,7 +1,8 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { callOperation, type CallInput } from '../core/client.js';
+import { callOperation, CallError, type CallInput } from '../core/client.js';
 import { CallInputSchema } from '../schemas/call.js';
+import { writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 
@@ -18,6 +19,7 @@ export function registerRawTools(server: McpServer): void {
         data: z.any().optional(),
         dryRun: z.boolean().optional(),
       }),
+      annotations: writeToolAnnotations,
     },
     async (args: CallInput) => {
       try {
@@ -32,6 +34,9 @@ export function registerRawTools(server: McpServer): void {
           structuredContent: result as unknown as Record<string, unknown>,
         };
     } catch (err) {
+      if (err instanceof CallError && err.payload) {
+        return toolError(err.message, err.payload);
+      }
       const message = err instanceof Error ? err.message : 'Unknown error';
       return toolError(message);
     }

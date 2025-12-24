@@ -118,7 +118,8 @@ export async function callReadOperation(
   const defaults = getPaginationParams(normalizedParams);
   const pageSize = page?.size ?? defaults.pageSize;
   const maxPages = page?.maxPages ?? defaults.maxPages;
-  const maxItems = page?.maxItems ?? defaults.maxItems;
+  const maxItems =
+    page?.maxItems ?? Math.max(1, Math.floor(pageSize)) * Math.max(1, Math.floor(maxPages));
   const startOffset = page?.offset ?? defaults.offset;
 
   const collected: JsonValue[] = [];
