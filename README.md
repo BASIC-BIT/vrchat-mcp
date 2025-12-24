@@ -27,13 +27,13 @@ Add this to your Claude Desktop config file and replace the path + user agent:
 ```
 
 ## OpenAPI / Swagger UI (via mcpo)
-If you want a Swagger UI + OpenAPI proxy for this MCP without writing extra code, use the `mcpo` MCP-to-OpenAPI proxy. It generates OpenAPI schemas from MCP tools and serves interactive docs. citeturn0search0
+If you want a Swagger UI + OpenAPI proxy for this MCP without writing extra code, use the `mcpo` MCP-to-OpenAPI proxy. It generates OpenAPI schemas from MCP tools and serves interactive docs.
 
 Command mode (single MCP server):
 ```bash
 uvx mcpo --port 8000 --api-key "top-secret" -- npx tsx <ABS_PATH_TO_REPO>/src/index.ts
 ```
-Then open `http://localhost:8000/docs` in your browser. citeturn0search0
+Then open `http://localhost:8000/docs` in your browser.
 
 Config mode (Claude Desktop config file, supports hot-reload):
 ```bash
@@ -55,7 +55,7 @@ Each MCP server is exposed under its own route (e.g., `http://localhost:8000/vrc
 - `test:evals` - run opt-in LLM evaluation tests
 - `check` - lint + typecheck + tests
 - `generate:tools-docs` - regenerate `docs/tools.md`
-- `mcpo` - run MCP-to-OpenAPI proxy with Swagger UI (see above)
+- `mcpo` - run MCP-to-OpenAPI proxy with Swagger UI (see above; requires `uvx`)
 - `generate:schemas` - regenerate VRChat OpenAPI Zod schemas in `src/generated/vrchat-schemas.ts` (do not edit manually)
 - `generate:test-schemas` - regenerate zod schemas for mock API fixtures
 
@@ -122,6 +122,7 @@ LLM eval config (local only):
 - `docs/tools-guide.md` - short human guide for how to use the tools.
 - `docs/architecture.md` - codebase overview and flow.
 - `docs/curated-tools.md` - curated tool charter (scope + risk tiers).
+- `docs/design-notes.md` - archived design notes and future-facing ideas.
 
 ## Tools (overview)
 - Tool names use underscores (e.g., `vrchat_me`) for Claude Desktop compatibility.

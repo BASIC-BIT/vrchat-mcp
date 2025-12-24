@@ -14,6 +14,7 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 
 ## Swagger UI (mcpo)
 - Run `npm run mcpo` to spin up an OpenAPI proxy with Swagger UI.
+- `npm run mcpo` requires `uvx` (from Astral’s `uv`) to be installed.
 - Open `http://localhost:8000/docs` to browse and try tool calls.
 - For config-based setup (Claude Desktop config + hot reload), see `README.md`.
 
