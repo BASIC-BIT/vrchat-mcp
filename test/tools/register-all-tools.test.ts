@@ -58,6 +58,15 @@ describe('registerAllTools', () => {
       'vrchat_auth_begin',
       'vrchat_auth_status',
       'vrchat_auth_logout',
+
+      'vrctl_auth_begin',
+      'vrctl_auth_status',
+      'vrctl_auth_logout',
+      'vrctl_metadata_get',
+      'vrctl_events_current',
+      'vrctl_event_get',
+      'vrctl_organizers_search',
+      'vrctl_organizer_profile',
     ];
 
     for (const name of required) {

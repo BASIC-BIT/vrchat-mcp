@@ -11,7 +11,16 @@ interface ParsedArgs {
   positionals: string[];
 }
 
-const COMMANDS = new Set(['list-tools', 'login', 'status', 'logout', 'call']);
+const COMMANDS = new Set([
+  'list-tools',
+  'login',
+  'status',
+  'logout',
+  'vrctl-login',
+  'vrctl-status',
+  'vrctl-logout',
+  'call',
+]);
 
 function parseArgs(args: string[]): ParsedArgs {
   const flags: Flags = {};
@@ -101,6 +110,9 @@ Commands:
   login
   status
   logout
+  vrctl-login
+  vrctl-status
+  vrctl-logout
   call
 
 Options:
@@ -111,6 +123,8 @@ Options:
   --timeout <seconds>     Wait this long (non-tty friendly)
   --cookie-store <mode>   memory | file | keychain (default file)
   --cookie-file <path>    file path for cookie store
+  --vrctl-cookie-store <mode>   memory | file | keychain (default cookie-store)
+  --vrctl-cookie-file <path>    file path for vrctl cookie store
   --user-agent <value>    VRCHAT_MCP_USER_AGENT override
   --server-command <cmd>  override server command (default: tsx)
   --server-args <args>    override server args (default: src/index.ts)
@@ -157,15 +171,12 @@ function delay(ms: number) {
 
 async function createClient(flags: Flags) {
   const serverCommand =
-    flagString(flags, 'server-command') ??
-    process.env.VRCHAT_MCP_SERVER_COMMAND ??
-    'tsx';
+    flagString(flags, 'server-command') ?? process.env.VRCHAT_MCP_SERVER_COMMAND ?? 'tsx';
   const serverArgs = parseArgList(
     flagString(flags, 'server-args') ?? process.env.VRCHAT_MCP_SERVER_ARGS,
-    ['src/index.ts'],
+    ['src/index.ts']
   );
-  const serverCwd =
-    flagString(flags, 'cwd') ?? process.env.VRCHAT_MCP_SERVER_CWD ?? process.cwd();
+  const serverCwd = flagString(flags, 'cwd') ?? process.env.VRCHAT_MCP_SERVER_CWD ?? process.cwd();
 
   const serverEnv = cleanEnv(process.env);
 
@@ -175,6 +186,15 @@ async function createClient(flags: Flags) {
 
   const cookieFile = flagString(flags, 'cookie-file');
   if (cookieFile) serverEnv.VRCHAT_MCP_COOKIE_FILE = cookieFile;
+
+  const vrctlCookieStore = flagString(flags, 'vrctl-cookie-store');
+  if (vrctlCookieStore) serverEnv.VRCHAT_MCP_VRCTL_COOKIE_STORE = vrctlCookieStore;
+  if (!serverEnv.VRCHAT_MCP_VRCTL_COOKIE_STORE) {
+    serverEnv.VRCHAT_MCP_VRCTL_COOKIE_STORE = serverEnv.VRCHAT_MCP_COOKIE_STORE;
+  }
+
+  const vrctlCookieFile = flagString(flags, 'vrctl-cookie-file');
+  if (vrctlCookieFile) serverEnv.VRCHAT_MCP_VRCTL_COOKIE_FILE = vrctlCookieFile;
 
   const userAgent = flagString(flags, 'user-agent');
   if (userAgent) serverEnv.VRCHAT_MCP_USER_AGENT = userAgent;
@@ -232,6 +252,18 @@ async function main() {
       return;
     }
 
+    if (command === 'vrctl-status') {
+      const res = await client.callTool({ name: 'vrctl_auth_status', arguments: {} });
+      printJson(res);
+      return;
+    }
+
+    if (command === 'vrctl-logout') {
+      const res = await client.callTool({ name: 'vrctl_auth_logout', arguments: {} });
+      printJson(res);
+      return;
+    }
+
     if (command === 'login') {
       const res = await client.callTool({ name: 'vrchat_auth_begin', arguments: {} });
       printJson(res);
@@ -241,7 +273,8 @@ async function main() {
 
       const shouldWait = flagBoolean(flags, 'wait', true);
       const timeoutSeconds = Number(flagString(flags, 'timeout') ?? '0');
-      const timeoutMs = Number.isFinite(timeoutSeconds) && timeoutSeconds > 0 ? timeoutSeconds * 1000 : undefined;
+      const timeoutMs =
+        Number.isFinite(timeoutSeconds) && timeoutSeconds > 0 ? timeoutSeconds * 1000 : undefined;
 
       let waited = false;
       if (shouldWait && process.stdin.isTTY) {
@@ -261,6 +294,36 @@ async function main() {
       return;
     }
 
+    if (command === 'vrctl-login') {
+      const res = await client.callTool({ name: 'vrctl_auth_begin', arguments: {} });
+      printJson(res);
+
+      const url = extractLoginUrl(res);
+      if (url) console.error(`Open in browser: ${url}`);
+
+      const shouldWait = flagBoolean(flags, 'wait', true);
+      const timeoutSeconds = Number(flagString(flags, 'timeout') ?? '0');
+      const timeoutMs =
+        Number.isFinite(timeoutSeconds) && timeoutSeconds > 0 ? timeoutSeconds * 1000 : undefined;
+
+      let waited = false;
+      if (shouldWait && process.stdin.isTTY) {
+        waited = await waitForEnter(timeoutMs);
+      } else if (shouldWait && timeoutMs) {
+        console.error(`Waiting ${timeoutSeconds}s for login to complete...`);
+        await delay(timeoutMs);
+        waited = true;
+      } else if (shouldWait && !process.stdin.isTTY) {
+        console.error('stdin is not a TTY; use --timeout to keep the server alive.');
+      }
+
+      if (waited) {
+        const status = await client.callTool({ name: 'vrctl_auth_status', arguments: {} });
+        printJson(status);
+      }
+      return;
+    }
+
     if (command === 'call') {
       const inputText =
         flagString(flags, 'input') ??
@@ -269,7 +332,9 @@ async function main() {
           : positionals.join(' '));
 
       if (!inputText) {
-        console.error('Missing input. Use --input, --input-file, or pass JSON as a positional argument.');
+        console.error(
+          'Missing input. Use --input, --input-file, or pass JSON as a positional argument.'
+        );
         usage();
         process.exit(1);
       }

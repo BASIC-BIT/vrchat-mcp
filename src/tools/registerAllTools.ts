@@ -13,6 +13,10 @@ import { registerCuratedWorldTools } from './curated/worlds.js';
 import { registerGeneratedTools } from './generated.js';
 import { registerSystemReadTools } from './read/system.js';
 import { registerRawTools } from './raw.js';
+import { registerVrctlAuthTools } from './vrctlAuth.js';
+import { registerVrctlEventTools } from './vrctlEvents.js';
+import { registerVrctlMetadataTools } from './vrctlMetadata.js';
+import { registerVrctlOrganizerTools } from './vrctlOrganizers.js';
 import { getConfig } from '../config/index.js';
 
 export async function registerAllTools(server: McpServer): Promise<void> {
@@ -34,6 +38,14 @@ export async function registerAllTools(server: McpServer): Promise<void> {
   registerSystemReadTools(server);
 
   registerAuthTools(server);
+
+  registerVrctlAuthTools(server);
+
+  registerVrctlMetadataTools(server);
+
+  registerVrctlEventTools(server);
+
+  registerVrctlOrganizerTools(server);
 
   await registerGeneratedTools(server);
 }

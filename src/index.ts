@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import pkg from '../package.json' with { type: 'json' };
 import { authManager } from './auth/index.js';
+import { vrctlAuthManager } from './vrctl/auth.js';
 import { getConfig } from './config/index.js';
 import { logger } from './infra/logger.js';
 import { registerResources } from './resources/index.js';
@@ -21,6 +22,7 @@ function validateConfig() {
 async function main() {
   validateConfig();
   await authManager.init();
+  await vrctlAuthManager.init();
   registerResources(server);
   await registerAllTools(server);
   registerPipelineHandlers(server);
@@ -29,6 +31,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  logger.error('Fatal error starting server', { message: err instanceof Error ? err.message : String(err) });
+  logger.error('Fatal error starting server', {
+    message: err instanceof Error ? err.message : String(err),
+  });
   process.exit(1);
 });

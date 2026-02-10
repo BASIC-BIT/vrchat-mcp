@@ -49,5 +49,15 @@
   },
   "generatedWriteTools": {
     "disable": false
+  },
+  "vrctl": {
+    "enabled": false,
+    "siteUrl": "https://vrc.tl",
+    "apiBaseUrl": "https://vrc.tl/api/v1",
+    "userAgent": "vrchat-mcp/{version}",
+    "auth": {
+      "cookieStore": "memory",
+      "cookieFile": "~/.vrchat-mcp-vrctl-cookies.json"
+    }
   }
 }

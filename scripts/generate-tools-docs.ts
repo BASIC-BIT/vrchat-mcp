@@ -4,7 +4,10 @@ import YAML from 'yaml';
 import { fetch } from 'undici';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { toJSONSchema, type ZodTypeAny } from 'zod';
-import { getCuratedReadToolName, getCuratedWriteToolName } from '../src/core/generatedToolOverrides.js';
+import {
+  getCuratedReadToolName,
+  getCuratedWriteToolName,
+} from '../src/core/generatedToolOverrides.js';
 import {
   GENERATED_READ_SKIP_IDS,
   GENERATED_WRITE_SKIP_IDS,
@@ -22,6 +25,10 @@ import { registerCuratedUserTools } from '../src/tools/curated/users.js';
 import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
 import { registerSystemReadTools } from '../src/tools/read/system.js';
+import { registerVrctlAuthTools } from '../src/tools/vrctlAuth.js';
+import { registerVrctlEventTools } from '../src/tools/vrctlEvents.js';
+import { registerVrctlMetadataTools } from '../src/tools/vrctlMetadata.js';
+import { registerVrctlOrganizerTools } from '../src/tools/vrctlOrganizers.js';
 import { readToolName, writeToolName } from '../src/utils/toolNames.js';
 import { ReadOptionsSchema, ReadToolOutputSchema } from '../src/schemas/read.js';
 import { WriteOptionsSchema, WriteToolOutputSchema } from '../src/schemas/write.js';
@@ -51,7 +58,7 @@ class ToolCollector {
           annotations?: ToolAnnotations;
           inputSchema?: ZodTypeAny;
           outputSchema?: ZodTypeAny;
-        },
+        }
       ) => {
         this.tools.push({
           name,
@@ -92,9 +99,7 @@ function formatAnnotations(annotations?: ToolAnnotations): string {
 }
 
 function toAscii(value: string): string {
-  return value
-    .replace(/[\u2012\u2013\u2014\u2015]/g, '-')
-    .replace(/[^\x20-\x7E]/g, '');
+  return value.replace(/[\u2012\u2013\u2014\u2015]/g, '-').replace(/[^\x20-\x7E]/g, '');
 }
 
 function buildGeneratedList(spec: any) {
@@ -159,9 +164,7 @@ function renderToolList(entries: ToolEntry[]) {
   let out = '';
   for (const entry of sorted) {
     const suffix = formatAnnotations(entry.annotations);
-    const desc = entry.description
-      ? ` - ${toAscii(entry.description)}${suffix}`
-      : suffix;
+    const desc = entry.description ? ` - ${toAscii(entry.description)}${suffix}` : suffix;
     out += `### ${entry.name}\n`;
     if (desc.trim()) {
       out += `${desc.replace(/^ - /, '')}\n\n`;
@@ -196,25 +199,31 @@ async function main() {
   registerCacheTools(collector.createServer('cache'));
   registerSystemReadTools(collector.createServer('system'));
   registerAuthTools(collector.createServer('auth'));
+  registerVrctlAuthTools(collector.createServer('vrctl-auth'));
+  registerVrctlMetadataTools(collector.createServer('vrctl'));
+  registerVrctlEventTools(collector.createServer('vrctl'));
+  registerVrctlOrganizerTools(collector.createServer('vrctl'));
   registerRawTools(collector.createServer('raw'));
 
   const curated = collector.tools.filter((tool) => tool.category === 'curated');
   const cache = collector.tools.filter((tool) => tool.category === 'cache');
   const system = collector.tools.filter((tool) => tool.category === 'system');
   const auth = collector.tools.filter((tool) => tool.category === 'auth');
+  const vrctlAuth = collector.tools.filter((tool) => tool.category === 'vrctl-auth');
+  const vrctl = collector.tools.filter((tool) => tool.category === 'vrctl');
   const raw = collector.tools.filter((tool) => tool.category === 'raw');
 
   const { readOps, writeOps } = buildGeneratedList(spec);
 
   const now = new Date().toISOString();
   const specTitle = typeof info.title === 'string' ? toAscii(info.title) : 'VRChat API';
-  const specVersion =
-    typeof info.version === 'string' ? toAscii(info.version) : 'unknown';
+  const specVersion = typeof info.version === 'string' ? toAscii(info.version) : 'unknown';
 
   let md = '# Tool Catalog (generated)\n\n';
   md += `Generated: ${now}\n\n`;
   md += `Spec: ${specTitle} (${specVersion})\n\n`;
-  md += 'This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).\n\n';
+  md +=
+    'This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).\n\n';
 
   md += '## Curated tools\n';
   md += renderToolList(curated) || '- (none)\n';
@@ -232,12 +241,21 @@ async function main() {
   md += renderToolList(auth) || '- (none)\n';
   md += '\n';
 
+  md += '## VRC.TL auth tools\n';
+  md += renderToolList(vrctlAuth) || '- (none)\n';
+  md += '\n';
+
+  md += '## VRC.TL tools\n';
+  md += renderToolList(vrctl) || '- (none)\n';
+  md += '\n';
+
   md += '## Optional raw tool\n';
   md += renderToolList(raw) || '- (none)\n';
   md += '\n';
 
   md += '## Auto-generated read tools (GET operations)\n';
-  md += 'Input schemas are derived per operation from OpenAPI parameters (path/query/header/cookie).\n';
+  md +=
+    'Input schemas are derived per operation from OpenAPI parameters (path/query/header/cookie).\n';
   md += 'Read options are shared across read tools:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(ReadOptionsSchema), null, 2)}\n\`\`\`\n\n`;
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(ReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
@@ -249,7 +267,8 @@ async function main() {
   md += '\n';
 
   md += '## Auto-generated write tools (non-GET operations)\n';
-  md += 'Input schemas are derived per operation from OpenAPI parameters and request bodies (writes still require `writes.allow = true`).\n';
+  md +=
+    'Input schemas are derived per operation from OpenAPI parameters and request bodies (writes still require `writes.allow = true`).\n';
   md += 'Write options are shared across write tools:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(WriteOptionsSchema), null, 2)}\n\`\`\`\n\n`;
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(WriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;

@@ -86,6 +86,20 @@ const ConfigBaseSchema = z
         disable: z.boolean(),
       })
       .strict(),
+    vrctl: z
+      .object({
+        enabled: z.boolean(),
+        siteUrl: z.string().min(1),
+        apiBaseUrl: z.string().min(1),
+        userAgent: z.string(),
+        auth: z
+          .object({
+            cookieStore: z.enum(['memory', 'file', 'keychain']),
+            cookieFile: z.string().min(1),
+          })
+          .strict(),
+      })
+      .strict(),
   })
   .strict();
 
@@ -96,29 +110,26 @@ const ConfigSchema = ConfigBaseSchema.transform((config) => {
     ? applyTemplate(next.pipeline.userAgent)
     : next.api.userAgent;
   next.auth.cookieFile = expandHome(next.auth.cookieFile);
+  next.vrctl.userAgent = next.vrctl.userAgent?.trim()
+    ? applyTemplate(next.vrctl.userAgent)
+    : next.api.userAgent;
+  next.vrctl.auth.cookieFile = expandHome(next.vrctl.auth.cookieFile);
   return next;
 });
 
 export type Config = z.output<typeof ConfigSchema>;
 type ConfigBase = z.infer<typeof ConfigBaseSchema>;
 type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends (infer U)[]
-    ? U[]
-    : T[K] extends object
-      ? DeepPartial<T[K]>
-      : T[K];
+  [K in keyof T]?: T[K] extends (infer U)[] ? U[] : T[K] extends object ? DeepPartial<T[K]> : T[K];
 };
 
 const defaults: Config = ConfigSchema.parse(defaultsJson);
 
-const EnvString = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    return value.trim();
-  },
-  z.string().min(1).optional(),
-);
+const EnvString = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  return value.trim();
+}, z.string().min(1).optional());
 
 const EnvLowercase = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => {
@@ -127,56 +138,50 @@ const EnvLowercase = <T extends z.ZodTypeAny>(schema: T) =>
     return value.trim().toLowerCase();
   }, schema);
 
-const EnvBoolean = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim().toLowerCase();
-    if (['1', 'true', 'yes', 'on'].includes(trimmed)) return true;
-    if (['0', 'false', 'no', 'off'].includes(trimmed)) return false;
-    return value;
-  },
-  z.boolean().optional(),
-);
+const EnvBoolean = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(trimmed)) return true;
+  if (['0', 'false', 'no', 'off'].includes(trimmed)) return false;
+  return value;
+}, z.boolean().optional());
 
-const EnvPositiveInt = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if (!trimmed) return value;
-    return Number(trimmed);
-  },
-  z.number().int().positive().optional(),
-);
+const EnvPositiveInt = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  return Number(trimmed);
+}, z.number().int().positive().optional());
 
-const EnvAllowlist = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if (!trimmed) return [];
-    if (DISABLED_ALLOWLIST_VALUES.has(trimmed.toLowerCase())) return [];
-    return trimmed
-      .split(/[,\n]/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-  },
-  z.array(z.string()).optional(),
-);
+const EnvAllowlist = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (DISABLED_ALLOWLIST_VALUES.has(trimmed.toLowerCase())) return [];
+  return trimmed
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}, z.array(z.string()).optional());
 
 const EnvSchema = z
   .object({
     VRCHAT_MCP_API_BASE: EnvString,
     VRCHAT_MCP_USER_AGENT: EnvString,
     VRCHAT_MCP_SPEC_URL: EnvString,
-    VRCHAT_MCP_LOG_LEVEL: EnvLowercase(
-      z.enum(['debug', 'info', 'warn', 'error']).optional(),
-    ),
-    VRCHAT_MCP_COOKIE_STORE: EnvLowercase(
-      z.enum(['memory', 'file', 'keychain']).optional(),
-    ),
+    VRCHAT_MCP_LOG_LEVEL: EnvLowercase(z.enum(['debug', 'info', 'warn', 'error']).optional()),
+    VRCHAT_MCP_COOKIE_STORE: EnvLowercase(z.enum(['memory', 'file', 'keychain']).optional()),
     VRCHAT_MCP_COOKIE_FILE: EnvString,
+
+    VRCHAT_MCP_VRCTL_ENABLED: EnvBoolean,
+    VRCHAT_MCP_VRCTL_SITE_URL: EnvString,
+    VRCHAT_MCP_VRCTL_API_BASE_URL: EnvString,
+    VRCHAT_MCP_VRCTL_USER_AGENT: EnvString,
+    VRCHAT_MCP_VRCTL_COOKIE_STORE: EnvLowercase(z.enum(['memory', 'file', 'keychain']).optional()),
+    VRCHAT_MCP_VRCTL_COOKIE_FILE: EnvString,
     VRCHAT_MCP_ALLOW_WRITES: EnvBoolean,
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
     VRCHAT_MCP_CACHE_TTL_FRIENDS: EnvPositiveInt,
@@ -303,6 +308,31 @@ function readEnvOverrides(): {
     overrides.auth = { ...overrides.auth, cookieFile: env.VRCHAT_MCP_COOKIE_FILE };
   }
 
+  if (env.VRCHAT_MCP_VRCTL_ENABLED !== undefined) {
+    overrides.vrctl = { ...overrides.vrctl, enabled: env.VRCHAT_MCP_VRCTL_ENABLED };
+  }
+  if (env.VRCHAT_MCP_VRCTL_SITE_URL) {
+    overrides.vrctl = { ...overrides.vrctl, siteUrl: env.VRCHAT_MCP_VRCTL_SITE_URL };
+  }
+  if (env.VRCHAT_MCP_VRCTL_API_BASE_URL) {
+    overrides.vrctl = { ...overrides.vrctl, apiBaseUrl: env.VRCHAT_MCP_VRCTL_API_BASE_URL };
+  }
+  if (env.VRCHAT_MCP_VRCTL_USER_AGENT) {
+    overrides.vrctl = { ...overrides.vrctl, userAgent: env.VRCHAT_MCP_VRCTL_USER_AGENT };
+  }
+  if (env.VRCHAT_MCP_VRCTL_COOKIE_STORE) {
+    overrides.vrctl = {
+      ...overrides.vrctl,
+      auth: { ...overrides.vrctl?.auth, cookieStore: env.VRCHAT_MCP_VRCTL_COOKIE_STORE },
+    };
+  }
+  if (env.VRCHAT_MCP_VRCTL_COOKIE_FILE) {
+    overrides.vrctl = {
+      ...overrides.vrctl,
+      auth: { ...overrides.vrctl?.auth, cookieFile: env.VRCHAT_MCP_VRCTL_COOKIE_FILE },
+    };
+  }
+
   if (env.VRCHAT_MCP_ALLOW_WRITES !== undefined) {
     overrides.writes = { allow: env.VRCHAT_MCP_ALLOW_WRITES };
   }
@@ -314,9 +344,12 @@ function readEnvOverrides(): {
   if (env.VRCHAT_MCP_CACHE_ENABLED !== undefined) {
     cacheOverrides.enabled = env.VRCHAT_MCP_CACHE_ENABLED;
   }
-  if (env.VRCHAT_MCP_CACHE_TTL_FRIENDS !== undefined) ttlOverrides.friends = env.VRCHAT_MCP_CACHE_TTL_FRIENDS;
-  if (env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS !== undefined) ttlOverrides.userGroups = env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_TTL_GROUPS !== undefined) ttlOverrides.groups = env.VRCHAT_MCP_CACHE_TTL_GROUPS;
+  if (env.VRCHAT_MCP_CACHE_TTL_FRIENDS !== undefined)
+    ttlOverrides.friends = env.VRCHAT_MCP_CACHE_TTL_FRIENDS;
+  if (env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS !== undefined)
+    ttlOverrides.userGroups = env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS;
+  if (env.VRCHAT_MCP_CACHE_TTL_GROUPS !== undefined)
+    ttlOverrides.groups = env.VRCHAT_MCP_CACHE_TTL_GROUPS;
   if (env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS !== undefined)
     ttlOverrides.notifications = env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS;
 
@@ -355,7 +388,6 @@ function readEnvOverrides(): {
   if (Object.keys(pipelineOverrides).length > 0) {
     overrides.pipeline = pipelineOverrides as ConfigBase['pipeline'];
   }
-
 
   if (env.VRCHAT_MCP_GROUP_ALLOWLIST !== undefined) {
     overrides.groups = { allowlist: env.VRCHAT_MCP_GROUP_ALLOWLIST };
