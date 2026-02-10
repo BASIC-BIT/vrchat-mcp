@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import prettierConfig from 'eslint-config-prettier';
+import sonarjs from 'eslint-plugin-sonarjs';
 import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -34,6 +35,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      sonarjs,
     },
     rules: {
       ...tsPlugin.configs['recommended-type-checked'].rules,
@@ -48,6 +50,9 @@ export default [
       // Cyclomatic complexity gate for production code.
       // Keep this high enough to be practical, and ratchet down over time.
       complexity: ['error', 20],
+      // Cognitive complexity gate (SonarJS) for production code.
+      // Cognitive complexity tends to be stricter than cyclomatic complexity.
+      'sonarjs/cognitive-complexity': ['error', 20],
     },
   },
   {

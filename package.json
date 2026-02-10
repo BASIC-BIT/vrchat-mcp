@@ -53,6 +53,7 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-sonarjs": "^3.0.6",
     "globals": "^16.5.0",
     "mock-json-schema": "^1.1.2",
     "openapi-backend": "^5.15.0",
