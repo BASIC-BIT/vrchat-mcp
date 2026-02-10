@@ -86,6 +86,13 @@ const ConfigBaseSchema = z
         disable: z.boolean(),
       })
       .strict(),
+    vrcx: z
+      .object({
+        enabled: z.boolean(),
+        databasePath: z.string(),
+        worldDbPath: z.string(),
+      })
+      .strict(),
   })
   .strict();
 
@@ -96,29 +103,24 @@ const ConfigSchema = ConfigBaseSchema.transform((config) => {
     ? applyTemplate(next.pipeline.userAgent)
     : next.api.userAgent;
   next.auth.cookieFile = expandHome(next.auth.cookieFile);
+  next.vrcx.databasePath = expandHome(next.vrcx.databasePath);
+  next.vrcx.worldDbPath = expandHome(next.vrcx.worldDbPath);
   return next;
 });
 
 export type Config = z.output<typeof ConfigSchema>;
 type ConfigBase = z.infer<typeof ConfigBaseSchema>;
 type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends (infer U)[]
-    ? U[]
-    : T[K] extends object
-      ? DeepPartial<T[K]>
-      : T[K];
+  [K in keyof T]?: T[K] extends (infer U)[] ? U[] : T[K] extends object ? DeepPartial<T[K]> : T[K];
 };
 
 const defaults: Config = ConfigSchema.parse(defaultsJson);
 
-const EnvString = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    return value.trim();
-  },
-  z.string().min(1).optional(),
-);
+const EnvString = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  return value.trim();
+}, z.string().min(1).optional());
 
 const EnvLowercase = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => {
@@ -127,55 +129,42 @@ const EnvLowercase = <T extends z.ZodTypeAny>(schema: T) =>
     return value.trim().toLowerCase();
   }, schema);
 
-const EnvBoolean = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim().toLowerCase();
-    if (['1', 'true', 'yes', 'on'].includes(trimmed)) return true;
-    if (['0', 'false', 'no', 'off'].includes(trimmed)) return false;
-    return value;
-  },
-  z.boolean().optional(),
-);
+const EnvBoolean = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(trimmed)) return true;
+  if (['0', 'false', 'no', 'off'].includes(trimmed)) return false;
+  return value;
+}, z.boolean().optional());
 
-const EnvPositiveInt = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if (!trimmed) return value;
-    return Number(trimmed);
-  },
-  z.number().int().positive().optional(),
-);
+const EnvPositiveInt = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  return Number(trimmed);
+}, z.number().int().positive().optional());
 
-const EnvAllowlist = z.preprocess(
-  (value) => {
-    if (value === undefined) return undefined;
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if (!trimmed) return [];
-    if (DISABLED_ALLOWLIST_VALUES.has(trimmed.toLowerCase())) return [];
-    return trimmed
-      .split(/[,\n]/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-  },
-  z.array(z.string()).optional(),
-);
+const EnvAllowlist = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (DISABLED_ALLOWLIST_VALUES.has(trimmed.toLowerCase())) return [];
+  return trimmed
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}, z.array(z.string()).optional());
 
 const EnvSchema = z
   .object({
     VRCHAT_MCP_API_BASE: EnvString,
     VRCHAT_MCP_USER_AGENT: EnvString,
     VRCHAT_MCP_SPEC_URL: EnvString,
-    VRCHAT_MCP_LOG_LEVEL: EnvLowercase(
-      z.enum(['debug', 'info', 'warn', 'error']).optional(),
-    ),
-    VRCHAT_MCP_COOKIE_STORE: EnvLowercase(
-      z.enum(['memory', 'file', 'keychain']).optional(),
-    ),
+    VRCHAT_MCP_LOG_LEVEL: EnvLowercase(z.enum(['debug', 'info', 'warn', 'error']).optional()),
+    VRCHAT_MCP_COOKIE_STORE: EnvLowercase(z.enum(['memory', 'file', 'keychain']).optional()),
     VRCHAT_MCP_COOKIE_FILE: EnvString,
     VRCHAT_MCP_ALLOW_WRITES: EnvBoolean,
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
@@ -263,50 +252,43 @@ function applyTemplate(value: string): string {
   return value.replace('{version}', pkg.version ?? '0.0.0');
 }
 
-function readEnvOverrides(): {
-  overrides: DeepPartial<ConfigBase>;
-} {
-  const envInput: Partial<Record<keyof EnvValues, string | undefined>> = {};
-  for (const key of ENV_KEYS) {
-    envInput[key] = process.env[key];
-  }
-  let env: EnvValues;
-  try {
-    env = EnvSchema.parse(envInput);
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      const issues = err.issues.map((issue) => issue.path.join('.') || 'env');
-      throw new Error(`Invalid environment variables: ${issues.join(', ')}`);
-    }
-    throw err;
-  }
-
-  const overrides: DeepPartial<ConfigBase> = {};
-
+function applyApiEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_API_BASE) {
     overrides.api = { ...overrides.api, baseUrl: env.VRCHAT_MCP_API_BASE };
   }
   if (env.VRCHAT_MCP_USER_AGENT) {
     overrides.api = { ...overrides.api, userAgent: env.VRCHAT_MCP_USER_AGENT };
   }
+}
+
+function applySpecEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_SPEC_URL) {
     overrides.spec = { ...overrides.spec, url: env.VRCHAT_MCP_SPEC_URL };
   }
+}
+
+function applyLoggingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_LOG_LEVEL) {
     overrides.logging = { ...overrides.logging, level: env.VRCHAT_MCP_LOG_LEVEL };
   }
+}
 
+function applyAuthEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_COOKIE_STORE) {
     overrides.auth = { ...overrides.auth, cookieStore: env.VRCHAT_MCP_COOKIE_STORE };
   }
   if (env.VRCHAT_MCP_COOKIE_FILE) {
     overrides.auth = { ...overrides.auth, cookieFile: env.VRCHAT_MCP_COOKIE_FILE };
   }
+}
 
+function applyWriteEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_ALLOW_WRITES !== undefined) {
     overrides.writes = { allow: env.VRCHAT_MCP_ALLOW_WRITES };
   }
+}
 
+function applyCacheEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   const cacheOverrides: Partial<ConfigBase['cache']> = {};
   const ttlOverrides: Partial<ConfigBase['cache']['ttlSeconds']> = {};
   const staleOverrides: Partial<ConfigBase['cache']['staleTtlSeconds']> = {};
@@ -314,9 +296,12 @@ function readEnvOverrides(): {
   if (env.VRCHAT_MCP_CACHE_ENABLED !== undefined) {
     cacheOverrides.enabled = env.VRCHAT_MCP_CACHE_ENABLED;
   }
-  if (env.VRCHAT_MCP_CACHE_TTL_FRIENDS !== undefined) ttlOverrides.friends = env.VRCHAT_MCP_CACHE_TTL_FRIENDS;
-  if (env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS !== undefined) ttlOverrides.userGroups = env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_TTL_GROUPS !== undefined) ttlOverrides.groups = env.VRCHAT_MCP_CACHE_TTL_GROUPS;
+  if (env.VRCHAT_MCP_CACHE_TTL_FRIENDS !== undefined)
+    ttlOverrides.friends = env.VRCHAT_MCP_CACHE_TTL_FRIENDS;
+  if (env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS !== undefined)
+    ttlOverrides.userGroups = env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS;
+  if (env.VRCHAT_MCP_CACHE_TTL_GROUPS !== undefined)
+    ttlOverrides.groups = env.VRCHAT_MCP_CACHE_TTL_GROUPS;
   if (env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS !== undefined)
     ttlOverrides.notifications = env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS;
 
@@ -338,7 +323,9 @@ function readEnvOverrides(): {
   if (Object.keys(cacheOverrides).length > 0) {
     overrides.cache = cacheOverrides as ConfigBase['cache'];
   }
+}
 
+function applyPipelineEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   const pipelineOverrides: Partial<ConfigBase['pipeline']> = {};
   if (env.VRCHAT_MCP_PIPELINE_ENABLED !== undefined) {
     pipelineOverrides.enabled = env.VRCHAT_MCP_PIPELINE_ENABLED;
@@ -355,12 +342,15 @@ function readEnvOverrides(): {
   if (Object.keys(pipelineOverrides).length > 0) {
     overrides.pipeline = pipelineOverrides as ConfigBase['pipeline'];
   }
+}
 
-
+function applyGroupEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_GROUP_ALLOWLIST !== undefined) {
     overrides.groups = { allowlist: env.VRCHAT_MCP_GROUP_ALLOWLIST };
   }
+}
 
+function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_ENABLE_RAW_CALL !== undefined) {
     overrides.rawTools = { enabled: env.VRCHAT_MCP_ENABLE_RAW_CALL };
   }
@@ -378,6 +368,37 @@ function readEnvOverrides(): {
       disable: env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
     };
   }
+}
+
+function readEnvOverrides(): {
+  overrides: DeepPartial<ConfigBase>;
+} {
+  const envInput: Partial<Record<keyof EnvValues, string | undefined>> = {};
+  for (const key of ENV_KEYS) {
+    envInput[key] = process.env[key];
+  }
+  let env: EnvValues;
+  try {
+    env = EnvSchema.parse(envInput);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const issues = err.issues.map((issue) => issue.path.join('.') || 'env');
+      throw new Error(`Invalid environment variables: ${issues.join(', ')}`);
+    }
+    throw err;
+  }
+
+  const overrides: DeepPartial<ConfigBase> = {};
+
+  applyApiEnvOverrides(overrides, env);
+  applySpecEnvOverrides(overrides, env);
+  applyLoggingEnvOverrides(overrides, env);
+  applyAuthEnvOverrides(overrides, env);
+  applyWriteEnvOverrides(overrides, env);
+  applyCacheEnvOverrides(overrides, env);
+  applyPipelineEnvOverrides(overrides, env);
+  applyGroupEnvOverrides(overrides, env);
+  applyToolingEnvOverrides(overrides, env);
 
   return {
     overrides,

@@ -43,6 +43,14 @@ export default [
     },
   },
   {
+    files: ['src/**/*.{ts,tsx,mts}', 'bin/**/*.{ts,tsx,mts}'],
+    rules: {
+      // Cyclomatic complexity gate for production code.
+      // Keep this high enough to be practical, and ratchet down over time.
+      complexity: ['error', 30],
+    },
+  },
+  {
     files: [
       'src/index.ts',
       'src/auth/index.ts',

@@ -45,6 +45,7 @@
   "license": "MIT",
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
@@ -63,6 +64,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "better-sqlite3": "^12.6.2",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
     "undici": "^7.16.0",

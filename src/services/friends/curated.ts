@@ -14,10 +14,7 @@ import {
 } from './match.js';
 import { getGroupProfile } from '../groups/index.js';
 import { getInstanceDetails } from '../instances/index.js';
-import {
-  callReadOperationParsed,
-  type ReadOperationData,
-} from '../api/client.js';
+import { callReadOperationParsed, type ReadOperationData } from '../api/client.js';
 
 export type FriendDetailsResult =
   | {
@@ -42,7 +39,7 @@ interface EnrichedLocationInfo extends LocationInfo {
   groupShortCode?: string;
 }
 
-type InstanceRecord = ReadOperationData<'getInstance'>;
+type InstanceRecord = NonNullable<ReadOperationData<'getInstance'>>;
 type WorldRecord = ReadOperationData<'getWorld'>;
 type GroupRecord = ReadOperationData<'getGroup'>;
 
@@ -71,9 +68,7 @@ function normalizeMaxPages(value: number | undefined, fallback: number): number 
   return typeof value === 'number' ? Math.floor(value) : fallback;
 }
 
-function normalizeStatusFilter(
-  value: string | string[] | undefined,
-): string[] | undefined {
+function normalizeStatusFilter(value: string | string[] | undefined): string[] | undefined {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     return trimmed ? [trimmed.toLowerCase()] : undefined;
@@ -91,7 +86,7 @@ function normalizeStatusFilter(
 function matchesStatusFilter(
   statusKey: string,
   isOffline: boolean,
-  filter: Set<string> | null,
+  filter: Set<string> | null
 ): boolean {
   if (!filter || filter.size === 0) return true;
   const normalized = statusKey.toLowerCase();
@@ -100,7 +95,9 @@ function matchesStatusFilter(
   return matchesOffline || matchesOnline || filter.has(normalized);
 }
 
-function buildInstanceSummary(instance: InstanceRecord | null | undefined): InstanceSummary | undefined {
+function buildInstanceSummary(
+  instance: InstanceRecord | null | undefined
+): InstanceSummary | undefined {
   if (!instance) return undefined;
   const region = instance.region ?? instance.photonRegion ?? undefined;
 
@@ -129,7 +126,9 @@ function buildInstanceSummary(instance: InstanceRecord | null | undefined): Inst
   };
 }
 
-function getInstanceUserCount(instance: InstanceRecord | InstanceSummary | null | undefined): number | null {
+function getInstanceUserCount(
+  instance: InstanceRecord | InstanceSummary | null | undefined
+): number | null {
   if (!instance) return null;
   const count =
     typeof instance.userCount === 'number'
@@ -151,18 +150,12 @@ function toInstanceErrorInfo(err: unknown): InstanceErrorInfo {
     return { message: err.message };
   }
   if (!err || typeof err !== 'object') return {};
-  const status =
-    'status' in err && typeof err.status === 'number' ? err.status : undefined;
-  const message =
-    'message' in err && typeof err.message === 'string' ? err.message : undefined;
+  const status = 'status' in err && typeof err.status === 'number' ? err.status : undefined;
+  const message = 'message' in err && typeof err.message === 'string' ? err.message : undefined;
   return { status, message };
 }
 
-function formatInstanceError(
-  worldId: string,
-  instanceId: string,
-  err: InstanceErrorInfo,
-): string {
+function formatInstanceError(worldId: string, instanceId: string, err: InstanceErrorInfo): string {
   const status = err.status;
   if (status === 401) {
     return `Not authorized to access instance ${worldId}:${instanceId}.`;
@@ -176,9 +169,7 @@ function formatInstanceError(
   return `Failed to fetch instance ${worldId}:${instanceId}.`;
 }
 
-function extractGroupInfo(
-  group: GroupRecord | null,
-): { name?: string; shortCode?: string } | null {
+function extractGroupInfo(group: GroupRecord | null): { name?: string; shortCode?: string } | null {
   if (!group) return null;
   const name = typeof group.name === 'string' ? group.name : undefined;
   const shortCode = typeof group.shortCode === 'string' ? group.shortCode : undefined;
@@ -212,7 +203,7 @@ export async function listFriends(input: FriendsListInput) {
   const pageSize = normalizePageSize(input.pageSize, DEFAULT_LIST_PAGE_SIZE);
   const maxPages = normalizeMaxPages(
     input.maxPages,
-    includeOffline ? DEFAULT_ALL_MAX_PAGES : DEFAULT_ONLINE_MAX_PAGES,
+    includeOffline ? DEFAULT_ALL_MAX_PAGES : DEFAULT_ONLINE_MAX_PAGES
   );
 
   const { friends, meta } = await fetchFriendsWithMeta({
@@ -230,32 +221,34 @@ export async function listFriends(input: FriendsListInput) {
   };
 }
 
-export async function getFriendsOverview(input: FriendsOverviewInput) {
-  const requestedIncludeOffline = input.includeOffline !== false;
-  const statusFilterValues =
-    normalizeStatusFilter(input.status) ??
-    normalizeStatusFilter(input.statusFilter);
-  const statusFilterSet = statusFilterValues
-    ? new Set(statusFilterValues)
-    : null;
-  const includeOffline =
-    requestedIncludeOffline || statusFilterSet?.has('offline') === true;
-  const minInstanceUserCount =
-    typeof input.minInstanceUserCount === 'number'
-      ? Math.max(0, Math.floor(input.minInstanceUserCount))
-      : undefined;
-  const instanceDetailLevel =
-    input.instanceDetailLevel === 'full' ? 'full' : 'summary';
-  const strictInstanceFilter = minInstanceUserCount !== undefined;
-  const pageSize = DEFAULT_LIST_PAGE_SIZE;
-  const maxPages = DEFAULT_ALL_MAX_PAGES;
+interface OverviewBuckets {
+  overallStatusCounts: Record<string, number>;
+  overallOnlineCount: number;
+  overallOfflineCount: number;
+  filteredOfflineStatusCounts: Record<string, number>;
+  filteredOfflineCount: number;
+  locations: Map<string, LocationBucket>;
+}
 
-  const { friends, meta } = await fetchFriendsWithMeta({
-    includeOffline,
-    pageSize,
-    maxPages,
-  });
+type OverviewLocationEntry = {
+  location: string;
+  instance?: InstanceRecord | InstanceSummary | null;
+  friendCount: number;
+  friends: FriendSummary[];
+} & EnrichedLocationInfo;
 
+function toFriendSummary(friend: FriendRecord, status: string | undefined): FriendSummary {
+  return {
+    userId: friend.id ? String(friend.id) : undefined,
+    displayName: friend.displayName ? String(friend.displayName) : undefined,
+    status,
+  };
+}
+
+function buildOverviewBuckets(
+  friends: FriendRecord[],
+  statusFilterSet: Set<string> | null
+): OverviewBuckets {
   const overallStatusCounts: Record<string, number> = {};
   const filteredOfflineStatusCounts: Record<string, number> = {};
   const locations = new Map<string, LocationBucket>();
@@ -268,52 +261,55 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
     const location = typeof friend.location === 'string' ? friend.location : undefined;
     const isOffline = status === 'offline' || location === 'offline';
     const statusKey = status ?? (isOffline ? 'offline' : 'unknown');
+
     overallStatusCounts[statusKey] = (overallStatusCounts[statusKey] ?? 0) + 1;
     if (isOffline) {
       overallOfflineCount += 1;
     } else {
       overallOnlineCount += 1;
     }
+
     if (!matchesStatusFilter(statusKey, isOffline, statusFilterSet)) {
       continue;
     }
     if (isOffline) {
       filteredOfflineCount += 1;
-      filteredOfflineStatusCounts[statusKey] =
-        (filteredOfflineStatusCounts[statusKey] ?? 0) + 1;
+      filteredOfflineStatusCounts[statusKey] = (filteredOfflineStatusCounts[statusKey] ?? 0) + 1;
       continue;
     }
 
     const locationKey = location ?? 'unknown';
+    const summary = toFriendSummary(friend, status);
     const existing = locations.get(locationKey);
     if (existing) {
-      existing.friends.push({
-        userId: friend.id ? String(friend.id) : undefined,
-        displayName: friend.displayName ? String(friend.displayName) : undefined,
-        status,
-      });
-    } else {
-      const info = parseLocation(locationKey) as EnrichedLocationInfo;
-      info.raw = locationKey;
-      locations.set(locationKey, {
-        info,
-        friends: [
-          {
-            userId: friend.id ? String(friend.id) : undefined,
-            displayName: friend.displayName ? String(friend.displayName) : undefined,
-            status,
-          },
-        ],
-      });
+      existing.friends.push(summary);
+      continue;
     }
+
+    const info = parseLocation(locationKey) as EnrichedLocationInfo;
+    info.raw = locationKey;
+    locations.set(locationKey, {
+      info,
+      friends: [summary],
+    });
   }
 
+  return {
+    overallStatusCounts,
+    overallOnlineCount,
+    overallOfflineCount,
+    filteredOfflineStatusCounts,
+    filteredOfflineCount,
+    locations,
+  };
+}
+
+function collectEnrichmentTargets(locations: Map<string, LocationBucket>): {
+  groupIds: Set<string>;
+  instanceTargets: { key: string; worldId: string; instanceId: string }[];
+} {
   const groupIds = new Set<string>();
-  const instanceTargets: {
-    key: string;
-    worldId: string;
-    instanceId: string;
-  }[] = [];
+  const instanceTargets: { key: string; worldId: string; instanceId: string }[] = [];
 
   for (const [key, bucket] of locations.entries()) {
     const { worldId, instanceId, groupId, type } = bucket.info;
@@ -322,6 +318,40 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
     }
     if (groupId) groupIds.add(groupId);
   }
+
+  return { groupIds, instanceTargets };
+}
+
+function applyInstanceEnrichment(
+  bucket: LocationBucket,
+  instance: InstanceRecord,
+  instanceDetailLevel: 'full' | 'summary'
+): void {
+  bucket.instance =
+    instanceDetailLevel === 'full' ? instance : (buildInstanceSummary(instance) ?? instance);
+
+  const worldName = instance.world?.name ?? undefined;
+  if (worldName) bucket.info.worldName = worldName;
+
+  const worldIdFromInstance = instance.worldId ?? instance.world?.id ?? undefined;
+  if (!bucket.info.worldId && worldIdFromInstance) {
+    bucket.info.worldId = worldIdFromInstance;
+  }
+
+  const region = instance.region ?? instance.photonRegion ?? undefined;
+  if (region) bucket.info.region = region;
+
+  const typeValue = instance.type ?? undefined;
+  if (typeValue) bucket.info.accessType = typeValue;
+}
+
+async function enrichLocationsWithInstances(input: {
+  locations: Map<string, LocationBucket>;
+  instanceTargets: { key: string; worldId: string; instanceId: string }[];
+  instanceDetailLevel: 'full' | 'summary';
+  strictInstanceFilter: boolean;
+}): Promise<void> {
+  const { locations, instanceTargets, instanceDetailLevel, strictInstanceFilter } = input;
 
   await Promise.all(
     instanceTargets.map(async ({ key, worldId, instanceId }) => {
@@ -333,35 +363,23 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
           }
           return;
         }
+
         const bucket = locations.get(key);
         if (!bucket) return;
-        bucket.instance =
-          instanceDetailLevel === 'full'
-            ? instance
-            : (buildInstanceSummary(instance) ?? instance);
-        if (instance) {
-          const worldName = instance.world?.name ?? undefined;
-          if (worldName) bucket.info.worldName = worldName;
-          const worldIdFromInstance = instance.worldId ?? instance.world?.id ?? undefined;
-          if (!bucket.info.worldId && worldIdFromInstance) {
-            bucket.info.worldId = worldIdFromInstance;
-          }
-          const region = instance.region ?? instance.photonRegion ?? undefined;
-          if (region) bucket.info.region = region;
-          const typeValue = instance.type ?? undefined;
-          if (typeValue) bucket.info.accessType = typeValue;
-        }
+        applyInstanceEnrichment(bucket, instance, instanceDetailLevel);
       } catch (err) {
         if (strictInstanceFilter) {
-          throw new Error(
-            formatInstanceError(worldId, instanceId, toInstanceErrorInfo(err)),
-          );
+          throw new Error(formatInstanceError(worldId, instanceId, toInstanceErrorInfo(err)));
         }
         // best-effort enrichment
       }
-    }),
+    })
   );
+}
 
+async function fetchGroupInfo(
+  groupIds: Set<string>
+): Promise<Map<string, { name?: string; shortCode?: string }>> {
   const groupInfo = new Map<string, { name?: string; shortCode?: string }>();
   await Promise.all(
     [...groupIds].map(async (groupId) => {
@@ -372,19 +390,27 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
       } catch {
         // best-effort enrichment
       }
-    }),
+    })
   );
+  return groupInfo;
+}
 
+function applyGroupEnrichment(
+  locations: Map<string, LocationBucket>,
+  groupInfo: Map<string, { name?: string; shortCode?: string }>
+): void {
   for (const bucket of locations.values()) {
     const groupId = bucket.info.groupId;
-    if (groupId && groupInfo.has(groupId)) {
-      const info = groupInfo.get(groupId);
-      bucket.info.groupName = info?.name;
-      bucket.info.groupShortCode = info?.shortCode;
-    }
+    if (!groupId) continue;
+    const info = groupInfo.get(groupId);
+    if (!info) continue;
+    bucket.info.groupName = info.name;
+    bucket.info.groupShortCode = info.shortCode;
   }
+}
 
-  const locationList = [...locations.entries()]
+function buildLocationList(locations: Map<string, LocationBucket>): OverviewLocationEntry[] {
+  return [...locations.entries()]
     .sort((a, b) => b[1].friends.length - a[1].friends.length)
     .map(([locationKey, bucket]) => ({
       location: locationKey,
@@ -393,32 +419,80 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
       friendCount: bucket.friends.length,
       friends: bucket.friends,
     }));
+}
 
-  const filteredLocations =
-    minInstanceUserCount !== undefined
-      ? locationList.filter((entry) => {
-          const count = getInstanceUserCount(entry.instance);
-          return count !== null && count >= minInstanceUserCount;
-        })
-      : locationList;
+function filterLocationsByMinUserCount(
+  locations: OverviewLocationEntry[],
+  minInstanceUserCount: number | undefined
+): OverviewLocationEntry[] {
+  if (minInstanceUserCount === undefined) return locations;
+  return locations.filter((entry) => {
+    const count = getInstanceUserCount(entry.instance);
+    return count !== null && count >= minInstanceUserCount;
+  });
+}
 
-  const filteredOnlineStatusCounts: Record<string, number> = {};
-  let filteredOnlineCount = 0;
-  for (const entry of filteredLocations) {
+function computeOnlineStatusCounts(locations: OverviewLocationEntry[]): {
+  onlineCount: number;
+  statusCounts: Record<string, number>;
+} {
+  const statusCounts: Record<string, number> = {};
+  let onlineCount = 0;
+  for (const entry of locations) {
     for (const friend of entry.friends) {
-      filteredOnlineCount += 1;
+      onlineCount += 1;
       const key = friend.status ?? 'unknown';
-      filteredOnlineStatusCounts[key] = (filteredOnlineStatusCounts[key] ?? 0) + 1;
+      statusCounts[key] = (statusCounts[key] ?? 0) + 1;
     }
   }
+  return { onlineCount, statusCounts };
+}
 
-  const statusCounts: Record<string, number> = { ...filteredOfflineStatusCounts };
-  for (const [key, count] of Object.entries(filteredOnlineStatusCounts)) {
+export async function getFriendsOverview(input: FriendsOverviewInput) {
+  const requestedIncludeOffline = input.includeOffline !== false;
+  const statusFilterValues =
+    normalizeStatusFilter(input.status) ?? normalizeStatusFilter(input.statusFilter);
+  const statusFilterSet = statusFilterValues ? new Set(statusFilterValues) : null;
+  const includeOffline = requestedIncludeOffline || statusFilterSet?.has('offline') === true;
+  const minInstanceUserCount =
+    typeof input.minInstanceUserCount === 'number'
+      ? Math.max(0, Math.floor(input.minInstanceUserCount))
+      : undefined;
+  const instanceDetailLevel = input.instanceDetailLevel === 'full' ? 'full' : 'summary';
+  const strictInstanceFilter = minInstanceUserCount !== undefined;
+  const pageSize = DEFAULT_LIST_PAGE_SIZE;
+  const maxPages = DEFAULT_ALL_MAX_PAGES;
+
+  const { friends, meta } = await fetchFriendsWithMeta({
+    includeOffline,
+    pageSize,
+    maxPages,
+  });
+
+  const buckets = buildOverviewBuckets(friends, statusFilterSet);
+  const { groupIds, instanceTargets } = collectEnrichmentTargets(buckets.locations);
+
+  await enrichLocationsWithInstances({
+    locations: buckets.locations,
+    instanceTargets,
+    instanceDetailLevel,
+    strictInstanceFilter,
+  });
+
+  const groupInfo = await fetchGroupInfo(groupIds);
+  applyGroupEnrichment(buckets.locations, groupInfo);
+
+  const locationList = buildLocationList(buckets.locations);
+  const filteredLocations = filterLocationsByMinUserCount(locationList, minInstanceUserCount);
+  const online = computeOnlineStatusCounts(filteredLocations);
+
+  const statusCounts: Record<string, number> = { ...buckets.filteredOfflineStatusCounts };
+  for (const [key, count] of Object.entries(online.statusCounts)) {
     statusCounts[key] = (statusCounts[key] ?? 0) + count;
   }
 
-  const filteredTotal = filteredOnlineCount + filteredOfflineCount;
-  const overallTotal = overallOnlineCount + overallOfflineCount;
+  const filteredTotal = online.onlineCount + buckets.filteredOfflineCount;
+  const overallTotal = buckets.overallOnlineCount + buckets.overallOfflineCount;
 
   return {
     includeOffline,
@@ -426,20 +500,20 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
     minInstanceUserCount,
     instanceDetailLevel,
     totalFriends: filteredTotal,
-    onlineCount: filteredOnlineCount,
-    offlineCount: filteredOfflineCount,
+    onlineCount: online.onlineCount,
+    offlineCount: buckets.filteredOfflineCount,
     statusCounts,
     totals: {
       all: {
         totalFriends: overallTotal,
-        onlineCount: overallOnlineCount,
-        offlineCount: overallOfflineCount,
-        statusCounts: overallStatusCounts,
+        onlineCount: buckets.overallOnlineCount,
+        offlineCount: buckets.overallOfflineCount,
+        statusCounts: buckets.overallStatusCounts,
       },
       filtered: {
         totalFriends: filteredTotal,
-        onlineCount: filteredOnlineCount,
-        offlineCount: filteredOfflineCount,
+        onlineCount: online.onlineCount,
+        offlineCount: buckets.filteredOfflineCount,
         statusCounts,
       },
     },
@@ -448,9 +522,7 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
   };
 }
 
-export async function getFriendDetails(
-  input: FriendDetailsInput,
-): Promise<FriendDetailsResult> {
+export async function getFriendDetails(input: FriendDetailsInput): Promise<FriendDetailsResult> {
   const name = typeof input.name === 'string' ? input.name : undefined;
   const userId = typeof input.userId === 'string' ? input.userId : undefined;
   const includeOffline = input.includeOffline !== false;
@@ -470,15 +542,12 @@ export async function getFriendDetails(
     };
   }
 
-  const location = parseLocation(
-    typeof target.location === 'string' ? target.location : undefined,
-  );
+  const location = parseLocation(typeof target.location === 'string' ? target.location : undefined);
   let instance: InstanceSummary | null = null;
   let world: WorldRecord | null = null;
   let group: GroupRecord | null = null;
 
-  const resolvedUserId =
-    typeof target.id === 'string' ? target.id : userId ? String(userId) : '';
+  const resolvedUserId = typeof target.id === 'string' ? target.id : userId ? String(userId) : '';
   if (!resolvedUserId) {
     return {
       ok: false,
@@ -496,7 +565,7 @@ export async function getFriendDetails(
   if (location.type === 'instance' && location.worldId && location.instanceId) {
     const { instance: instanceResult } = await getInstanceDetails(
       location.worldId,
-      location.instanceId,
+      location.instanceId
     );
     if (instanceResult) {
       instance = buildInstanceSummary(instanceResult) ?? null;

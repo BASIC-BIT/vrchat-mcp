@@ -1,4 +1,5 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { getConfig } from '../../config/index.js';
 import { shapeReadData } from '../../core/readTools.js';
 import {
   WorldFavoritesInputSchema,
@@ -17,6 +18,7 @@ import {
   resolveWorldId,
   searchWorlds,
 } from '../../services/worlds/index.js';
+import { getVrcxWorldMemo } from '../../services/vrcx/index.js';
 import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
@@ -57,7 +59,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -90,7 +92,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -122,11 +124,28 @@ export function registerCuratedWorldTools(server: McpServer): void {
           maxArrayLength: args?.maxArrayLength,
         });
 
+        let vrcxMemo: { editedAt: string | null; memo: string | null } | undefined;
+        try {
+          const config = getConfig();
+          const memoResult = await getVrcxWorldMemo({
+            enabled: config.vrcx.enabled,
+            databasePath: config.vrcx.databasePath,
+            worldDbPath: config.vrcx.worldDbPath,
+            worldId: resolved.worldId,
+          });
+          if (memoResult.ok && (memoResult.memo || memoResult.editedAt)) {
+            vrcxMemo = { editedAt: memoResult.editedAt, memo: memoResult.memo };
+          }
+        } catch {
+          // ignore VRCX errors; world profile should still work
+        }
+
         const payload = {
           worldId: resolved.worldId,
           resolvedBy: resolved.resolvedBy,
           stale: result.stale,
           world: shaped,
+          vrcxMemo,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),
@@ -136,7 +155,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -176,6 +195,6 @@ export function registerCuratedWorldTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 }

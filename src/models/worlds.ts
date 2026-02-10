@@ -106,6 +106,12 @@ export const WorldProfileOutputSchema = z.object({
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
   world: schemas.World.partial(),
+  vrcxMemo: z
+    .object({
+      editedAt: z.string().nullable(),
+      memo: z.string().nullable(),
+    })
+    .optional(),
 });
 
 export const WorldInstancesOverviewOutputSchema = z.object({
@@ -146,9 +152,7 @@ type WorldSummarySource = Partial<z.infer<typeof schemas.World>> & {
   favoriteId?: string;
 };
 
-export function buildWorldSummary(
-  world: WorldSummarySource,
-): WorldSummary | null {
+export function buildWorldSummary(world: WorldSummarySource): WorldSummary | null {
   const worldId = world.id ?? undefined;
   const name = world.name ?? undefined;
   if (!worldId || !name) return null;
@@ -160,13 +164,9 @@ export function buildWorldSummary(
     authorName: world.authorName ?? undefined,
     capacity: typeof world.capacity === 'number' ? Math.floor(world.capacity) : undefined,
     visits: typeof world.visits === 'number' ? Math.floor(world.visits) : undefined,
-    favorites:
-      typeof world.favorites === 'number' ? Math.floor(world.favorites) : undefined,
+    favorites: typeof world.favorites === 'number' ? Math.floor(world.favorites) : undefined,
     heat: typeof world.heat === 'number' ? Math.floor(world.heat) : undefined,
-    popularity:
-      typeof world.popularity === 'number'
-        ? Math.floor(world.popularity)
-        : undefined,
+    popularity: typeof world.popularity === 'number' ? Math.floor(world.popularity) : undefined,
     releaseStatus: world.releaseStatus ?? undefined,
     updatedAt: world.updated_at ?? undefined,
     tags: tags && tags.length > 0 ? tags : undefined,

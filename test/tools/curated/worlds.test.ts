@@ -5,9 +5,19 @@ import { registerCuratedWorldTools } from '../../../src/tools/curated/worlds.js'
 import { cacheManager } from '../../../src/services/cache.js';
 import { callReadOperationParsed } from '../../../src/services/api/client.js';
 
+vi.mock('../../../src/services/vrcx/index.js', () => ({
+  getVrcxWorldMemo: vi.fn().mockResolvedValue({
+    ok: false,
+    status: 'disabled',
+    reason: 'disabled',
+  }),
+}));
+
+import { getVrcxWorldMemo } from '../../../src/services/vrcx/index.js';
+
 vi.mock('../../../src/services/api/client.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>(
-    '../../../src/services/api/client.js',
+    '../../../src/services/api/client.js'
   );
   return {
     ...actual,
@@ -43,7 +53,7 @@ describe('curated world tools', () => {
     expect(callReadOperationParsed).toHaveBeenCalledWith(
       'searchWorlds',
       expect.objectContaining({ search: 'mock' }),
-      expect.any(Object),
+      expect.any(Object)
     );
     expect(result).toMatchObject({
       structuredContent: {
@@ -91,7 +101,7 @@ describe('curated world tools', () => {
     expect(callReadOperationParsed).toHaveBeenCalledWith(
       'getFavoritedWorlds',
       expect.any(Object),
-      expect.any(Object),
+      expect.any(Object)
     );
     expect(result).toMatchObject({
       structuredContent: {
@@ -124,6 +134,30 @@ describe('curated world tools', () => {
         worldId: 'wrld_1',
         resolvedBy: 'id',
         world: { id: 'wrld_1', name: 'Mock World' },
+      },
+    });
+  });
+
+  it('includes VRCX memo in world profile when available', async () => {
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
+      data: { id: 'wrld_1', name: 'Mock World', description: 'Hidden' },
+    });
+    vi.mocked(getVrcxWorldMemo).mockResolvedValue({
+      ok: true,
+      worldId: 'wrld_1',
+      editedAt: '2026-01-01T00:00:00.000Z',
+      memo: 'memo',
+    });
+
+    const server = new FakeServer();
+    registerCuratedWorldTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_world_profile');
+    const result = await tool!.handler({ worldId: 'wrld_1', fields: ['id', 'name'] });
+
+    expect(result).toMatchObject({
+      structuredContent: {
+        worldId: 'wrld_1',
+        vrcxMemo: { memo: 'memo' },
       },
     });
   });

@@ -57,10 +57,16 @@ export const UserProfileInputSchema = UserShapeSchema.extend({
   groupOffset: z.number().int().min(0).optional(),
 });
 
+export const VrcxMemoSchema = z.object({
+  editedAt: z.string().nullable(),
+  memo: z.string().nullable(),
+});
+
 export const UserProfileOutputSchema = z.object({
   userId: schemas.UserID,
   user: schemas.User.partial(),
   groups: UserGroupsOutputSchema.optional(),
+  vrcxMemo: VrcxMemoSchema.optional(),
 });
 
 export const ProfileUpdateInputSchema = schemas.UpdateUserRequest.pick({

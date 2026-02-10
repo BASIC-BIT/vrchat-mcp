@@ -1,12 +1,418 @@
 # Tool Catalog (generated)
 
-Generated: 2025-12-24T09:42:23.102Z
+Generated: 2026-02-09T08:34:13.195Z
 
 Spec: VRChat API Documentation (1.20.5)
 
 This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).
 
 ## Curated tools
+### vrchat_avatar_profile
+Get an avatar profile by avatarId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compact": {
+      "type": "boolean"
+    },
+    "maxArrayLength": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "avatarId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "avatarId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "avatar": {
+      "type": "object",
+      "properties": {
+        "acknowledgements": {
+          "type": "string"
+        },
+        "assetUrl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assetUrlObject": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0
+        },
+        "featured": {
+          "default": false,
+          "type": "boolean"
+        },
+        "highestPrice": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "id": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "listingDate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lock": {
+          "type": "boolean"
+        },
+        "lowestPrice": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "performance": {
+          "type": "object",
+          "properties": {
+            "android": {
+              "type": "string"
+            },
+            "android-sort": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "ios": {
+              "type": "string"
+            },
+            "ios-sort": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "standalonewindows": {
+              "type": "string"
+            },
+            "standalonewindows-sort": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": {}
+        },
+        "productId": {
+          "type": "string"
+        },
+        "publishedListings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "imageId": {
+                "type": "string"
+              },
+              "listingId": {
+                "type": "string"
+              },
+              "listingType": {
+                "type": "string"
+              },
+              "priceTokens": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": {}
+          }
+        },
+        "releaseStatus": {
+          "default": "public",
+          "type": "string",
+          "enum": [
+            "all",
+            "hidden",
+            "private",
+            "public"
+          ]
+        },
+        "searchable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "styles": {
+          "type": "object",
+          "properties": {
+            "primary": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "secondary": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "supplementary": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": {}
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "thumbnailImageUrl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unityPackageUrl": {
+          "type": "string"
+        },
+        "unityPackageUrlObject": {
+          "type": "object",
+          "properties": {
+            "unityPackageUrl": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {}
+        },
+        "unityPackages": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assetUrl": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "assetUrlObject": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {}
+              },
+              "assetVersion": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "id": {
+                "type": "string"
+              },
+              "impostorUrl": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "impostorizerVersion": {
+                "type": "string"
+              },
+              "performanceRating": {
+                "type": "string",
+                "enum": [
+                  "Excellent",
+                  "Good",
+                  "Medium",
+                  "None",
+                  "Poor",
+                  "VeryPoor"
+                ]
+              },
+              "platform": {
+                "type": "string"
+              },
+              "pluginUrl": {
+                "type": "string"
+              },
+              "pluginUrlObject": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {}
+              },
+              "scanStatus": {
+                "type": "string"
+              },
+              "unitySortNumber": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "unityVersion": {
+                "default": "5.3.4p1",
+                "type": "string",
+                "minLength": 1
+              },
+              "variant": {
+                "type": "string"
+              },
+              "worldSignature": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "assetVersion",
+              "id",
+              "platform",
+              "unityVersion"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "version": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": {}
+    },
+    "vrcxMemo": {
+      "type": "object",
+      "properties": {
+        "editedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "editedAt",
+        "memo"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "avatarId",
+    "stale",
+    "avatar"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_event_create
 Create a group calendar event. (write)
 
@@ -17,71 +423,30 @@ Input schema:
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "groupId": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "description": {
-      "type": "string",
-      "minLength": 1
-    },
-    "category": {
-      "type": "string",
-      "minLength": 1
-    },
-    "startsAt": {
-      "type": "string",
-      "minLength": 1
-    },
-    "endsAt": {
-      "type": "string",
-      "minLength": 1
-    },
     "accessType": {
+      "default": "group",
       "type": "string",
       "enum": [
         "group",
         "public"
       ]
     },
-    "sendCreationNotification": {
-      "type": "boolean"
-    },
-    "imageId": {
+    "category": {
       "type": "string"
     },
-    "tags": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "closeInstanceAfterEndMinutes": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
     },
-    "languages": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "description": {
+      "type": "string",
+      "minLength": 1
     },
-    "platforms": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "roleIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "parentId": {
-      "type": "string"
-    },
-    "isDraft": {
-      "type": "boolean"
+    "endsAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
     },
     "featured": {
       "type": "boolean"
@@ -96,24 +461,70 @@ Input schema:
       "minimum": -9007199254740991,
       "maximum": 9007199254740991
     },
-    "closeInstanceAfterEndMinutes": {
-      "type": "integer",
-      "minimum": -9007199254740991,
-      "maximum": 9007199254740991
+    "imageId": {
+      "type": "string"
+    },
+    "isDraft": {
+      "type": "boolean"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parentId": {
+      "type": "string"
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "roleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sendCreationNotification": {
+      "default": false,
+      "type": "boolean"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
     },
     "usesInstanceOverflow": {
       "type": "boolean"
+    },
+    "groupId": {
+      "type": "string"
     }
   },
   "required": [
-    "groupId",
-    "title",
-    "description",
+    "accessType",
     "category",
+    "description",
+    "endsAt",
+    "sendCreationNotification",
     "startsAt",
-    "endsAt"
+    "title",
+    "groupId"
   ],
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
@@ -568,74 +979,22 @@ Input schema:
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "groupId": {
+    "category": {
       "type": "string"
     },
-    "calendarId": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string",
-      "minLength": 1
+    "closeInstanceAfterEndMinutes": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
     },
     "description": {
       "type": "string",
       "minLength": 1
     },
-    "category": {
-      "type": "string",
-      "minLength": 1
-    },
-    "startsAt": {
-      "type": "string",
-      "minLength": 1
-    },
     "endsAt": {
       "type": "string",
-      "minLength": 1
-    },
-    "accessType": {
-      "type": "string",
-      "enum": [
-        "group",
-        "public"
-      ]
-    },
-    "sendCreationNotification": {
-      "type": "boolean"
-    },
-    "imageId": {
-      "type": "string"
-    },
-    "tags": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "languages": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "platforms": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "roleIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "parentId": {
-      "type": "string"
-    },
-    "isDraft": {
-      "type": "boolean"
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
     },
     "featured": {
       "type": "boolean"
@@ -650,20 +1009,67 @@ Input schema:
       "minimum": -9007199254740991,
       "maximum": 9007199254740991
     },
-    "closeInstanceAfterEndMinutes": {
-      "type": "integer",
-      "minimum": -9007199254740991,
-      "maximum": 9007199254740991
+    "imageId": {
+      "type": "string"
+    },
+    "isDraft": {
+      "type": "boolean"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parentId": {
+      "type": "string"
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "roleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sendCreationNotification": {
+      "default": false,
+      "type": "boolean"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
     },
     "usesInstanceOverflow": {
       "type": "boolean"
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "calendarId": {
+      "type": "string"
     }
   },
   "required": [
     "groupId",
     "calendarId"
   ],
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
@@ -1983,18 +2389,18 @@ Output schema:
               ]
             },
             "region": {
-              "default": "us",
               "type": "string",
               "enum": [
                 "eu",
                 "jp",
                 "unknown",
                 "us",
-                "use"
+                "use",
+                "usw",
+                "usx"
               ]
             },
             "photonRegion": {
-              "default": "us",
               "type": "string",
               "enum": [
                 "eu",
@@ -3007,7 +3413,132 @@ Output schema:
     },
     "friends": {
       "type": "array",
-      "items": {}
+      "items": {
+        "type": "object",
+        "properties": {
+          "bio": {
+            "type": "string"
+          },
+          "bioLinks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "currentAvatarImageUrl": {
+            "type": "string"
+          },
+          "currentAvatarTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "currentAvatarThumbnailImageUrl": {
+            "type": "string"
+          },
+          "developerType": {
+            "default": "none",
+            "type": "string",
+            "enum": [
+              "internal",
+              "moderator",
+              "none",
+              "trusted"
+            ]
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "friendKey": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "isFriend": {
+            "type": "boolean"
+          },
+          "last_activity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_login": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_mobile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_platform": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "profilePicOverride": {
+            "type": "string"
+          },
+          "profilePicOverrideThumbnail": {
+            "type": "string"
+          },
+          "status": {
+            "default": "offline",
+            "type": "string",
+            "enum": [
+              "active",
+              "ask me",
+              "busy",
+              "join me",
+              "offline"
+            ]
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "userIcon": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      }
     }
   },
   "required": [
@@ -3344,18 +3875,18 @@ Output schema:
                     ]
                   },
                   "region": {
-                    "default": "us",
                     "type": "string",
                     "enum": [
                       "eu",
                       "jp",
                       "unknown",
                       "us",
-                      "use"
+                      "use",
+                      "usw",
+                      "usx"
                     ]
                   },
                   "photonRegion": {
-                    "default": "us",
                     "type": "string",
                     "enum": [
                       "eu",
@@ -6465,7 +6996,14 @@ Input schema:
       "type": "string"
     },
     "ownerId": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "groupAccessType": {
       "type": "string",
@@ -6482,7 +7020,14 @@ Input schema:
       }
     },
     "displayName": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "inviteOnly": {
       "type": "boolean"
@@ -6497,22 +7042,52 @@ Input schema:
       "type": "boolean"
     },
     "instancePersistenceEnabled": {
-      "type": "boolean"
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "closedAt": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
     },
     "hardClose": {
       "type": "boolean"
     },
     "contentSettings": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
+      "properties": {
+        "drones": {
+          "default": true,
+          "type": "boolean"
+        },
+        "emoji": {
+          "default": true,
+          "type": "boolean"
+        },
+        "pedestals": {
+          "default": true,
+          "type": "boolean"
+        },
+        "prints": {
+          "default": true,
+          "type": "boolean"
+        },
+        "props": {
+          "default": true,
+          "type": "boolean"
+        },
+        "stickers": {
+          "default": true,
+          "type": "boolean"
+        }
       },
-      "additionalProperties": {
-        "type": "boolean"
-      }
+      "additionalProperties": {}
     }
   },
   "required": [
@@ -6607,18 +7182,18 @@ Output schema:
               ]
             },
             "region": {
-              "default": "us",
               "type": "string",
               "enum": [
                 "eu",
                 "jp",
                 "unknown",
                 "us",
-                "use"
+                "use",
+                "usw",
+                "usx"
               ]
             },
             "photonRegion": {
-              "default": "us",
               "type": "string",
               "enum": [
                 "eu",
@@ -6725,8 +7300,9 @@ Output schema:
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "details": {
-          "default": "{}",
-          "type": "string"
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
         },
         "id": {
           "type": "string",
@@ -6737,10 +7313,6 @@ Output schema:
         },
         "receiverUserId": {
           "type": "string"
-        },
-        "seen": {
-          "default": false,
-          "type": "boolean"
         },
         "senderUserId": {
           "type": "string"
@@ -6825,8 +7397,9 @@ Output schema:
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "details": {
-          "default": "{}",
-          "type": "string"
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
         },
         "id": {
           "type": "string",
@@ -6837,10 +7410,6 @@ Output schema:
         },
         "receiverUserId": {
           "type": "string"
-        },
-        "seen": {
-          "default": false,
-          "type": "boolean"
         },
         "senderUserId": {
           "type": "string"
@@ -7255,6 +7824,36 @@ Output schema:
         "groups"
       ],
       "additionalProperties": false
+    },
+    "vrcxMemo": {
+      "type": "object",
+      "properties": {
+        "editedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "editedAt",
+        "memo"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -7391,7 +7990,9 @@ Output schema:
           "seen": {
             "type": "boolean"
           },
-          "details": {}
+          "details": {
+            "$ref": "#/$defs/__schema0"
+          }
         },
         "required": [
           "id"
@@ -7408,7 +8009,40 @@ Output schema:
     "stale",
     "notifications"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    }
+  }
 }
 ```
 
@@ -8722,6 +9356,36 @@ Output schema:
         "groups"
       ],
       "additionalProperties": false
+    },
+    "vrcxMemo": {
+      "type": "object",
+      "properties": {
+        "editedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "editedAt",
+        "memo"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -9186,6 +9850,36 @@ Output schema:
         }
       },
       "additionalProperties": {}
+    },
+    "vrcxMemo": {
+      "type": "object",
+      "properties": {
+        "editedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "editedAt",
+        "memo"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -9603,6 +10297,876 @@ Output schema:
     "total",
     "stale",
     "worlds"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_db_status
+Detect VRCX on this machine and report database path, active user, and DB version (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "db": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "config",
+            "vrcx_json",
+            "default",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "exists",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "worldDb": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "config",
+            "vrcx_json",
+            "default",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "exists",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "vrcxJson": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "exists"
+      ],
+      "additionalProperties": false
+    },
+    "activeUserId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "userPrefix": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "databaseVersion": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "enabled",
+    "available",
+    "db",
+    "worldDb",
+    "vrcxJson",
+    "activeUserId",
+    "userPrefix",
+    "databaseVersion"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_gamelog_world_visits_recent
+List recent world visits from the VRCX gamelog (read-only). This reflects your local VRChat/VRCX activity history. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "daysBack": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rowId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "worldId": {
+            "type": "string"
+          },
+          "worldName": {
+            "type": "string"
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "accessType": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "timeMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "rowId",
+          "createdAt",
+          "location"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "limit",
+    "total",
+    "truncated",
+    "visits"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_instances_recent
+List recent instance sessions for your active VRCX account (read-only). Derived from VRCX gamelog OnPlayerLeft entries. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "daysBack": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "activeUserId": {
+      "type": "string"
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rowId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "location": {
+            "type": "string"
+          },
+          "joinTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "leaveTime": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "worldId": {
+            "type": "string"
+          },
+          "worldName": {
+            "type": "string"
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "accessType": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rowId",
+          "location",
+          "joinTime",
+          "leaveTime",
+          "durationMs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "limit",
+    "total",
+    "truncated",
+    "sessions"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_memos_avatar_get
+Get a VRCX avatar memo by avatarId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "avatarId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    },
+    "editedAt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "memo": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "avatarId",
+    "editedAt",
+    "memo"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_memos_user_get
+Get a VRCX user memo by userId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "userId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "editedAt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "memo": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "userId",
+    "editedAt",
+    "memo"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_memos_world_get
+Get a VRCX world memo by worldId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "worldId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "worldId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "worldId": {
+      "type": "string"
+    },
+    "editedAt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "memo": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "worldId",
+    "editedAt",
+    "memo"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_user_relationship_sessions
+List recent shared instance sessions with a user from VRCX logs (read-only). Use this for deep history; results are limited by default. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "resolvedBy": {
+      "type": "string",
+      "enum": [
+        "userId",
+        "displayName",
+        "none"
+      ]
+    },
+    "resolvedUserId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rowId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "location": {
+            "type": "string"
+          },
+          "joinTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "leaveTime": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "worldId": {
+            "type": "string"
+          },
+          "worldName": {
+            "type": "string"
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "accessType": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rowId",
+          "location",
+          "joinTime",
+          "leaveTime",
+          "durationMs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "query",
+    "resolvedBy",
+    "resolvedUserId",
+    "total",
+    "limit",
+    "truncated",
+    "sessions"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrcx_user_relationship_summary
+Summarize your relationship history with a user using VRCX logs: time spent, join count, and last seen (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "resolvedBy": {
+      "type": "string",
+      "enum": [
+        "userId",
+        "displayName",
+        "none"
+      ]
+    },
+    "resolvedUserId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "displayName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lastSeen": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "joinCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "timeSpentMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "timeSpentHours": {
+      "type": "number",
+      "minimum": 0
+    },
+    "hasData": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "query",
+    "resolvedBy",
+    "resolvedUserId",
+    "displayName",
+    "lastSeen",
+    "joinCount",
+    "timeSpentMs",
+    "timeSpentHours",
+    "hasData"
   ],
   "additionalProperties": false
 }

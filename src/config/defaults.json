@@ -49,5 +49,10 @@
   },
   "generatedWriteTools": {
     "disable": false
+  },
+  "vrcx": {
+    "enabled": true,
+    "databasePath": "",
+    "worldDbPath": ""
   }
 }
