@@ -522,6 +522,87 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
   };
 }
 
+function buildFriendNotFoundResult(
+  name: string | undefined,
+  userId: string | undefined
+): FriendDetailsResult {
+  const reason = name
+    ? `No friend found with displayName "${name}".`
+    : `No friend found with userId "${userId}".`;
+  return {
+    ok: false,
+    reason,
+    status: 'not_found',
+    nextSteps: ['vrchat_friends_search'],
+  };
+}
+
+function buildFriendUserIdNotFoundResult(): FriendDetailsResult {
+  return {
+    ok: false,
+    reason: 'Unable to resolve friend userId.',
+    status: 'not_found',
+    nextSteps: ['vrchat_friends_search'],
+  };
+}
+
+function resolveFriendUserId(
+  friend: FriendRecord,
+  fallbackUserId: string | undefined
+): string | null {
+  if (typeof friend.id === 'string' && friend.id) return friend.id;
+  if (fallbackUserId) return String(fallbackUserId);
+  return null;
+}
+
+async function enrichLocationWithInstanceContext(
+  location: EnrichedLocationInfo
+): Promise<{ instance: InstanceSummary | null; world: WorldRecord | null }> {
+  if (location.type !== 'instance' || !location.worldId || !location.instanceId) {
+    return { instance: null, world: null };
+  }
+
+  const { instance: instanceResult } = await getInstanceDetails(
+    location.worldId,
+    location.instanceId
+  );
+  if (!instanceResult) {
+    return { instance: null, world: null };
+  }
+
+  const instance = buildInstanceSummary(instanceResult) ?? null;
+  let world: WorldRecord | null = null;
+  if (instanceResult.world) {
+    world = instanceResult.world ?? null;
+    const worldName = instanceResult.world.name;
+    if (typeof worldName === 'string' && worldName) {
+      location.worldName = worldName;
+    }
+  }
+
+  const region = instanceResult.region ?? instanceResult.photonRegion ?? undefined;
+  if (region) location.region = region;
+  const typeValue = instanceResult.type ?? undefined;
+  if (typeValue) location.accessType = typeValue;
+
+  return { instance, world };
+}
+
+async function enrichLocationWithGroupContext(
+  location: EnrichedLocationInfo
+): Promise<GroupRecord | null> {
+  if (!location.groupId) return null;
+
+  const groupResult = await getGroupProfile(location.groupId);
+  const group = groupResult.group ?? null;
+  const groupInfo = extractGroupInfo(group);
+  if (groupInfo) {
+    location.groupName = groupInfo.name;
+    location.groupShortCode = groupInfo.shortCode;
+  }
+  return group;
+}
+
 export async function getFriendDetails(input: FriendDetailsInput): Promise<FriendDetailsResult> {
   const name = typeof input.name === 'string' ? input.name : undefined;
   const userId = typeof input.userId === 'string' ? input.userId : undefined;
@@ -530,68 +611,22 @@ export async function getFriendDetails(input: FriendDetailsInput): Promise<Frien
   const friends = await fetchFriends({ includeOffline });
   const target = findFriendByNameOrId(friends, { name, userId });
 
-  if (!target) {
-    const reason = name
-      ? `No friend found with displayName "${name}".`
-      : `No friend found with userId "${userId}".`;
-    return {
-      ok: false,
-      reason,
-      status: 'not_found',
-      nextSteps: ['vrchat_friends_search'],
-    };
-  }
+  if (!target) return buildFriendNotFoundResult(name, userId);
 
-  const location = parseLocation(typeof target.location === 'string' ? target.location : undefined);
-  let instance: InstanceSummary | null = null;
-  let world: WorldRecord | null = null;
-  let group: GroupRecord | null = null;
+  const location = parseLocation(
+    typeof target.location === 'string' ? target.location : undefined
+  ) as EnrichedLocationInfo;
 
-  const resolvedUserId = typeof target.id === 'string' ? target.id : userId ? String(userId) : '';
-  if (!resolvedUserId) {
-    return {
-      ok: false,
-      reason: 'Unable to resolve friend userId.',
-      status: 'not_found',
-      nextSteps: ['vrchat_friends_search'],
-    };
-  }
+  const resolvedUserId = resolveFriendUserId(target, userId);
+  if (!resolvedUserId) return buildFriendUserIdNotFoundResult();
 
   const profileResult = await callReadOperationParsed('getUser', {
     userId: resolvedUserId,
   });
   const profile = profileResult.data ?? {};
 
-  if (location.type === 'instance' && location.worldId && location.instanceId) {
-    const { instance: instanceResult } = await getInstanceDetails(
-      location.worldId,
-      location.instanceId
-    );
-    if (instanceResult) {
-      instance = buildInstanceSummary(instanceResult) ?? null;
-      if (instanceResult.world) {
-        world = instanceResult.world ?? null;
-        const worldName = instanceResult.world.name;
-        if (typeof worldName === 'string' && worldName) {
-          (location as EnrichedLocationInfo).worldName = worldName;
-        }
-      }
-      const region = instanceResult.region ?? instanceResult.photonRegion ?? undefined;
-      if (region) (location as EnrichedLocationInfo).region = region;
-      const typeValue = instanceResult.type ?? undefined;
-      if (typeValue) (location as EnrichedLocationInfo).accessType = typeValue;
-    }
-  }
-
-  if (location.groupId) {
-    const groupResult = await getGroupProfile(location.groupId);
-    group = groupResult.group ?? null;
-    const groupInfo = extractGroupInfo(group);
-    if (groupInfo) {
-      (location as EnrichedLocationInfo).groupName = groupInfo.name;
-      (location as EnrichedLocationInfo).groupShortCode = groupInfo.shortCode;
-    }
-  }
+  const { instance, world } = await enrichLocationWithInstanceContext(location);
+  const group = await enrichLocationWithGroupContext(location);
 
   return {
     ok: true,

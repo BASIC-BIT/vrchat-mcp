@@ -47,7 +47,7 @@ export default [
     rules: {
       // Cyclomatic complexity gate for production code.
       // Keep this high enough to be practical, and ratchet down over time.
-      complexity: ['error', 30],
+      complexity: ['error', 20],
     },
   },
   {

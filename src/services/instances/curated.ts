@@ -8,8 +8,9 @@ export type InstanceCreatePreparation =
 
 type InstanceRecord = WriteOperationData<'createInstance'>;
 
-export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreatePreparation {
-  let ownerId: string | null = null;
+type OwnerIdResolution = { ok: true; ownerId: string | null } | { ok: false; reason: string };
+
+function resolveOwnerId(input: InstanceCreateInput): OwnerIdResolution {
   if (input.type === 'group') {
     const groupId = input.groupId ?? input.ownerId ?? null;
     if (!groupId) {
@@ -19,27 +20,16 @@ export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreat
     if (!allowed.ok) {
       return { ok: false, reason: allowed.reason };
     }
-    ownerId = groupId;
-  } else {
-    if (input.groupId) {
-      return { ok: false, reason: 'groupId is only valid when type=group.' };
-    }
-    if (input.ownerId) ownerId = input.ownerId;
+    return { ok: true, ownerId: groupId };
   }
 
-  const request: InstanceCreateRequest = {
-    worldId: input.worldId,
-    type: input.type,
-    region: input.region,
-  };
-
-  if (ownerId) request.ownerId = ownerId;
-  if (input.type === 'group') {
-    if (input.groupAccessType) request.groupAccessType = input.groupAccessType;
-    if (input.roleIds) request.roleIds = input.roleIds;
-  } else if (input.groupAccessType || input.roleIds) {
-    return { ok: false, reason: 'groupAccessType and roleIds only apply to group instances.' };
+  if (input.groupId) {
+    return { ok: false, reason: 'groupId is only valid when type=group.' };
   }
+  return { ok: true, ownerId: input.ownerId ?? null };
+}
+
+function applyOptionalFields(request: InstanceCreateRequest, input: InstanceCreateInput): void {
   if (input.displayName) request.displayName = input.displayName;
   if (input.inviteOnly !== undefined) request.inviteOnly = input.inviteOnly;
   if (input.canRequestInvite !== undefined) request.canRequestInvite = input.canRequestInvite;
@@ -51,11 +41,45 @@ export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreat
   if (input.closedAt) request.closedAt = input.closedAt;
   if (input.hardClose !== undefined) request.hardClose = input.hardClose;
   if (input.contentSettings) request.contentSettings = input.contentSettings;
+}
 
+function applyGroupFields(
+  request: InstanceCreateRequest,
+  input: InstanceCreateInput
+): InstanceCreatePreparation {
+  if (input.type === 'group') {
+    if (input.groupAccessType) request.groupAccessType = input.groupAccessType;
+    if (input.roleIds) request.roleIds = input.roleIds;
+    return { ok: true, request };
+  }
+  if (input.groupAccessType || input.roleIds) {
+    return { ok: false, reason: 'groupAccessType and roleIds only apply to group instances.' };
+  }
   return { ok: true, request };
 }
 
-export async function createInstance(request: InstanceCreateRequest): Promise<InstanceRecord | null> {
+export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreatePreparation {
+  const ownerResult = resolveOwnerId(input);
+  if (!ownerResult.ok) return ownerResult;
+
+  const request: InstanceCreateRequest = {
+    worldId: input.worldId,
+    type: input.type,
+    region: input.region,
+  };
+
+  if (ownerResult.ownerId) request.ownerId = ownerResult.ownerId;
+
+  const groupFieldsResult = applyGroupFields(request, input);
+  if (!groupFieldsResult.ok) return groupFieldsResult;
+
+  applyOptionalFields(request, input);
+  return { ok: true, request };
+}
+
+export async function createInstance(
+  request: InstanceCreateRequest
+): Promise<InstanceRecord | null> {
   const result = await callWriteOperationParsed('createInstance', undefined, request);
   return result.data ?? null;
 }

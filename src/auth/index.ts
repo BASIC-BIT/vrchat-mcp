@@ -51,7 +51,10 @@ class AuthManager {
     return this.jar.getCookieString(url);
   }
 
-  async getCookieValue(name: string, url = 'https://api.vrchat.cloud'): Promise<string | undefined> {
+  async getCookieValue(
+    name: string,
+    url = 'https://api.vrchat.cloud'
+  ): Promise<string | undefined> {
     const cookies = await this.jar.getCookies(url);
     const match = cookies.find((cookie) => cookie.key === name);
     return match?.value;
@@ -92,7 +95,10 @@ class AuthManager {
 
   async startLoginServer(): Promise<{ url: string; token: string }> {
     if (this.server) {
-      return { url: `http://127.0.0.1:${this.port}/?token=${this.serverToken}`, token: this.serverToken! };
+      return {
+        url: `http://127.0.0.1:${this.port}/?token=${this.serverToken}`,
+        token: this.serverToken!,
+      };
     }
     const token = randomBytes(16).toString('hex');
     this.serverToken = token;
@@ -131,11 +137,12 @@ class AuthManager {
       error?: string;
       stage?: 'initial' | 'totp' | 'emailOtp';
       usernameHint?: string;
-    } = {},
+    } = {}
   ) {
     const stage = options.stage ?? 'initial';
     const showOtp = stage === 'totp' || stage === 'emailOtp';
-    const otpLabel = stage === 'emailOtp' ? 'TOTP (auth app, if prompted)' : 'TOTP (auth app, required)';
+    const otpLabel =
+      stage === 'emailOtp' ? 'TOTP (auth app, if prompted)' : 'TOTP (auth app, required)';
     const emailLabel = stage === 'emailOtp' ? 'Email OTP (required)' : 'Email OTP (if prompted)';
     const usernameHint = options.usernameHint ? ` (using ${options.usernameHint})` : '';
     const error = options.error;
@@ -154,62 +161,82 @@ class AuthManager {
     </body></html>`);
   }
 
-  private async handleRequest(req: IncomingMessage, res: ServerResponse) {
+  private getValidatedRequestContext(
+    req: IncomingMessage,
+    res: ServerResponse
+  ): { urlObj: URL; token: string } | null {
     if (!this.serverToken || !this.port) {
       res.statusCode = 503;
       res.end('Auth server not ready');
-      return;
+      return null;
     }
+
     const urlObj = new URL(req.url ?? '/', `http://127.0.0.1:${this.port}`);
     const token = urlObj.searchParams.get('token');
     if (!token || token !== this.serverToken) {
       res.statusCode = 403;
       res.end('Invalid token');
+      return null;
+    }
+
+    return { urlObj, token };
+  }
+
+  private async handleSubmit(req: IncomingMessage, res: ServerResponse, token: string) {
+    const params = await this.parseBody(req);
+    const usernameInput = params.get('username') ?? '';
+    const passwordInput = params.get('password') ?? '';
+    const totp = params.get('totp') ?? undefined;
+    const emailOtp = params.get('emailOtp') ?? undefined;
+
+    if (usernameInput || passwordInput) {
+      this.pendingCreds = { username: usernameInput, password: passwordInput };
+    }
+
+    const creds = this.pendingCreds ?? { username: usernameInput, password: passwordInput };
+    if (!creds.username || !creds.password) {
+      this.renderForm(res, token, { error: 'Username and password are required.' });
       return;
     }
+
+    try {
+      await this.performLogin(creds.username, creds.password, totp, emailOtp);
+      this.loggedIn = true;
+      this.pendingCreds = null;
+      await this.persist();
+      this.emitStatus();
+      res.statusCode = 200;
+      res.setHeader('content-type', 'text/html; charset=utf-8');
+      res.end('<p>Login successful. You can close this window.</p>');
+    } catch (err) {
+      this.loggedIn = false;
+      if (err instanceof AuthError && err.kind && err.kind !== 'unknown') {
+        this.renderForm(res, token, {
+          error: err.message,
+          stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
+          usernameHint: creds.username,
+        });
+        return;
+      }
+      this.clearCookies();
+      this.pendingCreds = null;
+      const msg = err instanceof Error ? err.message : 'Login failed';
+      this.renderForm(res, token, { error: msg });
+    }
+  }
+
+  private async handleRequest(req: IncomingMessage, res: ServerResponse) {
+    const context = this.getValidatedRequestContext(req, res);
+    if (!context) return;
+    const { urlObj, token } = context;
 
     if (req.method === 'GET' && urlObj.pathname === '/') {
       this.renderForm(res, token);
       return;
     }
+
     if (req.method === 'POST' && urlObj.pathname === '/submit') {
-      const params = await this.parseBody(req);
-      const usernameInput = params.get('username') ?? '';
-      const passwordInput = params.get('password') ?? '';
-      const totp = params.get('totp') ?? undefined;
-      const emailOtp = params.get('emailOtp') ?? undefined;
-      if (usernameInput || passwordInput) {
-        this.pendingCreds = { username: usernameInput, password: passwordInput };
-      }
-      const creds = this.pendingCreds ?? { username: usernameInput, password: passwordInput };
-      if (!creds.username || !creds.password) {
-        this.renderForm(res, token, { error: 'Username and password are required.' });
-        return;
-      }
-      try {
-        await this.performLogin(creds.username, creds.password, totp, emailOtp);
-        this.loggedIn = true;
-        this.pendingCreds = null;
-        await this.persist();
-        this.emitStatus();
-        res.statusCode = 200;
-        res.setHeader('content-type', 'text/html; charset=utf-8');
-        res.end('<p>Login successful. You can close this window.</p>');
-      } catch (err) {
-        this.loggedIn = false;
-        if (err instanceof AuthError && err.kind && err.kind !== 'unknown') {
-          this.renderForm(res, token, {
-            error: err.message,
-            stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
-            usernameHint: creds.username,
-          });
-          return;
-        }
-        this.clearCookies();
-        this.pendingCreds = null;
-        const msg = err instanceof Error ? err.message : 'Login failed';
-        this.renderForm(res, token, { error: msg });
-      }
+      await this.handleSubmit(req, res, token);
       return;
     }
 
@@ -240,7 +267,7 @@ class AuthManager {
         if (!totp) {
           throw new AuthError(
             '2FA required (TOTP). Enter the code from your authenticator app.',
-            'totp',
+            'totp'
           );
         }
         const res2 = await fetch('https://api.vrchat.cloud/api/1/auth/twofactorauth/totp/verify', {
@@ -264,7 +291,7 @@ class AuthManager {
         if (!emailOtp) {
           throw new AuthError(
             '2FA required (Email OTP). Check your email and enter the code.',
-            'emailOtp',
+            'emailOtp'
           );
         }
         const res2 = await fetch(
@@ -277,7 +304,7 @@ class AuthManager {
               'user-agent': 'vrchat-mcp-login',
             },
             body: JSON.stringify({ code: emailOtp }),
-          },
+          }
         );
         const setCookies2 = res2.headers.getSetCookie?.() ?? [];
         await this.setCookiesFromResponse('https://api.vrchat.cloud', setCookies2);
