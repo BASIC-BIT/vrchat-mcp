@@ -38,13 +38,7 @@ export interface FriendChangeSnapshot {
 }
 
 const MAX_BUFFER = getConfig().pipeline.changeBuffer;
-const FRIEND_STATUS_VALUES = new Set([
-  'active',
-  'offline',
-  'ask me',
-  'busy',
-  'join me',
-]);
+const FRIEND_STATUS_VALUES = new Set(['active', 'offline', 'ask me', 'busy', 'join me']);
 
 function isFriendStatus(value: string): value is NonNullable<FriendRecord['status']> {
   return FRIEND_STATUS_VALUES.has(value);
@@ -79,6 +73,36 @@ function getStringArrayField(record: JsonObject, key: string): string[] | undefi
   return items.length ? items : undefined;
 }
 
+function assignFriendStringField(
+  payload: Partial<FriendRecord>,
+  user: JsonObject,
+  key: Extract<keyof FriendRecord, string>
+): void {
+  const value = getStringField(user, key);
+  if (!value) return;
+  (payload as Record<string, unknown>)[key] = value;
+}
+
+function assignFriendStringArrayField(
+  payload: Partial<FriendRecord>,
+  user: JsonObject,
+  key: Extract<keyof FriendRecord, string>
+): void {
+  const value = getStringArrayField(user, key);
+  if (!value) return;
+  (payload as Record<string, unknown>)[key] = value;
+}
+
+function assignFriendBooleanField(
+  payload: Partial<FriendRecord>,
+  user: JsonObject,
+  key: Extract<keyof FriendRecord, string>
+): void {
+  const value = getBooleanField(user, key);
+  if (value === undefined) return;
+  (payload as Record<string, unknown>)[key] = value;
+}
+
 function extractUserId(content: JsonObject): string | undefined {
   const userId =
     getStringField(content, 'userId') ??
@@ -97,56 +121,35 @@ function extractUser(content: JsonObject): Partial<FriendRecord> | undefined {
   const user = content.user;
   if (!isJsonObject(user)) return undefined;
   const payload: Partial<FriendRecord> = {};
-  const id = getStringField(user, 'id');
-  if (id) payload.id = id;
-  const displayName = getStringField(user, 'displayName');
-  if (displayName) payload.displayName = displayName;
+
+  assignFriendStringField(payload, user, 'id');
+  assignFriendStringField(payload, user, 'displayName');
   const status = getStringField(user, 'status');
   if (status && isFriendStatus(status)) payload.status = status;
-  const statusDescription = getStringField(user, 'statusDescription');
-  if (statusDescription) payload.statusDescription = statusDescription;
-  const statusEmoji = getStringField(user, 'statusEmoji');
-  if (statusEmoji) payload.statusEmoji = statusEmoji;
-  const location = getStringField(user, 'location');
-  if (location) payload.location = location;
-  const platform = getStringField(user, 'platform');
-  if (platform) payload.platform = platform;
-  const userIcon = getStringField(user, 'userIcon');
-  if (userIcon) payload.userIcon = userIcon;
-  const profilePicOverride = getStringField(user, 'profilePicOverride');
-  if (profilePicOverride) payload.profilePicOverride = profilePicOverride;
-  const currentAvatarImageUrl = getStringField(user, 'currentAvatarImageUrl');
-  if (currentAvatarImageUrl) payload.currentAvatarImageUrl = currentAvatarImageUrl;
-  const currentAvatarThumbnailImageUrl = getStringField(
-    user,
-    'currentAvatarThumbnailImageUrl',
-  );
-  if (currentAvatarThumbnailImageUrl) {
-    payload.currentAvatarThumbnailImageUrl = currentAvatarThumbnailImageUrl;
-  }
-  const last_login = getStringField(user, 'last_login');
-  if (last_login) payload.last_login = last_login;
-  const last_platform = getStringField(user, 'last_platform');
-  if (last_platform) payload.last_platform = last_platform;
-  const bio = getStringField(user, 'bio');
-  if (bio) payload.bio = bio;
-  const bioLinks = getStringArrayField(user, 'bioLinks');
-  if (bioLinks) payload.bioLinks = bioLinks;
-  const tags = getStringArrayField(user, 'tags');
-  if (tags) payload.tags = tags;
-  const friendKey = getStringField(user, 'friendKey');
-  if (friendKey) payload.friendKey = friendKey;
-  const imageUrl = getStringField(user, 'imageUrl');
-  if (imageUrl) payload.imageUrl = imageUrl;
-  const isFriend = getBooleanField(user, 'isFriend');
-  if (isFriend !== undefined) payload.isFriend = isFriend;
+
+  assignFriendStringField(payload, user, 'statusDescription');
+  assignFriendStringField(payload, user, 'statusEmoji');
+  assignFriendStringField(payload, user, 'location');
+  assignFriendStringField(payload, user, 'platform');
+  assignFriendStringField(payload, user, 'userIcon');
+  assignFriendStringField(payload, user, 'profilePicOverride');
+  assignFriendStringField(payload, user, 'currentAvatarImageUrl');
+  assignFriendStringField(payload, user, 'currentAvatarThumbnailImageUrl');
+  assignFriendStringField(payload, user, 'last_login');
+  assignFriendStringField(payload, user, 'last_platform');
+  assignFriendStringField(payload, user, 'bio');
+  assignFriendStringArrayField(payload, user, 'bioLinks');
+  assignFriendStringArrayField(payload, user, 'tags');
+  assignFriendStringField(payload, user, 'friendKey');
+  assignFriendStringField(payload, user, 'imageUrl');
+  assignFriendBooleanField(payload, user, 'isFriend');
+
   return Object.keys(payload).length > 0 ? payload : undefined;
 }
 
 function extractLocation(content: JsonObject): string | undefined {
   const location =
-    getStringField(content, 'location') ??
-    getStringField(content, 'travelingToLocation');
+    getStringField(content, 'location') ?? getStringField(content, 'travelingToLocation');
   return location;
 }
 
@@ -165,7 +168,7 @@ function buildFriendRecord(
     platform?: string;
     canRequestInvite?: boolean;
   },
-  type: FriendEventType,
+  type: FriendEventType
 ): FriendRecord {
   const base: FriendRecord = {
     ...(existing ?? {}),
@@ -200,7 +203,7 @@ function applyFriendEventToList(
     platform?: string;
     canRequestInvite?: boolean;
   },
-  includeOffline: boolean,
+  includeOffline: boolean
 ): { friends: FriendRecord[]; changed: boolean } {
   const userId = payload.userId;
   const index = friends.findIndex((friend) => String(friend.id ?? '') === userId);
@@ -241,7 +244,9 @@ export class FriendsChangeStore {
   private events: FriendChange[] = [];
   private sequence = 0;
 
-  record(change: Omit<FriendChange, 'sequence' | 'receivedAt'> & { receivedAt?: string }): FriendChange {
+  record(
+    change: Omit<FriendChange, 'sequence' | 'receivedAt'> & { receivedAt?: string }
+  ): FriendChange {
     const next: FriendChange = {
       ...change,
       sequence: (this.sequence += 1),
@@ -257,9 +262,7 @@ export class FriendsChangeStore {
   snapshot(after = 0, limit = MAX_BUFFER): FriendChangeSnapshot {
     const filtered = this.events.filter((event) => event.sequence > after);
     const limited = filtered.slice(0, Math.max(1, limit));
-    const changedIds = Array.from(
-      new Set(limited.map((event) => event.userId).filter(Boolean)),
-    );
+    const changedIds = Array.from(new Set(limited.map((event) => event.userId).filter(Boolean)));
     const nextAfter = limited.length ? limited[limited.length - 1].sequence : after;
     return {
       after,
@@ -280,8 +283,7 @@ export function recordFriendChange(event: FriendPipelineEvent): FriendChange | n
   if (!userId) return null;
   const user = extractUser(content);
   const location = extractLocation(content);
-  const displayName =
-    typeof user?.displayName === 'string' ? user.displayName : undefined;
+  const displayName = typeof user?.displayName === 'string' ? user.displayName : undefined;
   const platform = getStringField(content, 'platform');
   const canRequestInvite = getBooleanField(content, 'canRequestInvite');
 
@@ -309,11 +311,15 @@ export function applyFriendEventToCache(event: FriendPipelineEvent): number {
     canRequestInvite: getBooleanField(content, 'canRequestInvite'),
   };
 
-  const updateEntry =
-    (includeOffline: boolean) => (value: FriendsFetchResult) => {
+  const updateEntry = (includeOffline: boolean) => (value: FriendsFetchResult) => {
     if (!value || typeof value !== 'object') return undefined;
     if (!Array.isArray(value.friends)) return undefined;
-    const result = applyFriendEventToList(value.friends, event.type as FriendEventType, payload, includeOffline);
+    const result = applyFriendEventToList(
+      value.friends,
+      event.type as FriendEventType,
+      payload,
+      includeOffline
+    );
     if (!result.changed) return undefined;
     return {
       ...value,

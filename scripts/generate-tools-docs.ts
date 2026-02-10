@@ -14,6 +14,7 @@ import {
 } from '../src/core/generatedToolSkips.js';
 import { registerAuthTools } from '../src/tools/auth.js';
 import { registerCacheTools } from '../src/tools/cache.js';
+import { registerCuratedAvatarTools } from '../src/tools/curated/avatars.js';
 import { registerCuratedEventTools } from '../src/tools/curated/events.js';
 import { registerCuratedFriendTools } from '../src/tools/curated/friends.js';
 import { registerCuratedGroupTools } from '../src/tools/curated/groups.js';
@@ -22,6 +23,7 @@ import { registerCuratedInviteTools } from '../src/tools/curated/invites.js';
 import { registerCuratedNotificationTools } from '../src/tools/curated/notifications.js';
 import { registerCuratedStatusTools } from '../src/tools/curated/status.js';
 import { registerCuratedUserTools } from '../src/tools/curated/users.js';
+import { registerCuratedVrcxTools } from '../src/tools/curated/vrcx/index.js';
 import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
 import { registerSystemReadTools } from '../src/tools/read/system.js';
@@ -187,6 +189,7 @@ async function main() {
   const info = spec.info ?? {};
 
   const collector = new ToolCollector();
+  registerCuratedAvatarTools(collector.createServer('curated'));
   registerCuratedFriendTools(collector.createServer('curated'));
   registerCuratedEventTools(collector.createServer('curated'));
   registerCuratedGroupTools(collector.createServer('curated'));
@@ -196,6 +199,7 @@ async function main() {
   registerCuratedStatusTools(collector.createServer('curated'));
   registerCuratedUserTools(collector.createServer('curated'));
   registerCuratedWorldTools(collector.createServer('curated'));
+  registerCuratedVrcxTools(collector.createServer('curated'));
   registerCacheTools(collector.createServer('cache'));
   registerSystemReadTools(collector.createServer('system'));
   registerAuthTools(collector.createServer('auth'));

@@ -34,7 +34,10 @@
     "generate:test-schemas": "openapi-zod-client test/fixtures/spec.yaml -o test/generated/mock-schemas.ts -t scripts/templates/openapi-schemas.hbs --export-schemas -p .prettierrc.json && tsx scripts/postprocess-schemas.ts test/generated/mock-schemas.ts",
     "generate:tools-docs": "tsx scripts/generate-tools-docs.ts",
     "mcpo": "uvx mcpo --port 8000 --api-key \"top-secret\" -- npx tsx src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "metrics:scc": "tsx scripts/metrics/scc.ts",
+    "metrics:lizard": "tsx scripts/metrics/lizard.ts",
+    "metrics": "npm run metrics:scc && npm run metrics:lizard"
   },
   "engines": {
     "node": ">=20"
@@ -48,6 +51,7 @@
   "license": "MIT",
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
@@ -55,6 +59,7 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-sonarjs": "^3.0.6",
     "globals": "^16.5.0",
     "mock-json-schema": "^1.1.2",
     "openapi-backend": "^5.15.0",
@@ -66,6 +71,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "better-sqlite3": "^12.6.2",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
     "undici": "^7.16.0",

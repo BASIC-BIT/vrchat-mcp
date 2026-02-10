@@ -32,11 +32,7 @@ export interface CallInput {
 export class CallError extends Error {
   status?: number;
   payload?: Record<string, unknown>;
-  constructor(
-    message: string,
-    status?: number,
-    payload?: Record<string, unknown>,
-  ) {
+  constructor(message: string, status?: number, payload?: Record<string, unknown>) {
     super(message);
     this.name = 'CallError';
     this.status = status;
@@ -156,33 +152,44 @@ function buildErrorPayload(params: {
   return payload;
 }
 
-export async function callOperation(input: CallInput): Promise<CallResult> {
-  const { operationId, params = {}, body, options } = input;
-  const index = await getSpecIndex();
+function getOperationOrThrow(
+  index: Awaited<ReturnType<typeof getSpecIndex>>,
+  operationId: string
+): OperationDef {
   const op = index.operations.get(operationId);
   if (!op) {
     throw new CallError(`Unknown operationId: ${operationId}`);
   }
+  return op;
+}
+
+function enforceOperationPolicy(
+  op: OperationDef,
+  params: Record<string, unknown>,
+  body: unknown
+): void {
   if (!ALLOW_WRITES && op.method !== 'GET') {
     throw new CallError(
-      `Write operations are disabled (blocked ${op.method}). Enable writes in config (writes.allow).`,
+      `Write operations are disabled (blocked ${op.method}). Enable writes in config (writes.allow).`
     );
   }
-  if (op.method !== 'GET' && isGroupOperation(op)) {
-    const groupId = extractGroupId(params, body);
-    if (groupId) {
-      const allowed = checkGroupAllowed(groupId);
-      if (!allowed.ok) {
-        throw new CallError(allowed.reason);
-      }
-    }
-  }
 
-  const url = buildUrl(op, params);
-  if (options?.dryRun) {
-    return { url, dryRun: true };
+  if (op.method === 'GET') return;
+  if (!isGroupOperation(op)) return;
+  const groupId = extractGroupId(params, body);
+  if (!groupId) return;
+  const allowed = checkGroupAllowed(groupId);
+  if (!allowed.ok) {
+    throw new CallError(allowed.reason);
   }
+}
 
+async function buildRequestInit(
+  op: OperationDef,
+  url: string,
+  params: Record<string, unknown>,
+  body: unknown
+): Promise<RequestInit> {
   const headers = buildHeaders(op, params);
   const cookieHeader = await authManager.getCookieHeader(url);
   if (cookieHeader) headers.set('cookie', cookieHeader);
@@ -197,50 +204,91 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
     headers.set('content-type', 'application/json');
   }
 
+  return init;
+}
+
+function parseResponseText(text: string): unknown {
   try {
-    const res = await fetch(url, init);
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return text;
+  }
+}
+
+function headersToRecord(headers: Headers): Record<string, string> {
+  const headersRecord: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    headersRecord[key] = value;
+  });
+  return headersRecord;
+}
+
+async function storeCookiesFromResponse(url: string, res: Response): Promise<void> {
+  const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
+  if (!setCookieHeaders.length) return;
+  await authManager.setCookiesFromResponse(url, setCookieHeaders);
+}
+
+function buildNonOkCallError(params: { status: number; url: string; data: unknown }): CallError {
+  const isClientError = params.status >= 400 && params.status < 500;
+  const errorMessage = isClientError ? extractErrorMessage(params.data) : undefined;
+  const message = errorMessage
+    ? `VRChat API returned ${params.status}: ${errorMessage}`
+    : `VRChat API returned ${params.status}`;
+  const payload = isClientError
+    ? buildErrorPayload({
+        status: params.status,
+        url: params.url,
+        data: params.data,
+        message: errorMessage,
+      })
+    : undefined;
+  return new CallError(message, params.status, payload);
+}
+
+async function executeRequestWithHandling(input: {
+  operationId: string;
+  url: string;
+  init: RequestInit;
+  options?: CallOptions;
+}): Promise<CallResult> {
+  try {
+    const res = await fetch(input.url, input.init);
     const text = await res.text();
-    let data: unknown = text;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      // keep text as-is
-    }
+    const data = parseResponseText(text);
+    const headersRecord = headersToRecord(res.headers);
+    await storeCookiesFromResponse(input.url, res);
 
-    const headersRecord: Record<string, string> = {};
-    res.headers.forEach((value, key) => {
-      headersRecord[key] = value;
-    });
-
-    // capture set-cookie
-    const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
-    if (setCookieHeaders.length) {
-      await authManager.setCookiesFromResponse(url, setCookieHeaders);
-    }
-
-    if (options?.rawResponse) {
-      return { url, status: res.status, headers: headersRecord, data };
+    if (input.options?.rawResponse) {
+      return { url: input.url, status: res.status, headers: headersRecord, data };
     }
 
     if (!res.ok) {
-      const isClientError = res.status >= 400 && res.status < 500;
-      const errorMessage = isClientError ? extractErrorMessage(data) : undefined;
-      const message = errorMessage
-        ? `VRChat API returned ${res.status}: ${errorMessage}`
-        : `VRChat API returned ${res.status}`;
-      const payload = isClientError
-        ? buildErrorPayload({ status: res.status, url, data, message: errorMessage })
-        : undefined;
-      throw new CallError(message, res.status, payload);
+      throw buildNonOkCallError({ status: res.status, url: input.url, data });
     }
 
-    return { url, data };
+    return { url: input.url, data };
   } catch (err) {
     logger.error('callOperation failed', {
-      operationId,
+      operationId: input.operationId,
       message: (err as Error).message,
     });
     if (err instanceof CallError) throw err;
     throw new CallError('Network or fetch error');
   }
+}
+
+export async function callOperation(input: CallInput): Promise<CallResult> {
+  const { operationId, params = {}, body, options } = input;
+  const index = await getSpecIndex();
+  const op = getOperationOrThrow(index, operationId);
+  enforceOperationPolicy(op, params, body);
+
+  const url = buildUrl(op, params);
+  if (options?.dryRun) {
+    return { url, dryRun: true };
+  }
+
+  const init = await buildRequestInit(op, url, params, body);
+  return executeRequestWithHandling({ operationId, url, init, options });
 }

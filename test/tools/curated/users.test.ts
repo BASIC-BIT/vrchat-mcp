@@ -11,14 +11,60 @@ vi.mock('../../../src/services/users/index.js', () => ({
   updateProfile: vi.fn(),
 }));
 
+vi.mock('../../../src/config/index.js', () => ({
+  getConfig: vi.fn(() => ({
+    vrcx: { enabled: true, databasePath: '', worldDbPath: '' },
+  })),
+}));
+
+vi.mock('../../../src/services/vrcx/index.js', () => ({
+  getVrcxUserMemo: vi.fn().mockResolvedValue({
+    ok: false,
+    status: 'disabled',
+    reason: 'disabled',
+  }),
+}));
+
 vi.mock('../../../src/core/readTools.js', () => ({
   shapeReadData: vi.fn((value: unknown) => value),
 }));
 
-import { listUserGroups, resolveUserId, resolveUserProfile, updateProfile } from '../../../src/services/users/index.js';
+import {
+  listUserGroups,
+  resolveUserId,
+  resolveUserProfile,
+  updateProfile,
+} from '../../../src/services/users/index.js';
 import { shapeReadData } from '../../../src/core/readTools.js';
+import { getVrcxUserMemo } from '../../../src/services/vrcx/index.js';
 
 describe('curated user tools', () => {
+  it('includes VRCX memo when available', async () => {
+    vi.mocked(resolveUserProfile).mockResolvedValue({
+      ok: true,
+      user: { id: 'usr_1', displayName: 'Tester' },
+      userId: 'usr_1',
+    });
+    vi.mocked(getVrcxUserMemo).mockResolvedValue({
+      ok: true,
+      userId: 'usr_1',
+      editedAt: '2026-01-01T00:00:00.000Z',
+      memo: 'hello',
+    });
+
+    const server = new FakeServer();
+    registerCuratedUserTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_user_profile');
+    const result = await tool!.handler({ userId: 'usr_1' });
+
+    expect(result).toMatchObject({
+      structuredContent: {
+        userId: 'usr_1',
+        vrcxMemo: { memo: 'hello' },
+      },
+    });
+  });
+
   it('returns user groups with pagination meta', async () => {
     vi.mocked(resolveUserId).mockResolvedValue({ ok: true, userId: 'usr_1' });
     vi.mocked(listUserGroups).mockResolvedValue({
@@ -95,7 +141,7 @@ describe('curated user tools', () => {
 
     expect(vi.mocked(shapeReadData)).toHaveBeenCalledWith(
       { id: 'usr_1', displayName: 'Tester', friends: ['usr_2'] },
-      expect.objectContaining({ fields: DEFAULT_SELF_FIELDS }),
+      expect.objectContaining({ fields: DEFAULT_SELF_FIELDS })
     );
     expect(result).toMatchObject({
       structuredContent: {

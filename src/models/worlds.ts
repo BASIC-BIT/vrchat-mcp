@@ -106,6 +106,12 @@ export const WorldProfileOutputSchema = z.object({
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
   world: schemas.World.partial(),
+  vrcxMemo: z
+    .object({
+      editedAt: z.string().nullable(),
+      memo: z.string().nullable(),
+    })
+    .optional(),
 });
 
 export const WorldInstancesOverviewOutputSchema = z.object({
@@ -146,30 +152,38 @@ type WorldSummarySource = Partial<z.infer<typeof schemas.World>> & {
   favoriteId?: string;
 };
 
-export function buildWorldSummary(
-  world: WorldSummarySource,
-): WorldSummary | null {
+function toOptionalInt(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.floor(value);
+}
+
+function toOptionalStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const tags = value.filter(
+    (entry): entry is string => typeof entry === 'string' && entry.length > 0
+  );
+  return tags.length > 0 ? tags : undefined;
+}
+
+export function buildWorldSummary(world: WorldSummarySource): WorldSummary | null {
   const worldId = world.id ?? undefined;
   const name = world.name ?? undefined;
   if (!worldId || !name) return null;
-  const tags = Array.isArray(world.tags) ? world.tags : undefined;
+
+  const tags = toOptionalStringArray(world.tags);
   return {
     worldId,
     name,
     authorId: world.authorId ?? undefined,
     authorName: world.authorName ?? undefined,
-    capacity: typeof world.capacity === 'number' ? Math.floor(world.capacity) : undefined,
-    visits: typeof world.visits === 'number' ? Math.floor(world.visits) : undefined,
-    favorites:
-      typeof world.favorites === 'number' ? Math.floor(world.favorites) : undefined,
-    heat: typeof world.heat === 'number' ? Math.floor(world.heat) : undefined,
-    popularity:
-      typeof world.popularity === 'number'
-        ? Math.floor(world.popularity)
-        : undefined,
+    capacity: toOptionalInt(world.capacity),
+    visits: toOptionalInt(world.visits),
+    favorites: toOptionalInt(world.favorites),
+    heat: toOptionalInt(world.heat),
+    popularity: toOptionalInt(world.popularity),
     releaseStatus: world.releaseStatus ?? undefined,
     updatedAt: world.updated_at ?? undefined,
-    tags: tags && tags.length > 0 ? tags : undefined,
+    tags,
     favoriteGroup: world.favoriteGroup ?? undefined,
     favoriteId: world.favoriteId ?? undefined,
   };

@@ -15,6 +15,20 @@ export interface ReadToolOptions {
   };
 }
 
+interface PageInfo {
+  pages: number;
+  items: number;
+  pageSize: number;
+  offsetStart: number;
+  truncated: boolean;
+}
+
+interface ReadOperationResult {
+  data: unknown;
+  url?: string;
+  page?: PageInfo;
+}
+
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 function pickFields(value: JsonValue, fields: string[]): JsonValue {
@@ -92,30 +106,83 @@ async function supportsOffsetPagination(operationId: string): Promise<boolean> {
   return hasOffset && hasN;
 }
 
-export async function callReadOperation(
+function shouldPaginate(page: ReadToolOptions['page'] | undefined): boolean {
+  return Boolean(page && page.enabled !== false);
+}
+
+function canContinuePaging(
+  pages: number,
+  maxPages: number,
+  items: number,
+  maxItems: number
+): boolean {
+  return pages < maxPages && items < maxItems;
+}
+
+function reachedPagingLimit(
+  pages: number,
+  maxPages: number,
+  items: number,
+  maxItems: number
+): boolean {
+  return pages >= maxPages || items >= maxItems;
+}
+
+function shouldMarkTruncatedAfterLoop(input: {
+  truncated: boolean;
+  pages: number;
+  maxPages: number;
+  items: number;
+  maxItems: number;
+  lastBatchSize: number;
+  pageSize: number;
+}): boolean {
+  if (input.truncated) return false;
+  if (input.lastBatchSize < input.pageSize) return false;
+  return reachedPagingLimit(input.pages, input.maxPages, input.items, input.maxItems);
+}
+
+function buildReadResponse(input: {
+  data: unknown;
+  options?: ReadToolOptions;
+  url?: string;
+  page?: PageInfo;
+}): ReadOperationResult {
+  if (input.options?.includeMeta) {
+    const out: ReadOperationResult = { data: input.data, url: input.url };
+    if (input.page) out.page = input.page;
+    return out;
+  }
+
+  const out: ReadOperationResult = { data: input.data };
+  if (input.page) out.page = input.page;
+  return out;
+}
+
+async function callReadOperationSingle(
   operationId: string,
   params: Record<string, unknown>,
-  options?: ReadToolOptions,
-): Promise<{ data: unknown; url?: string; page?: { pages: number; items: number; pageSize: number; offsetStart: number; truncated: boolean } }> {
+  options?: ReadToolOptions
+): Promise<ReadOperationResult> {
+  const result = await callOperation({ operationId, params });
+  const data = shapeReadData(result.data, options);
+  return buildReadResponse({ data, options, url: result.url });
+}
+
+async function callReadOperationPaginated(
+  operationId: string,
+  params: Record<string, unknown>,
+  options?: ReadToolOptions
+): Promise<ReadOperationResult> {
   const page = options?.page;
-  const paginate = Boolean(page && page.enabled !== false);
-  const normalizedParams = normalizeParams(params);
-
-  if (!paginate) {
-    const result = await callOperation({ operationId, params: normalizedParams });
-    const data = shapeReadData(result.data, options);
-    if (options?.includeMeta) {
-      return { data, url: result.url };
-    }
-    return { data };
-  }
-
   const supported = await supportsOffsetPagination(operationId);
   if (!supported) {
-    throw new Error(`Pagination not supported for ${operationId}; requires offset + n query params.`);
+    throw new Error(
+      `Pagination not supported for ${operationId}; requires offset + n query params.`
+    );
   }
 
-  const defaults = getPaginationParams(normalizedParams);
+  const defaults = getPaginationParams(params);
   const pageSize = page?.size ?? defaults.pageSize;
   const maxPages = page?.maxPages ?? defaults.maxPages;
   const maxItems =
@@ -129,46 +196,67 @@ export async function callReadOperation(
   let firstUrl: string | undefined;
   let lastBatchSize = 0;
 
-  while (pages < maxPages && collected.length < maxItems) {
+  while (canContinuePaging(pages, maxPages, collected.length, maxItems)) {
     const pageParams = { ...defaults.baseParams, offset, n: pageSize };
     const result = await callOperation({ operationId, params: pageParams });
     firstUrl ??= result.url;
+
     if (!Array.isArray(result.data)) {
       const data = shapeReadData(result.data, options);
-      if (options?.includeMeta) {
-        return { data, url: result.url };
-      }
-      return { data };
+      return buildReadResponse({ data, options, url: result.url });
     }
+
     const batch = result.data as JsonValue[];
     lastBatchSize = batch.length;
     collected.push(...batch);
     pages += 1;
-    if (batch.length < pageSize) {
-      break;
-    }
-    if (pages >= maxPages || collected.length >= maxItems) {
+
+    if (batch.length < pageSize) break;
+
+    if (reachedPagingLimit(pages, maxPages, collected.length, maxItems)) {
       truncated = true;
       break;
     }
+
     offset += pageSize;
   }
 
-  if (!truncated && (pages >= maxPages || collected.length >= maxItems) && lastBatchSize >= pageSize) {
+  if (
+    shouldMarkTruncatedAfterLoop({
+      truncated,
+      pages,
+      maxPages,
+      items: collected.length,
+      maxItems,
+      lastBatchSize,
+      pageSize,
+    })
+  ) {
     truncated = true;
   }
 
   const sliced = collected.slice(0, maxItems);
   const data = shapeReadData(sliced, options);
-  const pageInfo = {
+  const pageInfo: PageInfo = {
     pages,
     items: sliced.length,
     pageSize,
     offsetStart: startOffset,
     truncated,
   };
-  if (options?.includeMeta) {
-    return { data, url: firstUrl, page: pageInfo };
+
+  return buildReadResponse({ data, options, url: firstUrl, page: pageInfo });
+}
+
+export async function callReadOperation(
+  operationId: string,
+  params: Record<string, unknown>,
+  options?: ReadToolOptions
+): Promise<ReadOperationResult> {
+  const normalizedParams = normalizeParams(params);
+  if (!shouldPaginate(options?.page)) {
+    return callReadOperationSingle(operationId, normalizedParams, options);
   }
-  return { data, page: pageInfo };
+
+  return callReadOperationPaginated(operationId, normalizedParams, options);
 }

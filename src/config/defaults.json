@@ -59,5 +59,10 @@
       "cookieStore": "memory",
       "cookieFile": "~/.vrchat-mcp-vrctl-cookies.json"
     }
+  },
+  "vrcx": {
+    "enabled": true,
+    "databasePath": "",
+    "worldDbPath": ""
   }
 }

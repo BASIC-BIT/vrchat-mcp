@@ -36,6 +36,7 @@ describe('registerAllTools', () => {
       'vrchat_group_event_get',
       'vrchat_group_events_upcoming',
       'vrchat_group_instances_overview',
+      'vrchat_avatar_profile',
       'vrchat_worlds_search',
       'vrchat_worlds_favorites',
       'vrchat_world_profile',
@@ -67,6 +68,15 @@ describe('registerAllTools', () => {
       'vrctl_event_get',
       'vrctl_organizers_search',
       'vrctl_organizer_profile',
+
+      'vrcx_db_status',
+      'vrcx_memos_user_get',
+      'vrcx_memos_world_get',
+      'vrcx_memos_avatar_get',
+      'vrcx_gamelog_world_visits_recent',
+      'vrcx_instances_recent',
+      'vrcx_user_relationship_summary',
+      'vrcx_user_relationship_sessions',
     ];
 
     for (const name of required) {
