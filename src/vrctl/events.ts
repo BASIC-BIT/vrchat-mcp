@@ -224,6 +224,207 @@ function buildCategoryMap(categories: VrctlCategory[] | undefined) {
   return { categoriesById };
 }
 
+type EventsFeedChunk = z.infer<typeof EventsFeedResponseSchema>;
+type EventRecord = z.infer<typeof EventSchema>;
+type OrganizerRecord = z.infer<typeof OrganizerSchema>;
+type PerformerRecord = z.infer<typeof PerformerSchema>;
+type SlotRecord = z.infer<typeof SlotSchema>;
+
+function clampInt(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeCurrentOptions(options: VrctlEventsCurrentOptions) {
+  const daysBack = clampInt(options.daysBack ?? 0, 0, 30);
+  const daysForward = clampInt(options.daysForward ?? 0, 0, 30);
+  const maxItems = clampInt(options.maxItems ?? 200, 1, 500);
+  const includeHidden = Boolean(options.includeHidden);
+  return { daysBack, daysForward, maxItems, includeHidden };
+}
+
+function resolveTagLabels(params: {
+  tagIds: number[];
+  isLoggedIn: boolean;
+  hiddenTagIds: Set<number>;
+  tagsById: Map<number, VrctlTag>;
+}): string[] {
+  const visibleIds = params.isLoggedIn
+    ? params.tagIds
+    : params.tagIds.filter((id) => !params.hiddenTagIds.has(id));
+  return visibleIds
+    .map((id) => params.tagsById.get(id)?.name)
+    .filter((name): name is string => Boolean(name));
+}
+
+function resolveOrganizerSummaries(
+  organizerIds: number[] | undefined,
+  organizersById: Map<number, OrganizerRecord>
+): VrctlOrganizerSummary[] {
+  return (organizerIds ?? [])
+    .map((id) => organizersById.get(id))
+    .filter((o): o is OrganizerRecord => Boolean(o))
+    .map(organizerSummary);
+}
+
+function mergeEventsFeedChunks(chunks: EventsFeedChunk[]): {
+  organizersById: Map<number, OrganizerRecord>;
+  performersById: Map<number, PerformerRecord>;
+  events: EventRecord[];
+} {
+  const organizersById = new Map<number, OrganizerRecord>();
+  const performersById = new Map<number, PerformerRecord>();
+  const eventsById = new Map<number, EventRecord>();
+
+  for (const chunk of chunks) {
+    for (const org of chunk.eventData.organizers) {
+      organizersById.set(org.id, org);
+    }
+    for (const perf of chunk.eventData.performers) {
+      performersById.set(perf.id, perf);
+    }
+    for (const event of chunk.eventData.events) {
+      eventsById.set(event.id, event);
+    }
+  }
+
+  const events = [...eventsById.values()];
+  events.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+  return { organizersById, performersById, events };
+}
+
+function filterEventsByVisibility(params: {
+  events: EventRecord[];
+  hiddenEventTagIds: Set<number>;
+  includeHidden: boolean;
+  isLoggedIn: boolean;
+}): { events: EventRecord[]; filteredHiddenEvents: number } {
+  if (params.isLoggedIn || params.includeHidden) {
+    return { events: params.events, filteredHiddenEvents: 0 };
+  }
+
+  const visible: EventRecord[] = [];
+  let filteredHiddenEvents = 0;
+  for (const e of params.events) {
+    const tagIds = e.tags ?? [];
+    const hidden = tagIds.some((id) => params.hiddenEventTagIds.has(id));
+    if (hidden) {
+      filteredHiddenEvents += 1;
+      continue;
+    }
+    visible.push(e);
+  }
+  return { events: visible, filteredHiddenEvents };
+}
+
+function buildIdMap<T extends { id: number }>(items: T[]): Map<number, T> {
+  const map = new Map<number, T>();
+  for (const item of items) {
+    map.set(item.id, item);
+  }
+  return map;
+}
+
+function resolveEventSlots(
+  eventSlots: SlotRecord[] | undefined,
+  performersById: Map<number, PerformerRecord>
+): VrctlEventSlot[] {
+  return (eventSlots ?? []).map((slot) => {
+    const performerIds = slot.performers ?? [];
+    const performers = performerIds
+      .map((id) => performersById.get(id))
+      .filter((p): p is PerformerRecord => Boolean(p))
+      .map((p) => ({ performerId: p.id, name: p.name }));
+    return {
+      slotId: slot.id,
+      startEpoch: slot.start,
+      startIso: epochToIso(slot.start),
+      durationSec: slot.duration,
+      order: slot.order,
+      flag: slot.flag,
+      performers,
+    };
+  });
+}
+
+function isHiddenByTag(tagIds: number[], hiddenEventTagIds: Set<number>): boolean {
+  return tagIds.some((id) => hiddenEventTagIds.has(id));
+}
+
+function toEventSummary(params: {
+  event: EventRecord;
+  siteUrl: string;
+  isLoggedIn: boolean;
+  categoriesById: Map<number, VrctlCategory>;
+  tagsById: Map<number, VrctlTag>;
+  hiddenTagIds: Set<number>;
+  organizersById: Map<number, OrganizerRecord>;
+}): VrctlEventSummary {
+  const categoryId = params.event.category ?? null;
+  const category = categoryId ? params.categoriesById.get(categoryId)?.name : undefined;
+
+  const tagIds = params.event.tags ?? [];
+  const tags = resolveTagLabels({
+    tagIds,
+    isLoggedIn: params.isLoggedIn,
+    hiddenTagIds: params.hiddenTagIds,
+    tagsById: params.tagsById,
+  });
+
+  const organizers = resolveOrganizerSummaries(params.event.organizers, params.organizersById);
+
+  return {
+    eventId: params.event.id,
+    name: params.event.name,
+    startEpoch: params.event.start,
+    startIso: epochToIso(params.event.start),
+    endEpoch: params.event.end,
+    endIso: epochToIso(params.event.end),
+    durationSec: params.event.duration,
+    eventUrl: buildEventUrl(params.siteUrl, params.event.id),
+    posterUrl: params.event.poster ?? undefined,
+    categoryId,
+    category,
+    tagIds,
+    tags: tags.length ? tags : undefined,
+    organizers,
+  };
+}
+
+function toEventDetail(params: {
+  event: EventRecord;
+  siteUrl: string;
+  isLoggedIn: boolean;
+  categoriesById: Map<number, VrctlCategory>;
+  tagsById: Map<number, VrctlTag>;
+  hiddenTagIds: Set<number>;
+  organizersById: Map<number, OrganizerRecord>;
+  performersById: Map<number, PerformerRecord>;
+}): VrctlEventDetail {
+  const summary = toEventSummary({
+    event: params.event,
+    siteUrl: params.siteUrl,
+    isLoggedIn: params.isLoggedIn,
+    categoriesById: params.categoriesById,
+    tagsById: params.tagsById,
+    hiddenTagIds: params.hiddenTagIds,
+    organizersById: params.organizersById,
+  });
+
+  const promoted =
+    typeof params.event.promoted === 'boolean'
+      ? params.event.promoted
+      : Boolean(params.event.promoted);
+
+  return {
+    ...summary,
+    description: params.event.description,
+    urls: params.event.urls,
+    isHighlighted: params.event.isHighlighted,
+    promoted,
+    eventSlots: resolveEventSlots(params.event.eventSlots, params.performersById),
+  };
+}
+
 export interface VrctlEventsServiceDeps {
   client?: Pick<VrctlClient, 'getSiteHtml' | 'getApiJson'>;
   metadata?: Pick<VrctlMetadataService, 'getBootstrapCached'>;
@@ -238,6 +439,76 @@ export class VrctlEventsService {
     this.client = deps.client ?? createVrctlClient();
     this.siteUrl = getConfig().vrctl.siteUrl;
     this.metadata = deps.metadata ?? vrctlMetadataService;
+  }
+
+  private assertVrctlEnabled(): void {
+    const config = getConfig();
+    if (!config.vrctl.enabled) {
+      throw new Error(
+        'vrc.tl tools are disabled. Set vrctl.enabled=true (or VRCHAT_MCP_VRCTL_ENABLED=1).'
+      );
+    }
+  }
+
+  private async getAuthAndMetadata(includeHidden: boolean) {
+    const sessionStatus = vrctlAuthManager.getStatus();
+    const bootstrap = await this.metadata.getBootstrapCached();
+    const isLoggedIn = bootstrap.loggedIn === true;
+
+    if (includeHidden && !isLoggedIn) {
+      throw new Error('includeHidden requires vrc.tl login. Use vrctl_auth_begin and try again.');
+    }
+
+    const { categoriesById } = buildCategoryMap(bootstrap.categories);
+    const { tagsById, hiddenEventTagIds, hiddenTagIds } = buildTagMaps(bootstrap.tags);
+    return {
+      sessionStatus,
+      bootstrap,
+      isLoggedIn,
+      categoriesById,
+      tagsById,
+      hiddenEventTagIds,
+      hiddenTagIds,
+    };
+  }
+
+  private async pageEventChunks(
+    base: EventsFeedChunk,
+    daysBack: number,
+    daysForward: number
+  ): Promise<{
+    chunks: EventsFeedChunk[];
+    range: { firstLoadedDay: string; lastLoadedDay: string };
+  }> {
+    let firstLoadedDay = base.range.firstLoadedDay;
+    let lastLoadedDay = base.range.lastLoadedDay;
+    const chunks: EventsFeedChunk[] = [base];
+
+    if (daysBack > 0) {
+      const target = addDays(firstLoadedDay, -daysBack);
+      let safety = 0;
+      while (firstLoadedDay > target && safety < 20) {
+        const before = addDays(firstLoadedDay, -1);
+        const chunk = await this.getEventsChunk({ before });
+        chunks.unshift(chunk);
+        firstLoadedDay = chunk.range.firstLoadedDay;
+        safety += 1;
+      }
+    }
+
+    if (daysForward > 0) {
+      const target = addDays(lastLoadedDay, daysForward);
+      let safety = 0;
+      while (lastLoadedDay < target && safety < 20) {
+        const after = addDays(lastLoadedDay, 1);
+        const chunk = await this.getEventsChunk({ after });
+        chunks.push(chunk);
+        lastLoadedDay = chunk.range.lastLoadedDay;
+        safety += 1;
+      }
+    }
+
+    return { chunks, range: { firstLoadedDay, lastLoadedDay } };
   }
 
   private async getEventsChunk(params: { before?: string; after?: string }) {
@@ -259,149 +530,47 @@ export class VrctlEventsService {
   async listCurrentEvents(
     options: VrctlEventsCurrentOptions = {}
   ): Promise<VrctlEventsCurrentResult> {
-    const config = getConfig();
-    if (!config.vrctl.enabled) {
-      throw new Error(
-        'vrc.tl tools are disabled. Set vrctl.enabled=true (or VRCHAT_MCP_VRCTL_ENABLED=1).'
-      );
-    }
+    this.assertVrctlEnabled();
 
-    const daysBack = Math.max(0, Math.min(30, options.daysBack ?? 0));
-    const daysForward = Math.max(0, Math.min(30, options.daysForward ?? 0));
-    const maxItems = Math.max(1, Math.min(500, options.maxItems ?? 200));
-    const includeHidden = Boolean(options.includeHidden);
-
-    const sessionStatus = vrctlAuthManager.getStatus();
-    const bootstrap = await this.metadata.getBootstrapCached();
-    const isLoggedIn = bootstrap.loggedIn === true;
-
-    if (includeHidden && !isLoggedIn) {
-      throw new Error('includeHidden requires vrc.tl login. Use vrctl_auth_begin and try again.');
-    }
-
-    const { categoriesById } = buildCategoryMap(bootstrap.categories);
-    const { tagsById, hiddenEventTagIds, hiddenTagIds } = buildTagMaps(bootstrap.tags);
+    const { daysBack, daysForward, maxItems, includeHidden } = normalizeCurrentOptions(options);
+    const ctx = await this.getAuthAndMetadata(includeHidden);
 
     const base = await this.getEventsChunk({});
-    let firstLoadedDay = base.range.firstLoadedDay;
-    let lastLoadedDay = base.range.lastLoadedDay;
+    const paged = await this.pageEventChunks(base, daysBack, daysForward);
+    const merged = mergeEventsFeedChunks(paged.chunks);
 
-    const chunks = [base];
-
-    // Page backwards.
-    if (daysBack > 0) {
-      const target = addDays(firstLoadedDay, -daysBack);
-      let safety = 0;
-      while (firstLoadedDay > target && safety < 20) {
-        const before = addDays(firstLoadedDay, -1);
-        const chunk = await this.getEventsChunk({ before });
-        chunks.unshift(chunk);
-        firstLoadedDay = chunk.range.firstLoadedDay;
-        safety += 1;
-      }
-    }
-
-    // Page forwards.
-    if (daysForward > 0) {
-      const target = addDays(lastLoadedDay, daysForward);
-      let safety = 0;
-      while (lastLoadedDay < target && safety < 20) {
-        const after = addDays(lastLoadedDay, 1);
-        const chunk = await this.getEventsChunk({ after });
-        chunks.push(chunk);
-        lastLoadedDay = chunk.range.lastLoadedDay;
-        safety += 1;
-      }
-    }
-
-    const organizersById = new Map<number, z.infer<typeof OrganizerSchema>>();
-    const performersById = new Map<number, z.infer<typeof PerformerSchema>>();
-    const eventsById = new Map<number, z.infer<typeof EventSchema>>();
-
-    for (const chunk of chunks) {
-      for (const org of chunk.eventData.organizers) {
-        organizersById.set(org.id, org);
-      }
-      for (const perf of chunk.eventData.performers) {
-        performersById.set(perf.id, perf);
-      }
-      for (const event of chunk.eventData.events) {
-        eventsById.set(event.id, event);
-      }
-    }
-
-    const rawEvents = [...eventsById.values()];
-    rawEvents.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
-
-    const filtered: z.infer<typeof EventSchema>[] = [];
-    let filteredHiddenEvents = 0;
-
-    for (const e of rawEvents) {
-      const tagIds = e.tags ?? [];
-      const hidden = tagIds.some((id) => hiddenEventTagIds.has(id));
-      if (hidden && !isLoggedIn && !includeHidden) {
-        filteredHiddenEvents += 1;
-        continue;
-      }
-      filtered.push(e);
-    }
-
-    const truncated = filtered.length > maxItems;
-    const picked = filtered.slice(0, maxItems);
-
-    const summaries: VrctlEventSummary[] = picked.map((e) => {
-      const categoryId = e.category ?? null;
-      const categoryLabel = categoryId ? categoriesById.get(categoryId)?.name : undefined;
-
-      const tagIds = e.tags ?? [];
-      const tagLabels = !isLoggedIn
-        ? tagIds
-            .filter((id) => !hiddenTagIds.has(id))
-            .map((id) => tagsById.get(id)?.name)
-            .filter((name): name is string => Boolean(name))
-        : tagIds
-            .map((id) => tagsById.get(id)?.name)
-            .filter((name): name is string => Boolean(name));
-
-      const orgs = (e.organizers ?? [])
-        .map((id) => organizersById.get(id))
-        .filter((o): o is z.infer<typeof OrganizerSchema> => Boolean(o))
-        .map(organizerSummary);
-
-      return {
-        eventId: e.id,
-        name: e.name,
-        startEpoch: e.start,
-        startIso: epochToIso(e.start),
-        endEpoch: e.end,
-        endIso: epochToIso(e.end),
-        durationSec: e.duration,
-        eventUrl: buildEventUrl(this.siteUrl, e.id),
-        posterUrl: e.poster ?? undefined,
-        categoryId,
-        category: categoryLabel,
-        tagIds,
-        tags: tagLabels.length ? tagLabels : undefined,
-        organizers: orgs,
-      };
+    const visible = filterEventsByVisibility({
+      events: merged.events,
+      hiddenEventTagIds: ctx.hiddenEventTagIds,
+      includeHidden,
+      isLoggedIn: ctx.isLoggedIn,
     });
 
+    const truncated = visible.events.length > maxItems;
+    const picked = visible.events.slice(0, maxItems);
+    const summaries = picked.map((event) =>
+      toEventSummary({
+        event,
+        siteUrl: this.siteUrl,
+        isLoggedIn: ctx.isLoggedIn,
+        categoriesById: ctx.categoriesById,
+        tagsById: ctx.tagsById,
+        hiddenTagIds: ctx.hiddenTagIds,
+        organizersById: merged.organizersById,
+      })
+    );
+
     return {
-      requested: {
-        daysBack,
-        daysForward,
-        includeHidden,
-        maxItems,
-      },
+      requested: { daysBack, daysForward, includeHidden, maxItems },
       auth: {
-        loggedIn: bootstrap.loggedIn,
-        verified: bootstrap.loggedIn !== null,
-        hasSessionCookie: sessionStatus.hasSessionCookie,
+        loggedIn: ctx.bootstrap.loggedIn,
+        verified: ctx.bootstrap.loggedIn !== null,
+        hasSessionCookie: ctx.sessionStatus.hasSessionCookie,
       },
-      range: { firstLoadedDay, lastLoadedDay },
-      totalEvents: rawEvents.length,
+      range: paged.range,
+      totalEvents: merged.events.length,
       returnedEvents: summaries.length,
-      filteredHiddenEvents,
+      filteredHiddenEvents: visible.filteredHiddenEvents,
       truncated,
       events: summaries,
     };
@@ -411,111 +580,42 @@ export class VrctlEventsService {
     eventId: number,
     options: VrctlEventGetOptions = {}
   ): Promise<VrctlEventGetResult> {
-    const config = getConfig();
-    if (!config.vrctl.enabled) {
-      throw new Error(
-        'vrc.tl tools are disabled. Set vrctl.enabled=true (or VRCHAT_MCP_VRCTL_ENABLED=1).'
-      );
-    }
+    this.assertVrctlEnabled();
 
     const includeHidden = Boolean(options.includeHidden);
-    const sessionStatus = vrctlAuthManager.getStatus();
-    const bootstrap = await this.metadata.getBootstrapCached();
-    const isLoggedIn = bootstrap.loggedIn === true;
-    if (includeHidden && !isLoggedIn) {
-      throw new Error('includeHidden requires vrc.tl login. Use vrctl_auth_begin and try again.');
-    }
-
-    const { categoriesById } = buildCategoryMap(bootstrap.categories);
-    const { tagsById, hiddenEventTagIds, hiddenTagIds } = buildTagMaps(bootstrap.tags);
+    const ctx = await this.getAuthAndMetadata(includeHidden);
 
     const data = await this.client.getApiJson(`/events/${eventId}`);
     const dataset = EventDatasetResponseSchema.parse(data);
-
     const event = dataset.events[0];
-    if (!event) {
-      throw new Error(`Event not found: ${eventId}`);
-    }
+    if (!event) throw new Error(`Event not found: ${eventId}`);
 
     const tagIds = event.tags ?? [];
-    const hidden = tagIds.some((id) => hiddenEventTagIds.has(id));
-    if (hidden && !isLoggedIn && !includeHidden) {
+    if (isHiddenByTag(tagIds, ctx.hiddenEventTagIds) && !ctx.isLoggedIn && !includeHidden) {
       throw new Error(
         'Event is hidden on vrc.tl unless logged in. Use vrctl_auth_begin and try again.'
       );
     }
 
-    const organizersById = new Map<number, z.infer<typeof OrganizerSchema>>();
-    for (const org of dataset.organizers) {
-      organizersById.set(org.id, org);
-    }
-    const performersById = new Map<number, z.infer<typeof PerformerSchema>>();
-    for (const perf of dataset.performers) {
-      performersById.set(perf.id, perf);
-    }
-
-    const categoryId = event.category ?? null;
-    const categoryLabel = categoryId ? categoriesById.get(categoryId)?.name : undefined;
-
-    const tagLabels = !isLoggedIn
-      ? tagIds
-          .filter((id) => !hiddenTagIds.has(id))
-          .map((id) => tagsById.get(id)?.name)
-          .filter((name): name is string => Boolean(name))
-      : tagIds.map((id) => tagsById.get(id)?.name).filter((name): name is string => Boolean(name));
-
-    const orgs = (event.organizers ?? [])
-      .map((id) => organizersById.get(id))
-      .filter((o): o is z.infer<typeof OrganizerSchema> => Boolean(o))
-      .map(organizerSummary);
-
-    const slots = (event.eventSlots ?? []).map((slot) => {
-      const performerIds = slot.performers ?? [];
-      const performers = performerIds
-        .map((id) => performersById.get(id))
-        .filter((p): p is z.infer<typeof PerformerSchema> => Boolean(p))
-        .map((p) => ({ performerId: p.id, name: p.name }));
-      return {
-        slotId: slot.id,
-        startEpoch: slot.start,
-        startIso: epochToIso(slot.start),
-        durationSec: slot.duration,
-        order: slot.order,
-        flag: slot.flag,
-        performers,
-      } satisfies VrctlEventSlot;
+    const organizersById = buildIdMap(dataset.organizers);
+    const performersById = buildIdMap(dataset.performers);
+    const detail = toEventDetail({
+      event,
+      siteUrl: this.siteUrl,
+      isLoggedIn: ctx.isLoggedIn,
+      categoriesById: ctx.categoriesById,
+      tagsById: ctx.tagsById,
+      hiddenTagIds: ctx.hiddenTagIds,
+      organizersById,
+      performersById,
     });
-
-    const promoted = typeof event.promoted === 'boolean' ? event.promoted : Boolean(event.promoted);
-
-    const detail: VrctlEventDetail = {
-      eventId: event.id,
-      name: event.name,
-      description: event.description,
-      startEpoch: event.start,
-      startIso: epochToIso(event.start),
-      endEpoch: event.end,
-      endIso: epochToIso(event.end),
-      durationSec: event.duration,
-      eventUrl: buildEventUrl(this.siteUrl, event.id),
-      posterUrl: event.poster ?? undefined,
-      categoryId,
-      category: categoryLabel,
-      tagIds,
-      tags: tagLabels.length ? tagLabels : undefined,
-      organizers: orgs,
-      urls: event.urls,
-      isHighlighted: event.isHighlighted,
-      promoted,
-      eventSlots: slots,
-    };
 
     return {
       requested: { includeHidden },
       auth: {
-        loggedIn: bootstrap.loggedIn,
-        verified: bootstrap.loggedIn !== null,
-        hasSessionCookie: sessionStatus.hasSessionCookie,
+        loggedIn: ctx.bootstrap.loggedIn,
+        verified: ctx.bootstrap.loggedIn !== null,
+        hasSessionCookie: ctx.sessionStatus.hasSessionCookie,
       },
       event: detail,
     };

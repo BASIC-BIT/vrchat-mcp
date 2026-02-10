@@ -42,6 +42,17 @@ function findTimelineObjectStart(html: string): number {
   return html.indexOf('{', eq);
 }
 
+function advanceStringState(
+  state: { inString: boolean; escape: boolean },
+  ch: string
+): { inString: boolean; escape: boolean } {
+  if (!state.inString) return state;
+  if (state.escape) return { inString: true, escape: false };
+  if (ch === '\\') return { inString: true, escape: true };
+  if (ch === '"') return { inString: false, escape: false };
+  return state;
+}
+
 function extractJsonObject(html: string, start: number): string | null {
   if (start < 0 || start >= html.length) return null;
   let depth = 0;
@@ -50,17 +61,9 @@ function extractJsonObject(html: string, start: number): string | null {
   for (let i = start; i < html.length; i += 1) {
     const ch = html[i];
     if (inString) {
-      if (escape) {
-        escape = false;
-        continue;
-      }
-      if (ch === '\\') {
-        escape = true;
-        continue;
-      }
-      if (ch === '"') {
-        inString = false;
-      }
+      const next = advanceStringState({ inString, escape }, ch);
+      inString = next.inString;
+      escape = next.escape;
       continue;
     }
 
@@ -68,15 +71,16 @@ function extractJsonObject(html: string, start: number): string | null {
       inString = true;
       continue;
     }
+
     if (ch === '{') {
       depth += 1;
       continue;
     }
-    if (ch === '}') {
-      depth -= 1;
-      if (depth === 0) {
-        return html.slice(start, i + 1);
-      }
+
+    if (ch !== '}') continue;
+    depth -= 1;
+    if (depth === 0) {
+      return html.slice(start, i + 1);
     }
   }
   return null;
