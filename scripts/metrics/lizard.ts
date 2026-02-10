@@ -6,10 +6,15 @@ const CCN_THRESHOLD = 20;
 const LENGTH_THRESHOLD = 200;
 const PARAM_THRESHOLD = 8;
 
-function runOrThrow(command: string, args: string[], cwd?: string): void {
+function runOrThrow(
+  command: string,
+  args: string[],
+  options: { cwd?: string; shell?: boolean } = {}
+): void {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
-    cwd,
+    cwd: options.cwd,
+    shell: options.shell,
   });
 
   if (result.error) {
@@ -25,10 +30,20 @@ function runOrThrow(command: string, args: string[], cwd?: string): void {
   }
 }
 
+function runNpmOrThrow(args: string[]): void {
+  const npmExecPath = process.env.npm_execpath;
+  if (npmExecPath) {
+    runOrThrow(process.execPath, [npmExecPath, ...args]);
+    return;
+  }
+  // Fallback for non-npm execution.
+  runOrThrow('npm', args, { shell: process.platform === 'win32' });
+}
+
 function ensureDistBuilt(): void {
   const distMarker = path.join('dist', 'src', 'index.js');
   if (existsSync(distMarker)) return;
-  runOrThrow('npm', ['run', 'build']);
+  runNpmOrThrow(['run', 'build']);
 }
 
 function main(): void {
