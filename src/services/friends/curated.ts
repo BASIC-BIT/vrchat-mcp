@@ -330,19 +330,34 @@ function applyInstanceEnrichment(
   bucket.instance =
     instanceDetailLevel === 'full' ? instance : (buildInstanceSummary(instance) ?? instance);
 
+  const info = bucket.info;
+  applyInstanceWorldInfo(info, instance);
+  applyInstanceWorldId(info, instance);
+  applyInstanceRegion(info, instance);
+  applyInstanceAccessType(info, instance);
+}
+
+function applyInstanceWorldInfo(info: EnrichedLocationInfo, instance: InstanceRecord): void {
   const worldName = instance.world?.name ?? undefined;
-  if (worldName) bucket.info.worldName = worldName;
+  if (worldName) info.worldName = worldName;
+}
 
+function applyInstanceWorldId(info: EnrichedLocationInfo, instance: InstanceRecord): void {
+  if (info.worldId) return;
   const worldIdFromInstance = instance.worldId ?? instance.world?.id ?? undefined;
-  if (!bucket.info.worldId && worldIdFromInstance) {
-    bucket.info.worldId = worldIdFromInstance;
+  if (worldIdFromInstance) {
+    info.worldId = worldIdFromInstance;
   }
+}
 
+function applyInstanceRegion(info: EnrichedLocationInfo, instance: InstanceRecord): void {
   const region = instance.region ?? instance.photonRegion ?? undefined;
-  if (region) bucket.info.region = region;
+  if (region) info.region = region;
+}
 
+function applyInstanceAccessType(info: EnrichedLocationInfo, instance: InstanceRecord): void {
   const typeValue = instance.type ?? undefined;
-  if (typeValue) bucket.info.accessType = typeValue;
+  if (typeValue) info.accessType = typeValue;
 }
 
 async function enrichLocationsWithInstances(input: {
