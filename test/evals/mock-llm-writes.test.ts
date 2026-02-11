@@ -1,13 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 import { loadEvalConfig } from '../helpers/eval-config.js';
 import { gradeWithOpenAI } from '../helpers/llm-grader.js';
+import { resolveSpecPath } from '../helpers/spec-path.js';
 
-const SPEC_PATH = fileURLToPath(
-  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
-);
+const SPEC_PATH = resolveSpecPath(import.meta.url);
 const EVAL_TIMEOUT_MS = 120_000;
 
 const evalConfig = loadEvalConfig();
@@ -55,6 +53,6 @@ describeEval('llm evals (mock writes)', () => {
       }
       expect(result.pass).toBe(true);
     },
-    EVAL_TIMEOUT_MS,
+    EVAL_TIMEOUT_MS
   );
 });

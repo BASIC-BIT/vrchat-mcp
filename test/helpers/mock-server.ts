@@ -47,12 +47,14 @@ const GroupSchema = schemas.Group as ZodSchema<MockTypes.MockGroup>;
 const GroupMemberSchema = schemas.GroupMember as ZodSchema<MockTypes.MockGroupMember>;
 const GroupRoleSchema = schemas.GroupRole as ZodSchema<MockTypes.MockGroupRole>;
 const GroupPermissionSchema = schemas.GroupPermission as ZodSchema<MockTypes.MockGroupPermission>;
-const GroupAnnouncementSchema = schemas.GroupAnnouncement as ZodSchema<MockTypes.MockGroupAnnouncement>;
+const GroupAnnouncementSchema =
+  schemas.GroupAnnouncement as ZodSchema<MockTypes.MockGroupAnnouncement>;
 const GroupPostSchema = schemas.GroupPost as ZodSchema<MockTypes.MockGroupPost>;
 const GroupInstanceSchema = schemas.GroupInstance as ZodSchema<MockTypes.MockGroupInstance>;
 const CalendarEventSchema = schemas.CalendarEvent as ZodSchema<MockTypes.MockCalendarEvent>;
 
 const DEFAULT_SPEC_URL = new URL('../../specs/vrchat-openapi.yaml', import.meta.url);
+const FALLBACK_SPEC_URL = new URL('../fixtures/spec.yaml', import.meta.url);
 
 type ResponseCarrier = ServerResponse & {
   __mockPayload?: unknown;
@@ -66,7 +68,18 @@ async function loadSpec(specPath?: string | URL): Promise<unknown> {
       : typeof specPath === 'string'
         ? pathToFileURL(specPath)
         : specPath;
-  const text = await readFile(target, 'utf8');
+
+  let text: string;
+  try {
+    text = await readFile(target, 'utf8');
+  } catch (err) {
+    if (specPath === undefined && (err as { code?: string }).code === 'ENOENT') {
+      text = await readFile(FALLBACK_SPEC_URL, 'utf8');
+    } else {
+      throw err;
+    }
+  }
+
   return YAML.parse(text);
 }
 
@@ -78,7 +91,11 @@ function parseArray<T>(schema: ZodSchema<T>, value: unknown, label: string): T[]
   }
 }
 
-function parseRecordArray<T>(schema: ZodSchema<T>, value: unknown, label: string): Record<string, T[]> {
+function parseRecordArray<T>(
+  schema: ZodSchema<T>,
+  value: unknown,
+  label: string
+): Record<string, T[]> {
   if (!value || typeof value !== 'object') {
     throw new Error(`Invalid ${label} data: expected object.`);
   }
@@ -111,7 +128,7 @@ function parseMockData(raw: unknown): MockTypes.MockData {
   const favoritedWorlds = parseArray(
     FavoritedWorldSchema,
     record.favoritedWorlds,
-    'favoritedWorlds',
+    'favoritedWorlds'
   );
   const avatars = parseArray(AvatarSchema, record.avatars, 'avatars');
   const favorites = parseArray(FavoriteSchema, record.favorites, 'favorites');
@@ -133,30 +150,38 @@ function parseMockData(raw: unknown): MockTypes.MockData {
   const groups = parseArray(GroupSchema, record.groups, 'groups');
   const groupMembers = parseRecordArray(GroupMemberSchema, record.groupMembers, 'groupMembers');
   const groupRoles = parseRecordArray(GroupRoleSchema, record.groupRoles, 'groupRoles');
-  const groupPermissions = parseRecordArray(GroupPermissionSchema, record.groupPermissions, 'groupPermissions');
+  const groupPermissions = parseRecordArray(
+    GroupPermissionSchema,
+    record.groupPermissions,
+    'groupPermissions'
+  );
   const groupAnnouncements = parseRecordArray(
     GroupAnnouncementSchema,
     record.groupAnnouncements,
-    'groupAnnouncements',
+    'groupAnnouncements'
   );
   const groupPosts = parseRecordArray(GroupPostSchema, record.groupPosts, 'groupPosts');
-  const groupInstances = parseRecordArray(GroupInstanceSchema, record.groupInstances, 'groupInstances');
+  const groupInstances = parseRecordArray(
+    GroupInstanceSchema,
+    record.groupInstances,
+    'groupInstances'
+  );
 
   const calendarEvents = parseArray(CalendarEventSchema, record.calendarEvents, 'calendarEvents');
   const calendarFeatured = parseArray(
     CalendarEventSchema,
     record.calendarFeatured,
-    'calendarFeatured',
+    'calendarFeatured'
   );
   const calendarFollowed = parseArray(
     CalendarEventSchema,
     record.calendarFollowed,
-    'calendarFollowed',
+    'calendarFollowed'
   );
   const calendarGroupEvents = parseRecordArray(
     CalendarEventSchema,
     record.calendarGroupEvents,
-    'calendarGroupEvents',
+    'calendarGroupEvents'
   );
 
   return {
@@ -301,7 +326,7 @@ function applyPagination<T>(items: T[], query: unknown): T[] {
 
 function applyPaginatedList<T>(
   items: T[],
-  query: unknown,
+  query: unknown
 ): { results: T[]; totalCount: number; hasNext: boolean } {
   const offset = parseNumber(getQueryValue(query, 'offset')) ?? 0;
   const limit =
@@ -325,7 +350,7 @@ function applySearch<T>(items: T[], query: unknown, keys: (keyof T)[], param = '
       const value = item[key];
       if (typeof value !== 'string') return false;
       return value.toLowerCase().includes(normalized);
-    }),
+    })
   );
 }
 
@@ -353,19 +378,17 @@ export interface MockServerOptions {
 }
 
 export async function createMockServer(
-  options: MockServerOptions = {},
+  options: MockServerOptions = {}
 ): Promise<MockTypes.MockServer> {
   const spec = await loadSpec(options.specPath);
   const data = parseMockData(mockData);
   let instanceCounter = Object.keys(data.instances).length;
   let notificationCounter = data.notifications.length;
-  let calendarCounter = data.calendarEvents.length
-    + data.calendarFeatured.length
-    + data.calendarFollowed.length
-    + Object.values(data.calendarGroupEvents).reduce(
-        (sum, list) => sum + list.length,
-        0,
-      );
+  let calendarCounter =
+    data.calendarEvents.length +
+    data.calendarFeatured.length +
+    data.calendarFollowed.length +
+    Object.values(data.calendarGroupEvents).reduce((sum, list) => sum + list.length, 0);
 
   const api = new OpenAPIBackend({
     definition: spec,
@@ -539,11 +562,7 @@ export async function createMockServer(
     },
     getFavoritedWorlds: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(data.favoritedWorlds, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(data.favoritedWorlds, context.request.query));
     },
     getInstance: (c, _req, res) => {
       const context = toContext(c);
@@ -570,11 +589,7 @@ export async function createMockServer(
     },
     getRecentLocations: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(data.recentLocations, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(data.recentLocations, context.request.query));
     },
     createInstance: (c, _req, res) => {
       const context = toContext(c);
@@ -731,11 +746,7 @@ export async function createMockServer(
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const announcements = data.groupAnnouncements[groupId] ?? [];
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(announcements, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(announcements, context.request.query));
     },
     getGroupPosts: (c, _req, res) => {
       const context = toContext(c);
@@ -750,27 +761,15 @@ export async function createMockServer(
     },
     getCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(data.calendarEvents, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(data.calendarEvents, context.request.query));
     },
     getFeaturedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(data.calendarFeatured, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(data.calendarFeatured, context.request.query));
     },
     getFollowedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(
-        toResponse(res),
-        200,
-        applyPagination(data.calendarFollowed, context.request.query),
-      );
+      sendJson(toResponse(res), 200, applyPagination(data.calendarFollowed, context.request.query));
     },
     searchCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
@@ -860,7 +859,7 @@ export async function createMockServer(
       const userId = getParamValue(context.request.params, 'userId');
       const messageType = getParamValue(context.request.params, 'messageType');
       const matches = data.inviteMessages.filter(
-        (entry) => entry.userId === userId && entry.messageType === messageType,
+        (entry) => entry.userId === userId && entry.messageType === messageType
       );
       sendJson(toResponse(res), 200, matches);
     },
@@ -872,9 +871,7 @@ export async function createMockServer(
       const slot = slotValue ? Number(slotValue) : NaN;
       const match = data.inviteMessages.find(
         (entry) =>
-          entry.userId === userId &&
-          entry.messageType === messageType &&
-          entry.slot === slot,
+          entry.userId === userId && entry.messageType === messageType && entry.slot === slot
       );
       if (!match) {
         sendError(toResponse(res), 404, 'Invite message not found');
@@ -901,7 +898,7 @@ export async function createMockServer(
         if (validation.errors?.length) {
           console.warn(
             `[mock] Response validation failed for ${c.operation.operationId} (${statusCode})`,
-            validation.errors,
+            validation.errors
           );
         }
       }
