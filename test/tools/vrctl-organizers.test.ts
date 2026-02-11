@@ -14,12 +14,13 @@ import { vrctlOrganizersService } from '../../src/vrctl/organizers.js';
 
 describe('vrctl organizer tools', () => {
   it('search tool returns matches', async () => {
+    const groupId = 'grp_11111111-1111-1111-1111-111111111111';
     const server = new FakeServer();
     registerVrctlOrganizerTools(server as unknown as McpServer);
 
     vi.spyOn(vrctlOrganizersService, 'searchOrganizers').mockResolvedValue({
       total: 1,
-      matches: [{ name: 'Club A', slug: 'club-a', vrchatGroupId: 'grp_ABC123' }],
+      matches: [{ name: 'Club A', slug: 'club-a', vrchatGroupId: groupId }],
     });
 
     const tool = server.tools.find((t) => t.name === 'vrctl_organizers_search');
@@ -33,17 +34,18 @@ describe('vrctl organizer tools', () => {
   });
 
   it('profile tool returns one organizer', async () => {
+    const groupId = 'grp_11111111-1111-1111-1111-111111111111';
     const server = new FakeServer();
     registerVrctlOrganizerTools(server as unknown as McpServer);
 
     vi.spyOn(vrctlOrganizersService, 'getOrganizerProfile').mockResolvedValue({
       name: 'Club A',
       slug: 'club-a',
-      vrchatGroupId: 'grp_ABC123',
+      vrchatGroupId: groupId,
     });
 
     const tool = server.tools.find((t) => t.name === 'vrctl_organizer_profile');
-    const result = await tool!.handler({ vrchatGroupId: 'grp_ABC123' });
+    const result = await tool!.handler({ vrchatGroupId: groupId });
     expect(result).toMatchObject({ structuredContent: { organizer: { name: 'Club A' } } });
   });
 });

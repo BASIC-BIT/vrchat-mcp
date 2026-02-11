@@ -43,7 +43,7 @@ function normalize(text: string): string {
 
 function extractVrchatGroupId(vrcGroupUrl?: string): string | undefined {
   if (!vrcGroupUrl) return undefined;
-  const match = /(grp_[A-Za-z0-9]+)/.exec(vrcGroupUrl);
+  const match = /(grp_[A-Za-z0-9-]+)/.exec(vrcGroupUrl);
   return match ? match[1] : undefined;
 }
 

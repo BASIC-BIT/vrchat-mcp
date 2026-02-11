@@ -178,7 +178,7 @@ function addDays(date: string, deltaDays: number): string {
 
 function extractVrchatGroupId(vrcGroupUrl?: string): string | undefined {
   if (!vrcGroupUrl) return undefined;
-  const match = /(grp_[A-Za-z0-9]+)/.exec(vrcGroupUrl);
+  const match = /(grp_[A-Za-z0-9-]+)/.exec(vrcGroupUrl);
   return match ? match[1] : undefined;
 }
 
@@ -512,9 +512,11 @@ export class VrctlEventsService {
   }
 
   private async getEventsChunk(params: { before?: string; after?: string }) {
+    const hasSessionCookie = vrctlAuthManager.getStatus().hasSessionCookie;
     const cacheKey = buildCacheKey('vrctl:events:chunk', {
       before: params.before,
       after: params.after,
+      hasSessionCookie,
     });
     const ttlMs = 15_000;
 
