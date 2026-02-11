@@ -92,6 +92,15 @@ const ConfigBaseSchema = z
         siteUrl: z.string().min(1),
         apiBaseUrl: z.string().min(1),
         userAgent: z.string(),
+        requests: z
+          .object({
+            minIntervalMs: z.number().int().min(0),
+            maxRetries: z.number().int().min(0).max(10),
+            initialBackoffMs: z.number().int().min(0),
+            maxBackoffMs: z.number().int().min(0),
+            denyCooldownMs: z.number().int().min(0),
+          })
+          .strict(),
         auth: z
           .object({
             cookieStore: z.enum(['memory', 'file', 'keychain']),
