@@ -1,11 +1,9 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
+import { resolveSpecPath } from '../helpers/spec-path.js';
 
-const SPEC_PATH = fileURLToPath(
-  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
-);
+const SPEC_PATH = resolveSpecPath(import.meta.url);
 
 describe('mcp e2e (mock tools)', () => {
   let server: MockServer | null = null;
@@ -223,8 +221,7 @@ describe('mcp e2e (mock tools)', () => {
     });
     expectArrayField(events, 'events');
 
-    const calendarId =
-      data.calendarGroupEvents[groupId]?.[0]?.id ?? data.calendarEvents[0]?.id;
+    const calendarId = data.calendarGroupEvents[groupId]?.[0]?.id ?? data.calendarEvents[0]?.id;
     if (!calendarId) {
       throw new Error('Missing group calendar event fixture');
     }

@@ -1,11 +1,9 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { fileURLToPath } from 'node:url';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
+import { resolveSpecPath } from '../helpers/spec-path.js';
 
-const SPEC_PATH = fileURLToPath(
-  new URL('../../specs/vrchat-openapi.yaml', import.meta.url),
-);
+const SPEC_PATH = resolveSpecPath(import.meta.url);
 
 describe('mcp e2e (mock)', () => {
   let server: MockServer | null = null;
@@ -33,11 +31,7 @@ describe('mcp e2e (mock)', () => {
     const res = await harness!.client.listTools();
     const names = res.tools?.map((tool) => tool.name) ?? [];
     expect(names).toEqual(
-      expect.arrayContaining([
-        'vrchat_me',
-        'vrchat_friends_search',
-        'vrchat_friend_details',
-      ]),
+      expect.arrayContaining(['vrchat_me', 'vrchat_friends_search', 'vrchat_friend_details'])
     );
   });
 
