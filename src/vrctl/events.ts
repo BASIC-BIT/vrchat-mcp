@@ -491,7 +491,9 @@ export class VrctlEventsService {
         const before = addDays(firstLoadedDay, -1);
         const chunk = await this.getEventsChunk({ before });
         chunks.unshift(chunk);
+        const prev = firstLoadedDay;
         firstLoadedDay = chunk.range.firstLoadedDay;
+        if (firstLoadedDay >= prev) break; // no progress
         safety += 1;
       }
     }
@@ -503,7 +505,9 @@ export class VrctlEventsService {
         const after = addDays(lastLoadedDay, 1);
         const chunk = await this.getEventsChunk({ after });
         chunks.push(chunk);
+        const prev = lastLoadedDay;
         lastLoadedDay = chunk.range.lastLoadedDay;
+        if (lastLoadedDay <= prev) break; // no progress
         safety += 1;
       }
     }

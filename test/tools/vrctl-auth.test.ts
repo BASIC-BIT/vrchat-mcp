@@ -44,11 +44,15 @@ describe('vrctl auth tools', () => {
       structuredContent: { url: 'http://localhost/vrctl-login', token: 'tok' },
     });
 
+    // Default (verify=false) returns cached status without network call
+    const localResult = await status!.handler({});
+    expect(localResult).toMatchObject({ structuredContent: { loggedIn: false, verified: false } });
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(vrctlAuthManager.verifyStatus).not.toHaveBeenCalled();
+
+    // Explicit verify=true makes network request
     const verifiedResult = await status!.handler({ verify: true });
     expect(verifiedResult).toMatchObject({ structuredContent: { loggedIn: true, verified: true } });
-
-    const localResult = await status!.handler({ verify: false });
-    expect(localResult).toMatchObject({ structuredContent: { loggedIn: false, verified: false } });
 
     const logoutResult = await logoutTool!.handler({});
     expect(logoutResult).toMatchObject({ structuredContent: { loggedIn: false } });

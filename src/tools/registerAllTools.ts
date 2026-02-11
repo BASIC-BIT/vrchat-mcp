@@ -43,13 +43,12 @@ export async function registerAllTools(server: McpServer): Promise<void> {
 
   registerAuthTools(server);
 
-  registerVrctlAuthTools(server);
-
-  registerVrctlMetadataTools(server);
-
-  registerVrctlEventTools(server);
-
-  registerVrctlOrganizerTools(server);
+  if (config.vrctl.enabled) {
+    registerVrctlAuthTools(server);
+    registerVrctlMetadataTools(server);
+    registerVrctlEventTools(server);
+    registerVrctlOrganizerTools(server);
+  }
 
   await registerGeneratedTools(server);
 }

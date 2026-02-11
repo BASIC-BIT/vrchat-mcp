@@ -29,6 +29,15 @@ export interface VrctlAuthManagerDeps {
   userAgent?: string;
 }
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function safeCookieValue(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
@@ -238,20 +247,26 @@ class VrctlAuthManager {
   }
 
   private async parseBody(req: IncomingMessage): Promise<URLSearchParams> {
+    const MAX_BODY_BYTES = 16_384; // 16 KB
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
     for await (const chunk of req) {
       const value: unknown = chunk;
+      let buf: Buffer | undefined;
       if (Buffer.isBuffer(value)) {
-        chunks.push(value);
-        continue;
+        buf = value;
+      } else if (value instanceof Uint8Array) {
+        buf = Buffer.from(value);
+      } else if (typeof value === 'string') {
+        buf = Buffer.from(value, 'utf8');
       }
-      if (value instanceof Uint8Array) {
-        chunks.push(Buffer.from(value));
-        continue;
-      }
-      if (typeof value === 'string') {
-        chunks.push(Buffer.from(value, 'utf8'));
-        continue;
+      if (buf) {
+        totalBytes += buf.length;
+        if (totalBytes > MAX_BODY_BYTES) {
+          req.destroy();
+          throw new Error('Request body too large');
+        }
+        chunks.push(buf);
       }
     }
     const body = Buffer.concat(chunks).toString('utf8');
@@ -261,6 +276,7 @@ class VrctlAuthManager {
   private renderForm(res: ServerResponse, token: string, options: { error?: string } = {}) {
     const error = options.error;
     const loginUrl = new URL('/login', this.siteUrl).toString();
+    const escapedError = error ? escapeHtml(error) : '';
     res.setHeader('content-type', 'text/html; charset=utf-8');
     res.end(`<!doctype html><html><body>
       <h3>VRC.TL Login</h3>
@@ -271,7 +287,7 @@ class VrctlAuthManager {
         <li>Copy the cookie values for <code>PHPSESSID</code> (required) and <code>_nss</code> (optional) and paste them below.</li>
       </ol>
       <p><strong>Warning:</strong> these cookie values grant access to your vrc.tl account. Keep them private.</p>
-      ${error ? `<p style="color:red;">${error}</p>` : ''}
+      ${escapedError ? `<p style="color:red;">${escapedError}</p>` : ''}
       <form method="POST" action="/submit?token=${token}">
         <label>PHPSESSID <input name="phpSessId" required /></label><br />
         <label>_nss <input name="nss" /></label><br />

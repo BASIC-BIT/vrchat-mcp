@@ -25,13 +25,21 @@ export function registerVrctlAuthTools(server: McpServer): void {
   server.registerTool(
     toolName('vrctl.auth.status'),
     {
-      description: 'vrc.tl auth status.',
-      inputSchema: z.object({ verify: z.boolean().optional() }).optional(),
+      description:
+        'vrc.tl auth status. Returns cached status by default; set verify=true to check live against vrc.tl.',
+      inputSchema: z
+        .object({
+          verify: z
+            .boolean()
+            .optional()
+            .describe('When true, makes a network request to verify session. Default false.'),
+        })
+        .optional(),
       outputSchema: VrctlAuthStatusSchema,
       annotations: readOnlyToolAnnotations,
     },
     async (args) => {
-      const verify = args?.verify ?? true;
+      const verify = args?.verify ?? false;
       const status = verify ? await vrctlAuthManager.verifyStatus() : vrctlAuthManager.getStatus();
       return {
         content: [{ type: 'text', text: status.loggedIn ? 'logged-in' : 'logged-out' }],
