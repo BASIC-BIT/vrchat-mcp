@@ -2,6 +2,7 @@ import { fetch as undiciFetch, Headers } from 'undici';
 import type { RequestInfo, RequestInit } from 'undici';
 import { getConfig } from '../config/index.js';
 import { vrctlAuthManager } from './auth.js';
+import { vrctlBlockState, type VrctlBlockState } from './blockState.js';
 
 export interface VrctlClock {
   now(): number;
@@ -71,6 +72,7 @@ export interface VrctlClientDeps {
   userAgent?: string;
   policy?: Partial<VrctlRequestPolicy>;
   clock?: Partial<VrctlClock>;
+  blockState?: VrctlBlockState;
   auth?: {
     getCookieHeader: (url: string) => Promise<string>;
     setCookiesFromResponse: (url: string, setCookieHeaders: string[]) => Promise<void>;
@@ -89,7 +91,7 @@ export class VrctlClient {
   private policy: VrctlRequestPolicy;
   private gate = new SerialGate();
   private nextAllowedMs = 0;
-  private blockedUntilMs: number | null = null;
+  private blockState: VrctlBlockState;
 
   constructor(deps: VrctlClientDeps = {}) {
     const config = getConfig();
@@ -97,6 +99,7 @@ export class VrctlClient {
     this.siteUrl = new URL(deps.siteUrl ?? config.vrctl.siteUrl);
     this.apiBaseUrl = new URL(deps.apiBaseUrl ?? config.vrctl.apiBaseUrl);
     this.userAgent = deps.userAgent ?? config.vrctl.userAgent;
+    this.blockState = deps.blockState ?? vrctlBlockState;
 
     const defaultNow = () => Date.now();
     const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -119,25 +122,17 @@ export class VrctlClient {
     };
   }
 
-  private blockRequests(reason: string): void {
-    const until = this.clock.now() + this.policy.denyCooldownMs;
-    this.blockedUntilMs = until;
+  private blockRequests(reason: string): never {
+    this.blockState.block(this.policy.denyCooldownMs);
     throw new Error(
-      `${reason} (cooldown ${Math.round(this.policy.denyCooldownMs / 1000)}s; blockedUntil=${new Date(
-        until
-      ).toISOString()})`
+      `${reason} (cooldown ${Math.round(this.policy.denyCooldownMs / 1000)}s; blockedUntil=${this.blockState.blockedUntil})`
     );
   }
 
   private assertNotBlocked(): void {
-    if (this.blockedUntilMs === null) return;
-    const now = this.clock.now();
-    if (now >= this.blockedUntilMs) {
-      this.blockedUntilMs = null;
-      return;
-    }
+    if (!this.blockState.isBlocked()) return;
     throw new Error(
-      `vrc.tl requests are temporarily blocked until ${new Date(this.blockedUntilMs).toISOString()} (received 403 Access Denied)`
+      `vrc.tl requests are temporarily blocked until ${this.blockState.blockedUntil} (received 403 Access Denied)`
     );
   }
 
@@ -150,6 +145,44 @@ export class VrctlClient {
       await this.clock.sleep(waitMs);
     }
     this.nextAllowedMs = this.clock.now() + minIntervalMs;
+  }
+
+  private async getHeaders(url: string, accept: string): Promise<Headers> {
+    const headers = new Headers();
+    headers.set('user-agent', this.userAgent);
+    headers.set('accept', accept);
+    const cookieHeader = await this.auth.getCookieHeader(url);
+    if (cookieHeader) headers.set('cookie', cookieHeader);
+    return headers;
+  }
+
+  private async onFetchError(err: unknown, attempt: number): Promise<number> {
+    if (attempt >= this.policy.maxRetries) throw err;
+    const nextAttempt = attempt + 1;
+    const delayMs = computeBackoffMs(nextAttempt, this.policy);
+    if (delayMs > 0) await this.clock.sleep(delayMs);
+    return nextAttempt;
+  }
+
+  private async onAccessDenied(res: Response): Promise<never> {
+    // Consume body first so keep-alive connections remain reusable and include
+    // a short snippet for diagnostics.
+    const deniedBodyText = await res.text();
+    const deniedSnippet = deniedBodyText.trim().replace(/\s+/g, ' ').slice(0, 160);
+
+    // Avoid persisting WAF/challenge cookies.
+    const reason = deniedSnippet
+      ? `vrc.tl returned 403 Access Denied: ${deniedSnippet}`
+      : 'vrc.tl returned 403 Access Denied';
+    this.blockRequests(reason);
+  }
+
+  private async getRetryAttempt(res: Response, attempt: number): Promise<number | null> {
+    if (!shouldRetry(res.status, attempt, this.policy)) return null;
+    const nextAttempt = attempt + 1;
+    const delayMs = retryDelayMs(res, nextAttempt, this.policy, this.clock.now());
+    if (delayMs > 0) await this.clock.sleep(delayMs);
+    return nextAttempt;
   }
 
   buildSiteUrl(pathname: string, query?: Record<string, string | undefined>): string {
@@ -186,26 +219,18 @@ export class VrctlClient {
         this.assertNotBlocked();
         await this.waitForRateLimit();
 
-        const headers = new Headers();
-        headers.set('user-agent', this.userAgent);
-        headers.set('accept', options.accept);
-        const cookieHeader = await this.auth.getCookieHeader(url);
-        if (cookieHeader) headers.set('cookie', cookieHeader);
+        const headers = await this.getHeaders(url, options.accept);
 
         let res: Awaited<ReturnType<VrctlFetch>>;
         try {
           res = await this.fetchImpl(url, { method: 'GET', headers });
         } catch (err) {
-          if (attempt >= this.policy.maxRetries) throw err;
-          attempt += 1;
-          const delayMs = computeBackoffMs(attempt, this.policy);
-          if (delayMs > 0) await this.clock.sleep(delayMs);
+          attempt = await this.onFetchError(err, attempt);
           continue;
         }
 
         if (res.status === 403) {
-          // Avoid persisting WAF/challenge cookies.
-          this.blockRequests('vrc.tl returned 403 Access Denied');
+          await this.onAccessDenied(res);
         }
 
         const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
@@ -214,11 +239,9 @@ export class VrctlClient {
         }
 
         const bodyText = await res.text();
-
-        if (shouldRetry(res.status, attempt, this.policy)) {
-          attempt += 1;
-          const delayMs = retryDelayMs(res, attempt, this.policy, this.clock.now());
-          if (delayMs > 0) await this.clock.sleep(delayMs);
+        const nextAttempt = await this.getRetryAttempt(res, attempt);
+        if (nextAttempt !== null) {
+          attempt = nextAttempt;
           continue;
         }
 

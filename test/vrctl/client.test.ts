@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { RequestInfo, RequestInit } from 'undici';
 import { createVrctlClient, type VrctlFetch } from '../../src/vrctl/client.js';
+import { VrctlBlockState } from '../../src/vrctl/blockState.js';
 
 interface FetchQueueEntry {
   status: number;
@@ -78,6 +79,7 @@ describe('vrctl client request policy', () => {
     ];
     const { fetchImpl, calls } = createMockFetch(queue, clock);
 
+    const blockState = new VrctlBlockState({ now: clock.now });
     const client = createVrctlClient({
       fetchImpl: fetchImpl as unknown as VrctlFetch,
       siteUrl: 'https://example.test',
@@ -90,6 +92,7 @@ describe('vrctl client request policy', () => {
         denyCooldownMs: 1000,
       },
       clock,
+      blockState,
       auth: {
         getCookieHeader: () => Promise.resolve(''),
         setCookiesFromResponse: () => Promise.resolve(),
@@ -113,6 +116,7 @@ describe('vrctl client request policy', () => {
     ];
     const { fetchImpl, calls } = createMockFetch(queue, clock);
 
+    const blockState = new VrctlBlockState({ now: clock.now });
     const client = createVrctlClient({
       fetchImpl: fetchImpl as unknown as VrctlFetch,
       siteUrl: 'https://example.test',
@@ -125,6 +129,7 @@ describe('vrctl client request policy', () => {
         denyCooldownMs: 1000,
       },
       clock,
+      blockState,
       auth: {
         getCookieHeader: () => Promise.resolve(''),
         setCookiesFromResponse: () => Promise.resolve(),
@@ -150,6 +155,7 @@ describe('vrctl client request policy', () => {
     const { fetchImpl, calls } = createMockFetch(queue, clock);
     const setCookiesFromResponse = vi.fn(() => Promise.resolve());
 
+    const blockState = new VrctlBlockState({ now: clock.now });
     const client = createVrctlClient({
       fetchImpl: fetchImpl as unknown as VrctlFetch,
       siteUrl: 'https://example.test',
@@ -162,13 +168,22 @@ describe('vrctl client request policy', () => {
         denyCooldownMs: 1000,
       },
       clock,
+      blockState,
       auth: {
         getCookieHeader: () => Promise.resolve(''),
         setCookiesFromResponse,
       },
     });
 
-    await expect(client.getSiteHtml('/')).rejects.toThrow(/403 Access Denied/i);
+    let firstError = '';
+    try {
+      await client.getSiteHtml('/');
+      throw new Error('expected getSiteHtml to throw on 403');
+    } catch (err) {
+      firstError = err instanceof Error ? err.message : String(err);
+    }
+    expect(firstError).toMatch(/403 Access Denied/i);
+    expect(firstError).toMatch(/<h1>Access Denied<\/h1>/i);
     expect(setCookiesFromResponse).not.toHaveBeenCalled();
     expect(calls).toHaveLength(1);
 

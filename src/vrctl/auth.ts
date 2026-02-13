@@ -9,6 +9,7 @@ import { getConfig } from '../config/index.js';
 import type { CookieStore } from '../auth/cookieStore.js';
 import { getVrctlCookieStore } from '../auth/cookieStore.js';
 import { parseTimelineBootstrap } from './timelineBootstrap.js';
+import { vrctlBlockState, type VrctlBlockState } from './blockState.js';
 
 export interface VrctlAuthStatus extends Record<string, unknown> {
   loggedIn: boolean;
@@ -27,6 +28,7 @@ export interface VrctlAuthManagerDeps {
   fetchImpl?: typeof fetch;
   siteUrl?: string;
   userAgent?: string;
+  blockState?: VrctlBlockState;
 }
 
 function escapeHtml(unsafe: string): string {
@@ -57,6 +59,9 @@ class VrctlAuthManager {
   private serverToken: string | null = null;
   private port: number | null = null;
 
+  private blockState: VrctlBlockState;
+  private denyCooldownMs: number;
+
   private status: VrctlAuthStatus = {
     loggedIn: false,
     verified: false,
@@ -71,6 +76,8 @@ class VrctlAuthManager {
     this.userAgent = deps.userAgent ?? config.vrctl.userAgent ?? config.api.userAgent;
     this.store = deps.store ?? getVrctlCookieStore();
     this.fetchImpl = deps.fetchImpl ?? fetch;
+    this.blockState = deps.blockState ?? vrctlBlockState;
+    this.denyCooldownMs = config.vrctl.requests?.denyCooldownMs ?? 300_000;
   }
 
   async init() {
@@ -112,12 +119,26 @@ class VrctlAuthManager {
     this.status = { loggedIn: false, verified: false, hasSessionCookie: false };
     this.clearCookies();
     await this.store.clear();
+
     if (this.server) {
-      this.server.close();
-      this.server = null;
-      this.port = null;
-      this.serverToken = null;
+      const server = this.server;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          server.close((err) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            resolve();
+          });
+        });
+      } finally {
+        this.server = null;
+        this.port = null;
+        this.serverToken = null;
+      }
     }
+
     this.emitStatus();
   }
 
@@ -168,7 +189,25 @@ class VrctlAuthManager {
     this.emitStatus();
   }
 
+  /** Check whether requests are currently blocked due to a previous 403. */
+  isBlocked(): boolean {
+    return this.blockState.isBlocked();
+  }
+
   async verifyStatus(): Promise<VrctlAuthStatus> {
+    // Refuse to make network requests while in 403 cooldown.
+    if (this.isBlocked()) {
+      const has = await this.hasSessionCookie();
+      this.status = {
+        loggedIn: has,
+        verified: false,
+        hasSessionCookie: has,
+        message: `vrc.tl requests are temporarily blocked until ${this.blockState.blockedUntil} (received 403 Access Denied)`,
+      };
+      this.emitStatus();
+      return this.getStatus();
+    }
+
     const url = new URL('/', this.siteUrl).toString();
     const headers = new Headers();
     headers.set('user-agent', this.userAgent);
@@ -177,6 +216,21 @@ class VrctlAuthManager {
 
     try {
       const res = await this.fetchImpl(url, { method: 'GET', headers });
+
+      // On 403, activate cooldown and skip cookie persistence to avoid
+      // overwriting valid session cookies with WAF/challenge cookies.
+      if (res.status === 403) {
+        this.blockState.block(this.denyCooldownMs);
+        const has = await this.hasSessionCookie();
+        this.status = {
+          loggedIn: has,
+          verified: false,
+          hasSessionCookie: has,
+          message: `vrc.tl returned 403 Access Denied (cooldown ${Math.round(this.denyCooldownMs / 1000)}s)`,
+        };
+        this.emitStatus();
+        return this.getStatus();
+      }
 
       const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
       if (setCookieHeaders.length) {
@@ -236,9 +290,29 @@ class VrctlAuthManager {
       });
     });
 
-    await new Promise<void>((resolve) => {
-      this.server!.listen(0, '127.0.0.1', () => resolve());
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const server = this.server!;
+
+        const onListening = () => {
+          server.off('error', onError);
+          resolve();
+        };
+        const onError = (err: Error) => {
+          server.off('listening', onListening);
+          reject(err);
+        };
+
+        server.once('listening', onListening);
+        server.once('error', onError);
+        server.listen(0, '127.0.0.1');
+      });
+    } catch (err) {
+      this.server = null;
+      this.port = null;
+      this.serverToken = null;
+      throw err;
+    }
 
     const address = this.server.address();
     const port = typeof address === 'object' && address ? address.port : 0;
