@@ -6,7 +6,9 @@ vi.mock('../../../src/core/client.js', () => ({
 
 import { callOperation } from '../../../src/core/client.js';
 import {
+  inviteUserToCurrentInstance,
   prepareInviteUser,
+  resolveCurrentInviteLocation,
   resolveInviteLocation,
   resolveInviteInstanceId,
   sendSelfInvite,
@@ -52,7 +54,10 @@ describe('invites curated service', () => {
   });
 
   it('sends self invite via API', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'ntf_1' } });
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'ntf_1' },
+      url: 'https://example.test/inviteMyselfTo',
+    });
     const notification = await sendSelfInvite({ worldId: 'wrld_1', instanceId: 'inst_1' });
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'inviteMyselfTo',
@@ -63,7 +68,10 @@ describe('invites curated service', () => {
   });
 
   it('sends user invite via API', async () => {
-    vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'ntf_2' } });
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'ntf_2' },
+      url: 'https://example.test/inviteUser',
+    });
     const notification = await sendUserInvite('usr_2', { instanceId: 'inst_9' });
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'inviteUser',
@@ -71,5 +79,61 @@ describe('invites curated service', () => {
       body: { instanceId: 'inst_9' },
     });
     expect(notification).toMatchObject({ id: 'ntf_2' });
+  });
+
+  it('resolves current invite location from current user profile', async () => {
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'usr_self', location: 'wrld_5:inst_6~private' },
+      url: 'https://example.test/getCurrentUser',
+    });
+
+    await expect(resolveCurrentInviteLocation()).resolves.toEqual({
+      worldId: 'wrld_5',
+      instanceId: 'inst_6~private',
+      location: 'wrld_5:inst_6~private',
+    });
+  });
+
+  it('invites user to current instance using current user location', async () => {
+    vi.mocked(callOperation)
+      .mockResolvedValueOnce({
+        data: { id: 'usr_self', location: 'wrld_1:inst_2' },
+        url: 'https://example.test/getCurrentUser',
+      })
+      .mockResolvedValueOnce({
+        data: { id: 'ntf_9' },
+        url: 'https://example.test/inviteUser',
+      });
+
+    const result = await inviteUserToCurrentInstance({ userId: 'usr_target', messageSlot: 4 });
+
+    expect(callOperation).toHaveBeenNthCalledWith(1, {
+      operationId: 'getCurrentUser',
+      params: {},
+    });
+    expect(callOperation).toHaveBeenNthCalledWith(2, {
+      operationId: 'inviteUser',
+      params: { userId: 'usr_target' },
+      body: { instanceId: 'inst_2', messageSlot: 4 },
+    });
+    expect(result).toMatchObject({
+      status: 'sent',
+      userId: 'usr_target',
+      worldId: 'wrld_1',
+      instanceId: 'inst_2',
+      location: 'wrld_1:inst_2',
+      notification: { id: 'ntf_9' },
+    });
+  });
+
+  it('errors when current location is not a joinable instance', async () => {
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'usr_self', location: 'offline' },
+      url: 'https://example.test/getCurrentUser',
+    });
+
+    await expect(inviteUserToCurrentInstance({ userId: 'usr_target' })).rejects.toThrow(
+      'Could not determine your current joinable instance from location.'
+    );
   });
 });

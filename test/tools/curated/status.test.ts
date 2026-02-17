@@ -87,4 +87,36 @@ describe('curated status tools', () => {
       structuredContent: { error: 'Nope' },
     });
   });
+
+  it('rejects description-only status set at schema level', async () => {
+    const server = new FakeServer();
+    registerCuratedStatusTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_status_set');
+    const result = (await tool!.handler({ description: '' })) as {
+      isError?: boolean;
+      structuredContent?: { error?: string };
+    };
+
+    expect(result).toMatchObject({
+      isError: true,
+    });
+    expect(result.structuredContent?.error).toContain('Provide status or color.');
+    expect(updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('rejects conflicting status and color at schema level', async () => {
+    const server = new FakeServer();
+    registerCuratedStatusTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_status_set');
+    const result = (await tool!.handler({ status: 'active', color: 'red' })) as {
+      isError?: boolean;
+      structuredContent?: { error?: string };
+    };
+
+    expect(result).toMatchObject({
+      isError: true,
+    });
+    expect(result.structuredContent?.error).toContain('maps to status');
+    expect(updateStatus).not.toHaveBeenCalled();
+  });
 });

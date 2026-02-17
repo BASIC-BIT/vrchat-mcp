@@ -24,5 +24,20 @@ export const InviteUserOutputSchema = z.object({
   notification: schemas.SentNotification.partial().optional(),
 });
 
+export const InviteUserToMeSchema = z.object({
+  userId: schemas.UserID,
+  messageSlot: z.number().int().min(0).max(11).optional(),
+});
+
+export const InviteUserToMeOutputSchema = z.object({
+  status: z.literal('sent'),
+  userId: schemas.UserID,
+  worldId: schemas.WorldID,
+  instanceId: schemas.InstanceID,
+  location: z.string(),
+  notification: schemas.SentNotification.partial().optional(),
+});
+
 export type InviteSelfInput = z.infer<typeof InviteSelfSchema>;
 export type InviteUserInput = z.infer<typeof InviteUserSchema>;
+export type InviteUserToMeInput = z.infer<typeof InviteUserToMeSchema>;

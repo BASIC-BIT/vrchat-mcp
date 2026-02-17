@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerCuratedUserTools } from '../../../src/tools/curated/users.js';
-import { DEFAULT_SELF_FIELDS } from '../../../src/models/users.js';
+import { DEFAULT_SELF_FIELDS, PRESENCE_SELF_FIELDS } from '../../../src/models/users.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 
 vi.mock('../../../src/services/users/index.js', () => ({
@@ -149,6 +149,24 @@ describe('curated user tools', () => {
         user: { id: 'usr_1', displayName: 'Tester', friends: ['usr_2'] },
       },
     });
+  });
+
+  it('uses presence view preset for vrchat_me', async () => {
+    vi.mocked(resolveUserProfile).mockResolvedValue({
+      ok: true,
+      user: { id: 'usr_1', displayName: 'Tester', location: 'wrld_1:inst_1' },
+      userId: 'usr_1',
+    });
+
+    const server = new FakeServer();
+    registerCuratedUserTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_me');
+    await tool!.handler({ view: 'presence' });
+
+    expect(vi.mocked(shapeReadData)).toHaveBeenCalledWith(
+      { id: 'usr_1', displayName: 'Tester', location: 'wrld_1:inst_1' },
+      expect.objectContaining({ fields: PRESENCE_SELF_FIELDS })
+    );
   });
 
   it('returns tool error when profile resolution fails', async () => {

@@ -3,6 +3,7 @@
 This repo uses linting, typechecking, and tests to validate changes.
 
 Guidance for coding agents:
+
 - After significant code changes (or at the end of a work loop), run `npm run check`.
 - If you need just one step, use `npm run lint`, `npm run typecheck`, or `npm test`.
 - After making a change, run at least one relevant targeted test (or add/edit one) and confirm it passes before reporting back.
@@ -19,12 +20,14 @@ Guidance for coding agents:
 - Regenerate mock test schemas after spec tweaks: `npm run generate:test-schemas` (updates `test/generated/mock-schemas.ts`; do not edit manually).
 
 ## Tool ergonomics goals (distilled)
+
 - Prefer names over IDs: tools should accept human inputs (displayName/username) as first-class arguments; IDs are optional for precision or follow-ups.
 - Keep tools strict and explicit: each tool has a single, obvious purpose and should not hide search/fallback behaviors internally.
 - Fail cleanly with guidance: when a name lookup fails, return a structured "not found" response that points to the next obvious tool.
 - Chainable outputs: successful responses should include both human labels and IDs for follow-up calls.
 
 ## Curated output philosophy
+
 - Curated tools should return the smallest set of fields that answer the likely user question and support follow-up actions.
 - For high-volume collections (friends, group members, large lists), never return full objects by default; return compact summaries + IDs.
 - High-volume curated tools should auto-unroll pagination internally; only expose pagination when partial results are the intent (e.g., world search).
@@ -34,30 +37,38 @@ Guidance for coding agents:
 - Add argument descriptions for curated tools (especially include flags, filters, and paging knobs) so agents understand when to toggle them vs. use a different tool.
 
 ### Specific notes (current direction)
+
 - `vrchat_friend_details` should be KISS: accept `name` or `userId`, resolve directly, and either return the friend's details or a clear not-found error. No "match=exact" flag and no ambiguous candidate logic.
 - `vrchat_friends_search` is the explicit fuzzy lookup tool (agent should call it next after a not-found).
+- For `vrchat_me`, default to progressive disclosure: prefer `view` presets (`presence`, `summary`, `profile`) over broad field expansion.
+- For "invite friend to my current instance" flows, prefer `vrchat_invite_user_to_me` to avoid manual current-location plumbing in the agent loop.
 
 ## Caching considerations (planned)
+
 - Cache expensive list fetches (e.g., full friends list pagination) with TTLs to avoid repeated full scans on every call.
 - Support targeted invalidation (e.g., after invite/accept/remove flows or on explicit agent request).
 - Add an explicit cache-control tool (e.g., `vrchat_cache_invalidate`) for agents to force refreshes when needed.
 - Document per-area caching policy (friends, groups, worlds, etc.) with TTL defaults and invalidation triggers.
 
 ## Realtime pipeline notes
+
 - Pipeline websocket auto-starts after login by default; disable with `pipeline.enabled=false` in config.
 - Use `pipeline.url` to override the websocket endpoint when testing.
 - Use `pipeline.changeBuffer` to cap in-memory friend change history.
 - Friend change deltas are exposed via `vrchat://friends/changes{?after,limit}` and require `resources/subscribe` for notifications.
 
 ## Confirmation tokens (medium-risk writes)
+
 - Medium-risk write tools may return `confirm_required` with a `confirmId`.
 - Re-run the tool with the same arguments + `confirmId` to execute.
 - Tokens expire after `confirmations.ttlMs` (default 120000ms).
 
 ## Group write guard
+
 - Set `groups.allowlist` to a list of group IDs to limit group write operations.
 
 ## E2E tests
+
 - Mock E2E runs by default (`test/e2e/mock.test.ts`) and uses the OpenAPI fixtures + mock server.
 - Live E2E is opt-in: create `test/fixtures/e2e.live.json` (gitignored) to run `test/e2e/live.test.ts`.
 - Configure expectations in that file (see `test/fixtures/e2e.live.example.json`).

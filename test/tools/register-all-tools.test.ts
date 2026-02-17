@@ -45,6 +45,7 @@ describe('registerAllTools', () => {
       'vrchat_instance_create',
       'vrchat_invite_self',
       'vrchat_invite_user',
+      'vrchat_invite_user_to_me',
       'vrchat_status_get',
       'vrchat_status_set',
       'vrchat_events_upcoming',

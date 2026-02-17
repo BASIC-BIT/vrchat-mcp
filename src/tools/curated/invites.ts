@@ -2,10 +2,13 @@ import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   InviteSelfOutputSchema,
   InviteSelfSchema,
+  InviteUserToMeOutputSchema,
+  InviteUserToMeSchema,
   InviteUserOutputSchema,
   InviteUserSchema,
 } from '../../models/invites.js';
 import {
+  inviteUserToCurrentInstance,
   prepareInviteUser,
   resolveInviteLocation,
   sendSelfInvite,
@@ -41,7 +44,7 @@ export function registerCuratedInviteTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -73,6 +76,30 @@ export function registerCuratedInviteTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.invite.user_to_me'),
+    {
+      description:
+        'Invite a user to your current instance. Requires only the target userId; resolves your current location automatically. If you only have a display name, run vrchat_friends_search first to get userId.',
+      inputSchema: InviteUserToMeSchema,
+      outputSchema: InviteUserToMeOutputSchema,
+      annotations: writeToolAnnotations,
     },
+    async (args) => {
+      try {
+        const input = InviteUserToMeSchema.parse(args);
+        const payload = await inviteUserToCurrentInstance(input);
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
   );
 }

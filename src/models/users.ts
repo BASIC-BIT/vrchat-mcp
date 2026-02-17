@@ -8,7 +8,10 @@ export const UserShapeSchema = z.object({
   maxArrayLength: z.number().int().positive().optional(),
 });
 
+export const SelfProfileViewSchema = z.enum(['summary', 'presence', 'profile']);
+
 export const CurrentUserProfileInputSchema = UserShapeSchema.extend({
+  view: SelfProfileViewSchema.optional(),
   includeGroups: z.boolean().optional(),
   groupPageSize: z.number().int().min(1).max(100).optional(),
   groupMaxPages: z.number().int().min(1).max(50).optional(),
@@ -35,6 +38,30 @@ export const DEFAULT_SELF_FIELDS = [
   'developerType',
   'state',
   'twoFactorAuthEnabled',
+] as const;
+
+export const SUMMARY_SELF_FIELDS = [
+  'id',
+  'displayName',
+  'username',
+  'status',
+  'statusDescription',
+  'location',
+  'last_login',
+  'last_platform',
+  'userIcon',
+  'currentAvatarThumbnailImageUrl',
+] as const;
+
+export const PRESENCE_SELF_FIELDS = [
+  'id',
+  'displayName',
+  'status',
+  'statusDescription',
+  'statusEmoji',
+  'location',
+  'last_login',
+  'last_platform',
 ] as const;
 
 export const UserGroupsOutputSchema = z.object({
@@ -100,5 +127,6 @@ export const UserGroupsInputSchema = z.object({
 
 export type UserGroupsOutput = z.infer<typeof UserGroupsOutputSchema>;
 export type CurrentUserProfileInput = z.infer<typeof CurrentUserProfileInputSchema>;
+export type SelfProfileView = z.infer<typeof SelfProfileViewSchema>;
 export type ProfileUpdateInput = z.infer<typeof ProfileUpdateInputSchema>;
 export type ProfileUpdateOutput = z.infer<typeof ProfileUpdateOutputSchema>;

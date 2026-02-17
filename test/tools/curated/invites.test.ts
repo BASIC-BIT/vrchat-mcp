@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerCuratedInviteTools } from '../../../src/tools/curated/invites.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 import {
+  inviteUserToCurrentInstance,
   prepareInviteUser,
   resolveInviteLocation,
   sendSelfInvite,
@@ -10,6 +11,7 @@ import {
 } from '../../../src/services/invites/index.js';
 
 vi.mock('../../../src/services/invites/index.js', () => ({
+  inviteUserToCurrentInstance: vi.fn(),
   prepareInviteUser: vi.fn(),
   resolveInviteLocation: vi.fn(),
   sendSelfInvite: vi.fn(),
@@ -19,6 +21,7 @@ vi.mock('../../../src/services/invites/index.js', () => ({
 describe('curated invite tools', () => {
   beforeEach(() => {
     vi.mocked(prepareInviteUser).mockReset();
+    vi.mocked(inviteUserToCurrentInstance).mockReset();
     vi.mocked(resolveInviteLocation).mockReset();
     vi.mocked(sendSelfInvite).mockReset();
     vi.mocked(sendUserInvite).mockReset();
@@ -80,4 +83,30 @@ describe('curated invite tools', () => {
     });
   });
 
+  it('invites user to current instance with userId only', async () => {
+    const server = new FakeServer();
+    registerCuratedInviteTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_invite_user_to_me');
+    expect(tool).toBeTruthy();
+
+    vi.mocked(inviteUserToCurrentInstance).mockResolvedValue({
+      status: 'sent',
+      userId: 'usr_1',
+      worldId: 'wrld_1',
+      instanceId: 'inst_1',
+      location: 'wrld_1:inst_1',
+      notification: { id: 'ntf_4' },
+    });
+    const result = await tool!.handler({ userId: 'usr_1' });
+
+    expect(inviteUserToCurrentInstance).toHaveBeenCalledWith({ userId: 'usr_1' });
+    expect(result).toMatchObject({
+      structuredContent: {
+        status: 'sent',
+        userId: 'usr_1',
+        worldId: 'wrld_1',
+        instanceId: 'inst_1',
+      },
+    });
+  });
 });

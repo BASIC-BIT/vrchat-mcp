@@ -39,85 +39,40 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
 const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
   ['getConfig', 'Get VRChat API config (includes the current client API key).'],
   ['getSystemTime', 'Get VRChat server time.'],
-  [
-    'getCurrentUser',
-    'Fetch the current user (raw API; large payload). Prefer vrchat_me.',
-  ],
+  ['getCurrentUser', 'Fetch the current user (raw API; large payload). Prefer vrchat_me.'],
   ['getFriends', 'List friends (raw API; prefers pagination).'],
-  [
-    'getUser',
-    'Fetch a user by userId (raw API). Prefer vrchat_user_profile.',
-  ],
-  [
-    'getUserByName',
-    'Fetch a user by name (raw API). Prefer vrchat_user_profile.',
-  ],
-  [
-    'getUserGroups',
-    'List groups for a user (raw API). Prefer vrchat_user_groups.',
-  ],
+  ['getUser', 'Fetch a user by userId (raw API). Prefer vrchat_user_profile.'],
+  ['getUserByName', 'Fetch a user by name (raw API). Prefer vrchat_user_profile.'],
+  ['getUserGroups', 'List groups for a user (raw API). Prefer vrchat_user_groups.'],
   ['getWorld', 'Fetch a world by worldId (raw API). Prefer vrchat_world_profile.'],
-  [
-    'searchWorlds',
-    'Search worlds (raw API). Prefer vrchat_worlds_search.',
-  ],
-  [
-    'getFavoritedWorlds',
-    'List favorited worlds (raw API). Prefer vrchat_worlds_favorites.',
-  ],
+  ['searchWorlds', 'Search worlds (raw API). Prefer vrchat_worlds_search.'],
+  ['getFavoritedWorlds', 'List favorited worlds (raw API). Prefer vrchat_worlds_favorites.'],
   ['getGroup', 'Fetch a group profile (raw API). Prefer vrchat_group_profile.'],
   ['searchGroups', 'Search groups (raw API). Prefer vrchat_groups_search.'],
-  [
-    'getGroupMembers',
-    'List group members (raw API). Prefer vrchat_group_members.',
-  ],
+  ['getGroupMembers', 'List group members (raw API). Prefer vrchat_group_members.'],
   [
     'getGroupAnnouncements',
     'Fetch group announcement (raw API). Prefer vrchat_group_announcement.',
   ],
-  [
-    'getGroupPosts',
-    'List group posts (raw API). Prefer vrchat_group_posts_recent.',
-  ],
-  [
-    'getGroupInstances',
-    'List group instances (raw API). Prefer vrchat_group_instances_overview.',
-  ],
+  ['getGroupPosts', 'List group posts (raw API). Prefer vrchat_group_posts_recent.'],
+  ['getGroupInstances', 'List group instances (raw API). Prefer vrchat_group_instances_overview.'],
   [
     'getGroupCalendarEvents',
     'List group calendar events (raw API). Prefer vrchat_group_events_list.',
   ],
-  [
-    'getGroupCalendarEvent',
-    'Get a group calendar event (raw API). Prefer vrchat_group_event_get.',
-  ],
-  [
-    'getNotifications',
-    'List recent notifications (raw API). Prefer vrchat_notifications_recent.',
-  ],
-  [
-    'getCalendarEvents',
-    'List upcoming calendar events (raw API). Prefer vrchat_events_upcoming.',
-  ],
-  [
-    'searchCalendarEvents',
-    'Search calendar events (raw API). Prefer vrchat_events_search.',
-  ],
+  ['getGroupCalendarEvent', 'Get a group calendar event (raw API). Prefer vrchat_group_event_get.'],
+  ['getNotifications', 'List recent notifications (raw API). Prefer vrchat_notifications_recent.'],
+  ['getCalendarEvents', 'List upcoming calendar events (raw API). Prefer vrchat_events_upcoming.'],
+  ['searchCalendarEvents', 'Search calendar events (raw API). Prefer vrchat_events_search.'],
 ]);
 
 const GENERATED_WRITE_TOOL_DESCRIPTIONS = new Map<string, string>([
-  [
-    'createInstance',
-    'Create a VRChat instance (raw API). Prefer vrchat_instance_create.',
-  ],
+  ['createInstance', 'Create a VRChat instance (raw API). Prefer vrchat_instance_create.'],
   [
     'inviteUser',
-    'Invite a user to an instance (raw API). Prefer vrchat_invite_user.',
+    'Invite a user to an instance (raw API). Prefer vrchat_invite_user or vrchat_invite_user_to_me when inviting to your current instance.',
   ],
-  [
-    'inviteMyselfTo',
-    'Invite yourself to an instance (raw API). Prefer vrchat_invite_self.',
-  ],
+  ['inviteMyselfTo', 'Invite yourself to an instance (raw API). Prefer vrchat_invite_self.'],
   [
     'createGroupCalendarEvent',
     'Create a group calendar event (raw API). Prefer vrchat_event_create.',

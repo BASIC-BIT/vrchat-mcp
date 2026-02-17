@@ -1,14 +1,13 @@
 import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
-import { StatusSchema } from '../../models/status.js';
-import type { StatusColor, StatusGetOutput, StatusSetInput, StatusValue } from '../../models/status.js';
+import { STATUS_FROM_COLOR, StatusSchema } from '../../models/status.js';
+import type {
+  StatusColor,
+  StatusGetOutput,
+  StatusSetInput,
+  StatusValue,
+} from '../../models/status.js';
 import { resolveUserId } from '../users/index.js';
 
-const STATUS_FROM_COLOR: Record<StatusColor, StatusValue> = {
-  blue: 'active',
-  green: 'join me',
-  orange: 'ask me',
-  red: 'busy',
-};
 const STATUS_VALUES = new Set<StatusValue>(StatusSchema.options);
 
 function isStatusValue(value: string): value is StatusValue {
@@ -27,9 +26,7 @@ export async function getCurrentStatus(): Promise<StatusGetOutput> {
   return {
     userId: typeof user?.id === 'string' ? user.id : undefined,
     status:
-      typeof user?.status === 'string' && isStatusValue(user.status)
-        ? user.status
-        : undefined,
+      typeof user?.status === 'string' && isStatusValue(user.status) ? user.status : undefined,
     statusDescription:
       typeof user?.statusDescription === 'string' ? user.statusDescription : undefined,
   };

@@ -4,13 +4,16 @@ import { shapeReadData } from '../../core/readTools.js';
 import {
   CurrentUserProfileInputSchema,
   DEFAULT_SELF_FIELDS,
+  PRESENCE_SELF_FIELDS,
   PROFILE_UPDATE_FIELDS,
   ProfileUpdateInputSchema,
   ProfileUpdateOutputSchema,
+  SUMMARY_SELF_FIELDS,
   UserGroupsInputSchema,
   UserGroupsOutputSchema,
   UserProfileInputSchema,
   UserProfileOutputSchema,
+  type SelfProfileView,
   type UserGroupsOutput,
 } from '../../models/users.js';
 import {
@@ -24,12 +27,27 @@ import { readOnlyToolAnnotations, writeToolAnnotations } from '../../utils/toolA
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
+function getSelfFields(args: { view?: SelfProfileView; fields?: string[] } | undefined): string[] {
+  if (args?.fields?.length) {
+    return args.fields;
+  }
+
+  const view = args?.view ?? 'profile';
+  if (view === 'presence') {
+    return [...PRESENCE_SELF_FIELDS];
+  }
+  if (view === 'summary') {
+    return [...SUMMARY_SELF_FIELDS];
+  }
+  return [...DEFAULT_SELF_FIELDS];
+}
+
 export function registerCuratedUserTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.me'),
     {
       description:
-        'Get your profile (read-only). Uses a compact default field set to avoid large friend lists; provide fields to override. Optionally include a paged list of your groups.',
+        'Get your profile (read-only). Use view=presence/summary/profile presets; provide fields to override. Optionally include a paged list of your groups.',
       inputSchema: CurrentUserProfileInputSchema,
       outputSchema: UserProfileOutputSchema,
       annotations: readOnlyToolAnnotations,
@@ -41,7 +59,7 @@ export function registerCuratedUserTools(server: McpServer): void {
           return toolError(resolved.reason);
         }
 
-        const fields = args?.fields?.length ? args.fields : [...DEFAULT_SELF_FIELDS];
+        const fields = getSelfFields(args);
         const shapedUser = shapeReadData(resolved.user, {
           fields,
           compact: args?.compact,

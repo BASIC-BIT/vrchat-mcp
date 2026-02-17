@@ -5,10 +5,7 @@ import {
   StatusSetOutputSchema,
 } from '../../models/status.js';
 import { getCurrentStatus, updateStatus } from '../../services/status/index.js';
-import {
-  readOnlyToolAnnotations,
-  writeToolAnnotations,
-} from '../../utils/toolAnnotations.js';
+import { readOnlyToolAnnotations, writeToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -31,14 +28,14 @@ export function registerCuratedStatusTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
     toolName('vrchat.status.set'),
     {
       description:
-        'Set your status + description (write). Accepts status or color (blue/green/orange/red). Defaults to current user.',
+        'Set your status + description (write). Requires status or color (blue/green/orange/red); if both are provided they must agree. Defaults to current user.',
       inputSchema: StatusSetInputSchema,
       outputSchema: StatusSetOutputSchema,
       annotations: writeToolAnnotations,
@@ -55,6 +52,6 @@ export function registerCuratedStatusTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 }
