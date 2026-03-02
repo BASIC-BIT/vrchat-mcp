@@ -221,6 +221,58 @@ describe('status page curated service', () => {
     expect(result.notes.some((note) => note.includes('Failed to read incidents.json'))).toBe(true);
   });
 
+  it('excludes unresolved incidents from recent when unresolved endpoint fails', async () => {
+    const now = Date.now();
+    const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+
+    mockFetchByUrl({
+      'https://status.vrchat.com/api/v2/summary.json': {
+        body: {
+          page: { name: 'VRChat' },
+          status: { indicator: 'none' },
+          components: [],
+        },
+      },
+      'https://status.vrchat.com/api/v2/incidents/unresolved.json': {
+        body: { error: 'bad gateway' },
+        status: 502,
+        statusText: 'Bad Gateway',
+      },
+      'https://status.vrchat.com/api/v2/incidents.json': {
+        body: {
+          incidents: [
+            {
+              id: 'inc_open',
+              name: 'Still open',
+              status: 'investigating',
+              updated_at: oneHourAgo,
+            },
+            {
+              id: 'inc_resolved',
+              name: 'Resolved recently',
+              status: 'resolved',
+              resolved_at: oneHourAgo,
+            },
+          ],
+        },
+      },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/active.json': {
+        body: { scheduled_maintenances: [] },
+      },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/upcoming.json': {
+        body: { scheduled_maintenances: [] },
+      },
+    });
+
+    const result = await getStatusPageOverview({ includeGraphs: false });
+
+    expect(
+      result.notes.some((note) => note.includes('Failed to read incidents/unresolved.json'))
+    ).toBe(true);
+    expect(result.incidents.recentCount).toBe(1);
+    expect(result.incidents.recent.map((incident) => incident.id)).toEqual(['inc_resolved']);
+  });
+
   it('counts only successfully mapped components in total', async () => {
     mockFetchByUrl({
       'https://status.vrchat.com/api/v2/summary.json': {

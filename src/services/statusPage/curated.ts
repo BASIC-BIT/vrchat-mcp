@@ -162,6 +162,10 @@ function isIncidentRecent(incident: Incident, thresholdMs: number): boolean {
   return startedTs !== null && startedTs >= thresholdMs;
 }
 
+function isIncidentResolved(incident: Incident): boolean {
+  return toTimestamp(incident.resolvedAt) !== null || incident.status === 'resolved';
+}
+
 function parseSeries(raw: unknown): [number, number][] {
   if (!Array.isArray(raw)) return [];
   const out: [number, number][] = [];
@@ -390,7 +394,10 @@ export async function getStatusPageOverview(
 
   const recentAll = sortByMostRecent(
     allIncidents.filter(
-      (incident) => !unresolvedIds.has(incident.id) && isIncidentRecent(incident, recentThresholdMs)
+      (incident) =>
+        !unresolvedIds.has(incident.id) &&
+        isIncidentResolved(incident) &&
+        isIncidentRecent(incident, recentThresholdMs)
     )
   );
   const recent = recentAll.slice(0, maxItems);
