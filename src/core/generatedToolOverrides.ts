@@ -16,7 +16,6 @@ const CURATED_READ_TOOL_MAP = new Map<string, string>([
   ['getGroup', toToolName('vrchat.group.profile')],
   ['searchGroups', toToolName('vrchat.groups.search')],
   ['getGroupMembers', toToolName('vrchat.group.members')],
-  ['getGroupAnnouncements', toToolName('vrchat.group.announcement')],
   ['getGroupPosts', toToolName('vrchat.group.posts_recent')],
   ['getGroupInstances', toToolName('vrchat.group.instances.overview')],
   ['getGroupCalendarEvents', toToolName('vrchat.group.events.list')],
@@ -50,10 +49,6 @@ const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
   ['getGroup', 'Fetch a group profile (raw API). Prefer vrchat_group_profile.'],
   ['searchGroups', 'Search groups (raw API). Prefer vrchat_groups_search.'],
   ['getGroupMembers', 'List group members (raw API). Prefer vrchat_group_members.'],
-  [
-    'getGroupAnnouncements',
-    'Fetch group announcement (raw API). Prefer vrchat_group_announcement.',
-  ],
   ['getGroupPosts', 'List group posts (raw API). Prefer vrchat_group_posts_recent.'],
   ['getGroupInstances', 'List group instances (raw API). Prefer vrchat_group_instances_overview.'],
   [

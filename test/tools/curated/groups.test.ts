@@ -7,7 +7,6 @@ vi.mock('../../../src/services/groups/index.js', () => ({
   resolveGroupId: vi.fn(),
   getGroupProfile: vi.fn(),
   listGroupMembers: vi.fn(),
-  getGroupAnnouncement: vi.fn(),
   listGroupPosts: vi.fn(),
   listGroupEvents: vi.fn(),
   getGroupEvent: vi.fn(),
@@ -64,7 +63,11 @@ describe('curated group tools', () => {
   });
 
   it('resolves group profile by shortCode', async () => {
-    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'shortCode' });
+    vi.mocked(resolveGroupId).mockResolvedValue({
+      ok: true,
+      groupId: 'grp_1',
+      resolvedBy: 'shortCode',
+    });
     vi.mocked(getGroupProfile).mockResolvedValue({ group: { id: 'grp_1' }, stale: false });
 
     const server = new FakeServer();

@@ -1,8 +1,6 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { shapeReadData } from '../../core/readTools.js';
 import {
-  GroupAnnouncementInputSchema,
-  GroupAnnouncementOutputSchema,
   GroupEventGetInputSchema,
   GroupEventGetOutputSchema,
   GroupEventsListInputSchema,
@@ -21,7 +19,6 @@ import {
   GroupSearchOutputSchema,
 } from '../../models/groups.js';
 import {
-  getGroupAnnouncement,
   getGroupEvent,
   getGroupInstancesOverview,
   getGroupProfile,
@@ -71,7 +68,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -116,7 +113,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -158,46 +155,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
-  );
-
-  server.registerTool(
-    toolName('vrchat.group.announcement'),
-    {
-      description: 'Get the current group announcement (read-only).',
-      inputSchema: GroupAnnouncementInputSchema,
-      outputSchema: GroupAnnouncementOutputSchema,
-      annotations: readOnlyToolAnnotations,
-    },
-    async (args) => {
-      try {
-        const resolved = await resolveGroupId({
-          groupId: args?.groupId,
-          shortCode: args?.shortCode,
-        });
-        if (!resolved.ok) {
-          return toolError(resolved.reason, {
-            status: resolved.status,
-            message: resolved.reason,
-            nextSteps: resolved.nextSteps,
-          });
-        }
-
-        const result = await getGroupAnnouncement(resolved.groupId);
-        const payload = {
-          groupId: resolved.groupId,
-          stale: result.stale,
-          announcement: result.announcement ?? null,
-        };
-        return {
-          content: textContent(JSON.stringify(payload, null, 2)),
-          structuredContent: payload as Record<string, unknown>,
-        };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        return toolError(message);
-      }
-    },
+    }
   );
 
   server.registerTool(
@@ -241,7 +199,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -292,7 +250,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -337,7 +295,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -390,7 +348,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -435,6 +393,6 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 }

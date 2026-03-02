@@ -203,12 +203,6 @@ describe('mcp e2e (mock tools)', () => {
     });
     expectArrayField(members, 'members');
 
-    const announcement = await client.callTool({
-      name: 'vrchat_group_announcement',
-      arguments: { groupId },
-    });
-    expectDefinedField(announcement, 'announcement');
-
     const posts = await client.callTool({
       name: 'vrchat_group_posts_recent',
       arguments: { groupId },

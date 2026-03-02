@@ -7,6 +7,7 @@ Guidance for coding agents:
 - After significant code changes (or at the end of a work loop), run `npm run check`.
 - If you need just one step, use `npm run lint`, `npm run typecheck`, or `npm test`.
 - After making a change, run at least one relevant targeted test (or add/edit one) and confirm it passes before reporting back.
+- For PR review workflow: before pushing any new commits, respond to each open review comment (reply or reaction) and resolve the thread.
 - Keep stdout reserved for MCP protocol; log to stderr only.
 - Config defaults live in `src/config/defaults.json`; override via `VRCHAT_MCP_CONFIG_FILE` (env overrides still supported).
 - Prefer the local harness over Codex MCP hosting for dev iteration:

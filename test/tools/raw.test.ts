@@ -1,12 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FakeServer } from '../helpers/fake-server.js';
-import type * as ClientModule from '../../src/core/client.js';
 
 vi.mock('../../src/core/client.js', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const actual = (await vi.importActual('../../src/core/client.js')) as ClientModule;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  const actual = await vi.importActual('../../src/core/client.js');
   return {
     ...actual,
     callOperation: vi.fn(),
@@ -38,5 +35,24 @@ describe('raw tool', () => {
 
     const result = await Promise.resolve(tool!.handler({ operationId: 'getConfig' }));
     expect(result).toMatchObject({ isError: true });
+  });
+
+  it('blocks deprecated group announcement operationIds', async () => {
+    const server = new FakeServer();
+    registerRawTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_call');
+    const beforeCallCount = vi.mocked(callOperation).mock.calls.length;
+
+    const blockedOperationIds = [
+      'getGroupAnnouncements',
+      'createGroupAnnouncement',
+      'deleteGroupAnnouncement',
+    ];
+    for (const operationId of blockedOperationIds) {
+      const result = await Promise.resolve(tool!.handler({ operationId }));
+      expect(result).toMatchObject({ isError: true });
+    }
+
+    expect(vi.mocked(callOperation).mock.calls.length).toBe(beforeCallCount);
   });
 });

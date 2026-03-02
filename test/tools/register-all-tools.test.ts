@@ -30,7 +30,6 @@ describe('registerAllTools', () => {
       'vrchat_groups_search',
       'vrchat_group_profile',
       'vrchat_group_members',
-      'vrchat_group_announcement',
       'vrchat_group_posts_recent',
       'vrchat_group_events_list',
       'vrchat_group_event_get',

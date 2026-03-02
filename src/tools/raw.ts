@@ -6,6 +6,12 @@ import { writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 
+const RAW_BLOCKED_OPERATION_IDS = new Set([
+  'getGroupAnnouncements',
+  'createGroupAnnouncement',
+  'deleteGroupAnnouncement',
+]);
+
 export function registerRawTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.call'),
@@ -22,6 +28,12 @@ export function registerRawTools(server: McpServer): void {
       annotations: writeToolAnnotations,
     },
     async (args: CallInput) => {
+      if (RAW_BLOCKED_OPERATION_IDS.has(args.operationId)) {
+        return toolError(
+          `Operation ${args.operationId} is disabled: group announcement endpoints are deprecated and unsafe.`
+        );
+      }
+
       try {
         const result = await callOperation(args);
         return {
@@ -33,13 +45,13 @@ export function registerRawTools(server: McpServer): void {
           ],
           structuredContent: result as unknown as Record<string, unknown>,
         };
-    } catch (err) {
-      if (err instanceof CallError && err.payload) {
-        return toolError(err.message, err.payload);
+      } catch (err) {
+        if (err instanceof CallError && err.payload) {
+          return toolError(err.message, err.payload);
+        }
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
       }
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      return toolError(message);
     }
-  }
-);
+  );
 }
