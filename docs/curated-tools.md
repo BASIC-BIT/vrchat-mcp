@@ -61,6 +61,12 @@ Status and presence:
 - `vrchat_status_set` (low-risk write)
 - `vrchat_profile_update` (profile write; status preserved automatically)
 
+Status page (read):
+
+- `vrchat_status_page_summary`
+- `vrchat_status_page_incidents_open`
+- `vrchat_status_page_maintenances_active`
+
 Notifications (read):
 
 - `vrchat_notifications_recent`
