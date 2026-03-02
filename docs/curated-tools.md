@@ -63,9 +63,7 @@ Status and presence:
 
 Status page (read):
 
-- `vrchat_status_page_summary`
-- `vrchat_status_page_incidents_open`
-- `vrchat_status_page_maintenances_active`
+- `vrchat_status_page_overview`
 
 Notifications (read):
 

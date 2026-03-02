@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-03-02T06:14:07.553Z
+Generated: 2026-03-02T06:35:07.858Z
 
 Spec: VRChat API Documentation (1.20.5)
 
@@ -4953,6 +4953,81 @@ Output schema:
     "includeOffline",
     "totalFriends",
     "matches"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_announcement
+Get the current group announcement (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string"
+    },
+    "shortCode": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "announcement": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "authorId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "groupId",
+    "stale",
+    "announcement"
   ],
   "additionalProperties": false
 }
@@ -11808,6 +11883,7 @@ Output schema:
 - `vrchat_read_getFollowedCalendarEvents` (GET /calendar/following) - List followed calendar events
 - `vrchat_read_getFriendStatus` (GET /user/{userId}/friendStatus) - Check Friend Status
 - `vrchat_read_getGlobalAvatarModerations` (GET /auth/user/avatarmoderations) - Get Global Avatar Moderations
+- `vrchat_read_getGroupAnnouncements` (GET /groups/{groupId}/announcement) - Get Group Announcement (curated: vrchat_group_announcement)
 - `vrchat_read_getGroupAuditLogs` (GET /groups/{groupId}/auditLogs) - Get Group Audit Logs
 - `vrchat_read_getGroupBans` (GET /groups/{groupId}/bans) - Get Group Bans
 - `vrchat_read_getGroupCalendarEventICS` (GET /calendar/{groupId}/{calendarId}.ics) - Download calendar event as ICS
@@ -11961,6 +12037,7 @@ Output schema:
 - `vrchat_write_createFileVersion` (POST /file/{fileId}) - Create File Version
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Create Global Avatar Moderation
 - `vrchat_write_createGroup` (POST /groups) - Create Group
+- `vrchat_write_createGroupAnnouncement` (POST /groups/{groupId}/announcement) - Create Group Announcement
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Create Group Gallery
 - `vrchat_write_createGroupInvite` (POST /groups/{groupId}/invites) - Invite User to Group
 - `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Create GroupRole
@@ -11971,6 +12048,7 @@ Output schema:
 - `vrchat_write_deleteFriendRequest` (DELETE /user/{userId}/friendRequest) - Delete Friend Request
 - `vrchat_write_deleteGlobalAvatarModeration` (DELETE /auth/user/avatarmoderations) - Delete Global Avatar Moderation
 - `vrchat_write_deleteGroup` (DELETE /groups/{groupId}) - Delete Group
+- `vrchat_write_deleteGroupAnnouncement` (DELETE /groups/{groupId}/announcement) - Delete Group Announcement
 - `vrchat_write_deleteGroupGallery` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Delete Group Gallery
 - `vrchat_write_deleteGroupGalleryImage` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Delete Group Gallery Image
 - `vrchat_write_deleteGroupInvite` (DELETE /groups/{groupId}/invites/{userId}) - Delete User Invite
