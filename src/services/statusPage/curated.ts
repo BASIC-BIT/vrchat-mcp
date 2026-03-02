@@ -205,8 +205,8 @@ function summarizeSeries(
 
   return {
     current: values[values.length - 1] ?? null,
-    min: Math.min(...values),
-    max: Math.max(...values),
+    min: values.reduce((acc, value) => Math.min(acc, value), Number.POSITIVE_INFINITY),
+    max: values.reduce((acc, value) => Math.max(acc, value), Number.NEGATIVE_INFINITY),
     samples: values.length,
     windowStart: typeof firstTs === 'number' ? new Date(firstTs * 1000).toISOString() : undefined,
     windowEnd: typeof lastTs === 'number' ? new Date(lastTs * 1000).toISOString() : undefined,
