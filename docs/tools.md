@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-02-09T08:34:13.195Z
+Generated: 2026-03-02T06:35:07.858Z
 
 Spec: VRChat API Documentation (1.20.5)
 
@@ -7442,8 +7442,115 @@ Output schema:
 }
 ```
 
+### vrchat_invite_user_to_me
+Invite a user to your current instance. Requires only the target userId; resolves your current location automatically. If you only have a display name, run vrchat_friends_search first to get userId. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "messageSlot": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 11
+    }
+  },
+  "required": [
+    "userId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "sent"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "worldId": {
+      "type": "string"
+    },
+    "instanceId": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "notification": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "details": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string"
+        },
+        "receiverUserId": {
+          "type": "string"
+        },
+        "senderUserId": {
+          "type": "string"
+        },
+        "senderUsername": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "default": "friendRequest",
+          "type": "string",
+          "enum": [
+            "friendRequest",
+            "invite",
+            "inviteResponse",
+            "message",
+            "requestInvite",
+            "requestInviteResponse",
+            "votetokick"
+          ]
+        }
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "status",
+    "userId",
+    "worldId",
+    "instanceId",
+    "location"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_me
-Get your profile (read-only). Uses a compact default field set to avoid large friend lists; provide fields to override. Optionally include a paged list of your groups. (read-only)
+Get your profile (read-only). Use view=presence/summary/profile presets; provide fields to override. Optionally include a paged list of your groups. (read-only)
 
 Input schema:
 
@@ -7465,6 +7572,14 @@ Input schema:
       "type": "integer",
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991
+    },
+    "view": {
+      "type": "string",
+      "enum": [
+        "summary",
+        "presence",
+        "profile"
+      ]
     },
     "includeGroups": {
       "type": "boolean"
@@ -8753,7 +8868,7 @@ Output schema:
 ```
 
 ### vrchat_status_set
-Set your status + description (write). Accepts status or color (blue/green/orange/red). Defaults to current user. (write)
+Set your status + description (write). Requires status or color (blue/green/orange/red); if both are provided they must agree. Defaults to current user. (write)
 
 Input schema:
 

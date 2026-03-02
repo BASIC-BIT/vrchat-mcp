@@ -47,6 +47,7 @@ describe('registerAllTools', () => {
       'vrchat_invite_user_to_me',
       'vrchat_status_get',
       'vrchat_status_set',
+      'vrchat_status_page_overview',
       'vrchat_events_upcoming',
       'vrchat_events_search',
       'vrchat_event_create',
