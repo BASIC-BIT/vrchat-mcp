@@ -43,8 +43,16 @@ describe('raw tool', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_call');
     const beforeCallCount = vi.mocked(callOperation).mock.calls.length;
 
-    const result = await Promise.resolve(tool!.handler({ operationId: 'getGroupAnnouncements' }));
-    expect(result).toMatchObject({ isError: true });
+    const blockedOperationIds = [
+      'getGroupAnnouncements',
+      'createGroupAnnouncement',
+      'deleteGroupAnnouncement',
+    ];
+    for (const operationId of blockedOperationIds) {
+      const result = await Promise.resolve(tool!.handler({ operationId }));
+      expect(result).toMatchObject({ isError: true });
+    }
+
     expect(vi.mocked(callOperation).mock.calls.length).toBe(beforeCallCount);
   });
 });
