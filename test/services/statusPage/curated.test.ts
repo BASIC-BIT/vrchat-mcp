@@ -221,6 +221,34 @@ describe('status page curated service', () => {
     expect(result.notes.some((note) => note.includes('Failed to read incidents.json'))).toBe(true);
   });
 
+  it('counts only successfully mapped components in total', async () => {
+    mockFetchByUrl({
+      'https://status.vrchat.com/api/v2/summary.json': {
+        body: {
+          page: { name: 'VRChat' },
+          status: { indicator: 'none' },
+          components: [
+            { id: 'cmp_ok', name: 'API', status: 'operational' },
+            { id: 'cmp_bad', status: 'major_outage' },
+          ],
+        },
+      },
+      'https://status.vrchat.com/api/v2/incidents/unresolved.json': { body: { incidents: [] } },
+      'https://status.vrchat.com/api/v2/incidents.json': { body: { incidents: [] } },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/active.json': {
+        body: { scheduled_maintenances: [] },
+      },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/upcoming.json': {
+        body: { scheduled_maintenances: [] },
+      },
+    });
+
+    const result = await getStatusPageOverview({ includeGraphs: false });
+
+    expect(result.components).toMatchObject({ total: 1, nonOperational: 0 });
+    expect(result.notes.some((note) => note.includes('Dropped 1 malformed components'))).toBe(true);
+  });
+
   it('throws when summary endpoint fails', async () => {
     mockFetchByUrl({
       'https://status.vrchat.com/api/v2/summary.json': {
@@ -232,6 +260,14 @@ describe('status page curated service', () => {
 
     await expect(getStatusPageOverview({})).rejects.toThrow(
       'Request failed (502 Bad Gateway) for https://status.vrchat.com/api/v2/summary.json.'
+    );
+  });
+
+  it('throws a timeout error when status page request aborts', async () => {
+    vi.mocked(fetch).mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+
+    await expect(getStatusPageOverview({ includeGraphs: false })).rejects.toThrow(
+      'Request timed out after 10000ms for https://status.vrchat.com/api/v2/summary.json.'
     );
   });
 });

@@ -4,6 +4,7 @@ import { fetch } from 'undici';
 const STATUS_PAGE_API_BASE = 'https://status.vrchat.com/api/v2';
 const DEFAULT_RECENT_HOURS = 72;
 const DEFAULT_MAX_ITEMS = 5;
+const FETCH_TIMEOUT_MS = 10_000;
 
 interface GraphDefinition {
   key: string;
@@ -209,12 +210,26 @@ function summarizeSeries(
 }
 
 async function fetchJson(url: string): Promise<Record<string, unknown> | unknown[]> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let response: Awaited<ReturnType<typeof fetch>>;
+
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Request timed out after ${FETCH_TIMEOUT_MS}ms for ${url}.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status} ${response.statusText}) for ${url}.`);
@@ -343,10 +358,14 @@ export async function getStatusPageOverview(
   const description = asString(status?.description);
 
   const componentsRaw = Array.isArray(summaryPayload.components) ? summaryPayload.components : [];
-  const nonOperationalAll = componentsRaw
+  const allMappedComponents = componentsRaw
     .map(mapComponent)
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-    .filter((entry) => entry.status !== 'operational');
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const nonOperationalAll = allMappedComponents.filter((entry) => entry.status !== 'operational');
+  const droppedComponentCount = componentsRaw.length - allMappedComponents.length;
+  if (droppedComponentCount > 0) {
+    notes.push(`Dropped ${droppedComponentCount} malformed components from status payload.`);
+  }
   const nonOperationalItems = nonOperationalAll.slice(0, maxItems);
   if (nonOperationalAll.length > nonOperationalItems.length) {
     notes.push(`Showing first ${maxItems} non-operational components.`);
@@ -416,7 +435,7 @@ export async function getStatusPageOverview(
       description,
     },
     components: {
-      total: componentsRaw.length,
+      total: allMappedComponents.length,
       nonOperational: nonOperationalAll.length,
       nonOperationalItems,
     },
