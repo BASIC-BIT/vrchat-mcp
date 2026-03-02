@@ -1,10 +1,12 @@
 import type { StatusPageOverviewInput, StatusPageOverviewOutput } from '../../models/statusPage.js';
 import { fetch } from 'undici';
+import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 
 const STATUS_PAGE_API_BASE = 'https://status.vrchat.com/api/v2';
 const DEFAULT_RECENT_HOURS = 72;
 const DEFAULT_MAX_ITEMS = 5;
 const FETCH_TIMEOUT_MS = 10_000;
+const OVERVIEW_CACHE_TTL_MS = cacheConfig.notificationsTtlMs;
 
 interface GraphDefinition {
   key: string;
@@ -330,7 +332,7 @@ async function fetchOptionalStatusPageJson(
   }
 }
 
-export async function getStatusPageOverview(
+async function buildStatusPageOverview(
   input: StatusPageOverviewInput
 ): Promise<StatusPageOverviewOutput> {
   const recentHours =
@@ -461,4 +463,27 @@ export async function getStatusPageOverview(
     },
     notes,
   };
+}
+
+export async function getStatusPageOverview(
+  input: StatusPageOverviewInput
+): Promise<StatusPageOverviewOutput> {
+  const recentHours =
+    typeof input.recentHours === 'number' ? Math.floor(input.recentHours) : DEFAULT_RECENT_HOURS;
+  const maxItems =
+    typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : DEFAULT_MAX_ITEMS;
+  const includeGraphs = input.includeGraphs !== false;
+
+  const cacheKey = buildCacheKey('status-page:overview', {
+    recentHours,
+    maxItems,
+    includeGraphs,
+  });
+
+  return await cacheManager.getOrSet(
+    cacheKey,
+    OVERVIEW_CACHE_TTL_MS,
+    ['status-page', 'status-page:overview'],
+    async () => buildStatusPageOverview({ recentHours, maxItems, includeGraphs })
+  );
 }

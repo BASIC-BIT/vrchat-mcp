@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('undici', () => ({
   fetch: vi.fn(),
 }));
 
 import { fetch } from 'undici';
+import { cacheManager } from '../../../src/services/cache.js';
 import { getStatusPageOverview } from '../../../src/services/statusPage/curated.js';
 
 interface MockRoute {
@@ -93,6 +94,10 @@ function buildGraphRoutes(): Record<string, MockRoute> {
 }
 
 describe('status page curated service', () => {
+  beforeEach(() => {
+    cacheManager.invalidateAll();
+  });
+
   afterEach(() => {
     vi.mocked(fetch).mockReset();
   });
@@ -321,5 +326,39 @@ describe('status page curated service', () => {
     await expect(getStatusPageOverview({ includeGraphs: false })).rejects.toThrow(
       'Request timed out after 10000ms for https://status.vrchat.com/api/v2/summary.json.'
     );
+  });
+
+  it('caches assembled overview for identical inputs', async () => {
+    mockFetchByUrl({
+      'https://status.vrchat.com/api/v2/summary.json': {
+        body: {
+          page: { name: 'VRChat' },
+          status: { indicator: 'none', description: 'All Systems Operational' },
+          components: [],
+        },
+      },
+      'https://status.vrchat.com/api/v2/incidents/unresolved.json': { body: { incidents: [] } },
+      'https://status.vrchat.com/api/v2/incidents.json': { body: { incidents: [] } },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/active.json': {
+        body: { scheduled_maintenances: [] },
+      },
+      'https://status.vrchat.com/api/v2/scheduled-maintenances/upcoming.json': {
+        body: { scheduled_maintenances: [] },
+      },
+    });
+
+    const first = await getStatusPageOverview({
+      includeGraphs: false,
+      recentHours: 72,
+      maxItems: 5,
+    });
+    const second = await getStatusPageOverview({
+      includeGraphs: false,
+      recentHours: 72,
+      maxItems: 5,
+    });
+
+    expect(second).toEqual(first);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(5);
   });
 });
