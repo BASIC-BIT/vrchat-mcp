@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FakeServer } from '../helpers/fake-server.js';
 
@@ -12,7 +12,13 @@ import { registerAllTools } from '../../src/tools/registerAllTools.js';
 import { registerGeneratedTools } from '../../src/tools/generated.js';
 
 describe('registerAllTools', () => {
-  it('registers curated and read tools with expected names', async () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('registers curated and read tools with expected names (vrctl enabled)', async () => {
+    vi.stubEnv('VRCHAT_MCP_VRCTL_ENABLED', '1');
+    const { resetConfigCacheForTest } = await import('../../src/config/index.js');
+    resetConfigCacheForTest();
+
     const server = new FakeServer();
     await registerAllTools(server as unknown as McpServer);
 
@@ -61,6 +67,15 @@ describe('registerAllTools', () => {
       'vrchat_auth_status',
       'vrchat_auth_logout',
 
+      'vrctl_auth_begin',
+      'vrctl_auth_status',
+      'vrctl_auth_logout',
+      'vrctl_metadata_get',
+      'vrctl_events_current',
+      'vrctl_event_get',
+      'vrctl_organizers_search',
+      'vrctl_organizer_profile',
+
       'vrcx_db_status',
       'vrcx_memos_user_get',
       'vrcx_memos_world_get',
@@ -78,5 +93,29 @@ describe('registerAllTools', () => {
     expect(names).not.toContain('vrchat_call');
 
     expect(registerGeneratedTools).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllEnvs();
+    resetConfigCacheForTest();
+  });
+
+  it('excludes vrctl tools when vrctl.enabled=false', async () => {
+    // Default config has vrctl.enabled=false, but ensure it explicitly
+    vi.stubEnv('VRCHAT_MCP_VRCTL_ENABLED', '0');
+    const { resetConfigCacheForTest } = await import('../../src/config/index.js');
+    resetConfigCacheForTest();
+
+    const server = new FakeServer();
+    await registerAllTools(server as unknown as McpServer);
+
+    const names = server.tools.map((tool) => tool.name);
+    const vrctlTools = names.filter((n) => n.startsWith('vrctl_'));
+    expect(vrctlTools).toEqual([]);
+
+    // Core tools should still be present
+    expect(names).toContain('vrchat_friends_search');
+    expect(names).toContain('vrchat_auth_begin');
+
+    vi.unstubAllEnvs();
+    resetConfigCacheForTest();
   });
 });

@@ -7,6 +7,11 @@ Guidance for coding agents:
 - After significant code changes (or at the end of a work loop), run `npm run check`.
 - If you need just one step, use `npm run lint`, `npm run typecheck`, or `npm test`.
 - After making a change, run at least one relevant targeted test (or add/edit one) and confirm it passes before reporting back.
+- For PR descriptions, avoid a "Verification" section that lists routine commands (CI will run checks). Only mention manual/atypical verification when it adds value.
+- When review bots (Greptile/Codex/etc.) leave comments:
+  - First sanity-check the feedback (ignore incorrect suggestions).
+  - If valid, batch fixes, run checks locally, then commit/push.
+  - Reply on the thread, add a 👍/👎 reaction, and resolve the thread when addressed.
 - Keep stdout reserved for MCP protocol; log to stderr only.
 - Config defaults live in `src/config/defaults.json`; override via `VRCHAT_MCP_CONFIG_FILE` (env overrides still supported).
 - Prefer the local harness over Codex MCP hosting for dev iteration:

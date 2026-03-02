@@ -10,6 +10,16 @@ export interface CookieStore {
   clear(): Promise<void>;
 }
 
+export interface CookieStoreConfig {
+  cookieStore: 'memory' | 'file' | 'keychain';
+  cookieFile: string;
+}
+
+export interface CookieStoreOptions {
+  keychainService?: string;
+  keychainAccount?: string;
+}
+
 async function serializeJar(jar: CookieJar): Promise<SerializedCookieJar> {
   return await new Promise((resolve, reject) => {
     jar.serialize((err, serialized) => {
@@ -76,13 +86,18 @@ class FileStore implements CookieStore {
 }
 
 class KeychainStore implements CookieStore {
-  private service = 'vrchat-mcp';
-  private account = 'default';
+  private service: string;
+  private account: string;
   private keytar: {
     getPassword: (service: string, account: string) => Promise<string | null>;
     setPassword: (service: string, account: string, password: string) => Promise<void>;
     deletePassword: (service: string, account: string) => Promise<boolean>;
   } | null = null;
+
+  constructor(options: CookieStoreOptions = {}) {
+    this.service = options.keychainService ?? 'vrchat-mcp';
+    this.account = options.keychainAccount ?? 'default';
+  }
 
   async ensureKeytar() {
     if (this.keytar) return this.keytar;
@@ -91,7 +106,9 @@ class KeychainStore implements CookieStore {
       this.keytar = mod.default ?? (mod as any);
       return this.keytar;
     } catch (err) {
-      logger.warn('keytar not available; falling back to memory', { message: (err as Error).message });
+      logger.warn('keytar not available; falling back to memory', {
+        message: (err as Error).message,
+      });
       return null;
     }
   }
@@ -126,12 +143,36 @@ class KeychainStore implements CookieStore {
 
 export function getCookieStore(): CookieStore {
   const config = getConfig();
-  const mode = config.auth.cookieStore.toLowerCase();
+  return createCookieStore(
+    {
+      cookieStore: config.auth.cookieStore,
+      cookieFile: config.auth.cookieFile,
+    },
+    { keychainService: 'vrchat-mcp', keychainAccount: 'default' }
+  );
+}
+
+export function getVrctlCookieStore(): CookieStore {
+  const config = getConfig();
+  return createCookieStore(
+    {
+      cookieStore: config.vrctl.auth.cookieStore,
+      cookieFile: config.vrctl.auth.cookieFile,
+    },
+    { keychainService: 'vrchat-mcp', keychainAccount: 'vrctl' }
+  );
+}
+
+export function createCookieStore(
+  config: CookieStoreConfig,
+  options: CookieStoreOptions = {}
+): CookieStore {
+  const mode = config.cookieStore.toLowerCase();
   if (mode === 'file') {
-    return new FileStore(path.resolve(config.auth.cookieFile));
+    return new FileStore(path.resolve(config.cookieFile));
   }
   if (mode === 'keychain') {
-    return new KeychainStore();
+    return new KeychainStore(options);
   }
   return new MemoryStore();
 }

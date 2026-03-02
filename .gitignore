@@ -21,6 +21,7 @@ pnpm-debug.log*
 
 # Local auth / state
 .vrchat-mcp-cookies.json
+.vrchat-mcp-vrctl-cookies.json
 
 # Local E2E config
 test/fixtures/e2e.live.json

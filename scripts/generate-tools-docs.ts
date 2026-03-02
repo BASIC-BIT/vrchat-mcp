@@ -27,6 +27,10 @@ import { registerCuratedVrcxTools } from '../src/tools/curated/vrcx/index.js';
 import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
 import { registerSystemReadTools } from '../src/tools/read/system.js';
+import { registerVrctlAuthTools } from '../src/tools/vrctlAuth.js';
+import { registerVrctlEventTools } from '../src/tools/vrctlEvents.js';
+import { registerVrctlMetadataTools } from '../src/tools/vrctlMetadata.js';
+import { registerVrctlOrganizerTools } from '../src/tools/vrctlOrganizers.js';
 import { readToolName, writeToolName } from '../src/utils/toolNames.js';
 import { ReadOptionsSchema, ReadToolOutputSchema } from '../src/schemas/read.js';
 import { WriteOptionsSchema, WriteToolOutputSchema } from '../src/schemas/write.js';
@@ -199,12 +203,18 @@ async function main() {
   registerCacheTools(collector.createServer('cache'));
   registerSystemReadTools(collector.createServer('system'));
   registerAuthTools(collector.createServer('auth'));
+  registerVrctlAuthTools(collector.createServer('vrctl-auth'));
+  registerVrctlMetadataTools(collector.createServer('vrctl'));
+  registerVrctlEventTools(collector.createServer('vrctl'));
+  registerVrctlOrganizerTools(collector.createServer('vrctl'));
   registerRawTools(collector.createServer('raw'));
 
   const curated = collector.tools.filter((tool) => tool.category === 'curated');
   const cache = collector.tools.filter((tool) => tool.category === 'cache');
   const system = collector.tools.filter((tool) => tool.category === 'system');
   const auth = collector.tools.filter((tool) => tool.category === 'auth');
+  const vrctlAuth = collector.tools.filter((tool) => tool.category === 'vrctl-auth');
+  const vrctl = collector.tools.filter((tool) => tool.category === 'vrctl');
   const raw = collector.tools.filter((tool) => tool.category === 'raw');
 
   const { readOps, writeOps } = buildGeneratedList(spec);
@@ -233,6 +243,14 @@ async function main() {
 
   md += '## Auth tools\n';
   md += renderToolList(auth) || '- (none)\n';
+  md += '\n';
+
+  md += '## VRC.TL auth tools\n';
+  md += renderToolList(vrctlAuth) || '- (none)\n';
+  md += '\n';
+
+  md += '## VRC.TL tools\n';
+  md += renderToolList(vrctl) || '- (none)\n';
   md += '\n';
 
   md += '## Optional raw tool\n';

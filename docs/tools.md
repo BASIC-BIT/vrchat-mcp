@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-02-09T08:34:13.195Z
+Generated: 2026-02-10T20:59:08.077Z
 
 Spec: VRChat API Documentation (1.20.5)
 
@@ -11535,6 +11535,954 @@ Output schema:
   },
   "required": [
     "loggedIn"
+  ],
+  "additionalProperties": false
+}
+```
+
+
+## VRC.TL auth tools
+### vrctl_auth_begin
+Begin vrc.tl login flow via local browser UI (cookie import). (write)
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_auth_logout
+Logout from vrc.tl and clear session cookies. (write)
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "loggedIn": {
+      "type": "boolean"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "hasSessionCookie": {
+      "type": "boolean"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "loggedIn",
+    "verified",
+    "hasSessionCookie"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_auth_status
+vrc.tl auth status. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "verify": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "loggedIn": {
+      "type": "boolean"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "hasSessionCookie": {
+      "type": "boolean"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "loggedIn",
+    "verified",
+    "hasSessionCookie"
+  ],
+  "additionalProperties": false
+}
+```
+
+
+## VRC.TL tools
+### vrctl_event_get
+Get one vrc.tl event by eventId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "eventId": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "includeHidden": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "eventId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "requested": {
+      "type": "object",
+      "properties": {
+        "includeHidden": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "includeHidden"
+      ],
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "loggedIn": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "hasSessionCookie": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "loggedIn",
+        "verified",
+        "hasSessionCookie"
+      ],
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "name": {
+          "type": "string"
+        },
+        "startEpoch": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "startIso": {
+          "type": "string"
+        },
+        "endEpoch": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "endIso": {
+          "type": "string"
+        },
+        "durationSec": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "eventUrl": {
+          "type": "string"
+        },
+        "posterUrl": {
+          "type": "string"
+        },
+        "categoryId": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "tagIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "organizers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "shortCode": {
+                "type": "string"
+              },
+              "vrcGroupUrl": {
+                "type": "string"
+              },
+              "vrchatGroupId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "urls": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "isHighlighted": {
+          "type": "boolean"
+        },
+        "promoted": {
+          "type": "boolean"
+        },
+        "eventSlots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slotId": {
+                "type": "string"
+              },
+              "startEpoch": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "startIso": {
+                "type": "string"
+              },
+              "durationSec": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "order": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "flag": {
+                "type": "string"
+              },
+              "performers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "performerId": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "performerId",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "slotId",
+              "performers"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "eventId",
+        "name",
+        "eventUrl",
+        "tagIds",
+        "organizers",
+        "eventSlots"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "requested",
+    "auth",
+    "event"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_events_current
+List vrc.tl events in the current timeline window (read-only). Optionally page more days with daysBack/daysForward. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "daysBack": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 30
+    },
+    "daysForward": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 30
+    },
+    "includeHidden": {
+      "type": "boolean"
+    },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "requested": {
+      "type": "object",
+      "properties": {
+        "daysBack": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "daysForward": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "includeHidden": {
+          "type": "boolean"
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "daysBack",
+        "daysForward",
+        "includeHidden",
+        "maxItems"
+      ],
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "loggedIn": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "hasSessionCookie": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "loggedIn",
+        "verified",
+        "hasSessionCookie"
+      ],
+      "additionalProperties": false
+    },
+    "range": {
+      "type": "object",
+      "properties": {
+        "firstLoadedDay": {
+          "type": "string"
+        },
+        "lastLoadedDay": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "firstLoadedDay",
+        "lastLoadedDay"
+      ],
+      "additionalProperties": false
+    },
+    "totalEvents": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "returnedEvents": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "filteredHiddenEvents": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "startEpoch": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "startIso": {
+            "type": "string"
+          },
+          "endEpoch": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "endIso": {
+            "type": "string"
+          },
+          "durationSec": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "eventUrl": {
+            "type": "string"
+          },
+          "posterUrl": {
+            "type": "string"
+          },
+          "categoryId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "tagIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organizers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "shortCode": {
+                  "type": "string"
+                },
+                "vrcGroupUrl": {
+                  "type": "string"
+                },
+                "vrchatGroupId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "eventId",
+          "name",
+          "eventUrl",
+          "tagIds",
+          "organizers"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "requested",
+    "auth",
+    "range",
+    "totalEvents",
+    "returnedEvents",
+    "filteredHiddenEvents",
+    "truncated",
+    "events"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_metadata_get
+Get vrc.tl category + tag metadata (read-only). (read-only)
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "loggedIn": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tags": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "categories",
+        "tags"
+      ],
+      "additionalProperties": false
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "urlName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "urlName": {
+            "type": "string"
+          },
+          "group": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "tooltip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibleOnEvent": {
+            "type": "boolean"
+          },
+          "visibleOnFilter": {
+            "type": "boolean"
+          },
+          "eventsHiddenForNotLoggedIn": {
+            "type": "boolean"
+          },
+          "tagHiddenForNotLoggedIn": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "loggedIn",
+    "verified",
+    "counts",
+    "categories",
+    "tags"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_organizer_profile
+Get one vrc.tl organizer/club profile by VRChat groupId, slug, or shortCode (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "vrchatGroupId": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "shortCode": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "organizer": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "shortCode": {
+              "type": "string"
+            },
+            "vrcGroupUrl": {
+              "type": "string"
+            },
+            "vrchatGroupId": {
+              "type": "string"
+            },
+            "discordInv": {
+              "type": "string"
+            },
+            "isSupporter": {
+              "type": "boolean"
+            },
+            "providesInstances": {
+              "type": "boolean"
+            },
+            "showOnlyIfFavourite": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "organizer"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrctl_organizers_search
+Search vrc.tl organizers/clubs by name, slug, shortCode, or VRChat groupId (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  },
+  "required": [
+    "query"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string"
+    },
+    "totalMatches": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "shortCode": {
+            "type": "string"
+          },
+          "vrcGroupUrl": {
+            "type": "string"
+          },
+          "vrchatGroupId": {
+            "type": "string"
+          },
+          "discordInv": {
+            "type": "string"
+          },
+          "isSupporter": {
+            "type": "boolean"
+          },
+          "providesInstances": {
+            "type": "boolean"
+          },
+          "showOnlyIfFavourite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "query",
+    "totalMatches",
+    "matches"
   ],
   "additionalProperties": false
 }

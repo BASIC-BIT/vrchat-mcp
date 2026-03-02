@@ -50,6 +50,23 @@
   "generatedWriteTools": {
     "disable": false
   },
+  "vrctl": {
+    "enabled": false,
+    "siteUrl": "https://vrc.tl",
+    "apiBaseUrl": "https://vrc.tl/api/v1",
+    "userAgent": "vrchat-mcp/{version}",
+    "requests": {
+      "minIntervalMs": 1000,
+      "maxRetries": 1,
+      "initialBackoffMs": 750,
+      "maxBackoffMs": 8000,
+      "denyCooldownMs": 900000
+    },
+    "auth": {
+      "cookieStore": "memory",
+      "cookieFile": "~/.vrchat-mcp-vrctl-cookies.json"
+    }
+  },
   "vrcx": {
     "enabled": true,
     "databasePath": "",

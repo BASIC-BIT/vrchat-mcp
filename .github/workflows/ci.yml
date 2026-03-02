@@ -22,6 +22,12 @@ jobs:
         with:
           go-version: '1.22.x'
       - run: npm ci
+
+      - name: Download VRChat OpenAPI spec
+        run: |
+          mkdir -p specs
+          curl -fsSL "https://vrchat.community/openapi.yaml" -o specs/vrchat-openapi.yaml
+
       - run: npm run check
 
       # Metrics gates (redundant complexity heuristics).

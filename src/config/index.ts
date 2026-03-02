@@ -86,6 +86,29 @@ const ConfigBaseSchema = z
         disable: z.boolean(),
       })
       .strict(),
+    vrctl: z
+      .object({
+        enabled: z.boolean(),
+        siteUrl: z.string().min(1),
+        apiBaseUrl: z.string().min(1),
+        userAgent: z.string(),
+        requests: z
+          .object({
+            minIntervalMs: z.number().int().min(0),
+            maxRetries: z.number().int().min(0).max(10),
+            initialBackoffMs: z.number().int().min(0),
+            maxBackoffMs: z.number().int().min(0),
+            denyCooldownMs: z.number().int().min(0),
+          })
+          .strict(),
+        auth: z
+          .object({
+            cookieStore: z.enum(['memory', 'file', 'keychain']),
+            cookieFile: z.string().min(1),
+          })
+          .strict(),
+      })
+      .strict(),
     vrcx: z
       .object({
         enabled: z.boolean(),
@@ -103,6 +126,10 @@ const ConfigSchema = ConfigBaseSchema.transform((config) => {
     ? applyTemplate(next.pipeline.userAgent)
     : next.api.userAgent;
   next.auth.cookieFile = expandHome(next.auth.cookieFile);
+  next.vrctl.userAgent = next.vrctl.userAgent?.trim()
+    ? applyTemplate(next.vrctl.userAgent)
+    : next.api.userAgent;
+  next.vrctl.auth.cookieFile = expandHome(next.vrctl.auth.cookieFile);
   next.vrcx.databasePath = expandHome(next.vrcx.databasePath);
   next.vrcx.worldDbPath = expandHome(next.vrcx.worldDbPath);
   return next;
@@ -166,6 +193,13 @@ const EnvSchema = z
     VRCHAT_MCP_LOG_LEVEL: EnvLowercase(z.enum(['debug', 'info', 'warn', 'error']).optional()),
     VRCHAT_MCP_COOKIE_STORE: EnvLowercase(z.enum(['memory', 'file', 'keychain']).optional()),
     VRCHAT_MCP_COOKIE_FILE: EnvString,
+
+    VRCHAT_MCP_VRCTL_ENABLED: EnvBoolean,
+    VRCHAT_MCP_VRCTL_SITE_URL: EnvString,
+    VRCHAT_MCP_VRCTL_API_BASE_URL: EnvString,
+    VRCHAT_MCP_VRCTL_USER_AGENT: EnvString,
+    VRCHAT_MCP_VRCTL_COOKIE_STORE: EnvLowercase(z.enum(['memory', 'file', 'keychain']).optional()),
+    VRCHAT_MCP_VRCTL_COOKIE_FILE: EnvString,
     VRCHAT_MCP_ALLOW_WRITES: EnvBoolean,
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
     VRCHAT_MCP_CACHE_TTL_FRIENDS: EnvPositiveInt,
@@ -282,6 +316,33 @@ function applyAuthEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValue
   }
 }
 
+function applyVrctlEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
+  if (env.VRCHAT_MCP_VRCTL_ENABLED !== undefined) {
+    overrides.vrctl = { ...overrides.vrctl, enabled: env.VRCHAT_MCP_VRCTL_ENABLED };
+  }
+  if (env.VRCHAT_MCP_VRCTL_SITE_URL) {
+    overrides.vrctl = { ...overrides.vrctl, siteUrl: env.VRCHAT_MCP_VRCTL_SITE_URL };
+  }
+  if (env.VRCHAT_MCP_VRCTL_API_BASE_URL) {
+    overrides.vrctl = { ...overrides.vrctl, apiBaseUrl: env.VRCHAT_MCP_VRCTL_API_BASE_URL };
+  }
+  if (env.VRCHAT_MCP_VRCTL_USER_AGENT) {
+    overrides.vrctl = { ...overrides.vrctl, userAgent: env.VRCHAT_MCP_VRCTL_USER_AGENT };
+  }
+  if (env.VRCHAT_MCP_VRCTL_COOKIE_STORE) {
+    overrides.vrctl = {
+      ...overrides.vrctl,
+      auth: { ...overrides.vrctl?.auth, cookieStore: env.VRCHAT_MCP_VRCTL_COOKIE_STORE },
+    };
+  }
+  if (env.VRCHAT_MCP_VRCTL_COOKIE_FILE) {
+    overrides.vrctl = {
+      ...overrides.vrctl,
+      auth: { ...overrides.vrctl?.auth, cookieFile: env.VRCHAT_MCP_VRCTL_COOKIE_FILE },
+    };
+  }
+}
+
 function applyWriteEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_ALLOW_WRITES !== undefined) {
     overrides.writes = { allow: env.VRCHAT_MCP_ALLOW_WRITES };
@@ -394,6 +455,7 @@ function readEnvOverrides(): {
   applySpecEnvOverrides(overrides, env);
   applyLoggingEnvOverrides(overrides, env);
   applyAuthEnvOverrides(overrides, env);
+  applyVrctlEnvOverrides(overrides, env);
   applyWriteEnvOverrides(overrides, env);
   applyCacheEnvOverrides(overrides, env);
   applyPipelineEnvOverrides(overrides, env);
