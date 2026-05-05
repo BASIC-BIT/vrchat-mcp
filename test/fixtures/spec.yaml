@@ -820,6 +820,11 @@ paths:
         - $ref: '#/components/parameters/GroupIdParam'
         - $ref: '#/components/parameters/OffsetParam'
         - $ref: '#/components/parameters/LimitParam'
+        - name: publicOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: ok
