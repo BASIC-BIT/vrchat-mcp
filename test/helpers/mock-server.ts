@@ -377,6 +377,24 @@ function applyPaginatedList<T>(
   };
 }
 
+function applyCursorPage<T>(
+  items: T[],
+  query: unknown
+): { results: T[]; nextCursor: string } {
+  const cursor = firstValue(getQueryValue(query, 'nextCursor'));
+  const offset = typeof cursor === 'string' ? parseNumber(cursor.replace(/^mock-cursor-/, '')) ?? 0 : 0;
+  const limit =
+    parseNumber(getQueryValue(query, 'n')) ??
+    parseNumber(getQueryValue(query, 'number')) ??
+    items.length;
+  const results = items.slice(offset, offset + limit);
+  const nextOffset = offset + results.length;
+  return {
+    results,
+    nextCursor: nextOffset < items.length ? `mock-cursor-${nextOffset}` : '',
+  };
+}
+
 function applySearch<T>(items: T[], query: unknown, keys: (keyof T)[], param = 'search'): T[] {
   const term = firstValue(getQueryValue(query, param));
   if (typeof term !== 'string' || !term) return items;
@@ -829,11 +847,7 @@ export async function createMockServer(
       const context = toContext(c);
       const query = context.request.query;
       const matches = applySearch(data.calendarEvents, query, ['title'], 'search');
-      const page = applyPaginatedList(matches, query);
-      sendJson(toResponse(res), 200, {
-        results: page.results,
-        nextCursor: page.hasNext ? `mock-cursor-${page.results.length}` : '',
-      });
+      sendJson(toResponse(res), 200, applyCursorPage(matches, query));
     },
     searchCalendarEvents: (c, _req, res) => {
       const context = toContext(c);

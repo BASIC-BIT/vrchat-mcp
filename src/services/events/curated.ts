@@ -214,7 +214,9 @@ export async function discoverEvents(input: EventsDiscoverInput) {
   }
 
   const sliced = events.slice(0, maxItems);
-  const truncated = Boolean(nextCursor) && (pages >= maxPages || events.length >= maxItems);
+  const clipped = events.length > sliced.length;
+  if (clipped) nextCursor = undefined;
+  const truncated = clipped || (Boolean(nextCursor) && (pages >= maxPages || events.length >= maxItems));
   return {
     scope: input.scope,
     pageSize,

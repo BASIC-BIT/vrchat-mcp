@@ -1,4 +1,4 @@
-import { Client } from '@modelcontextprotocol/sdk/client';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 type JsonRecord = Record<string, unknown>;
@@ -72,13 +72,31 @@ function errorText(response: ToolResponse): string | undefined {
     .slice(0, 220);
 }
 
+function parseArgList(raw: string | undefined, fallback: string[]): string[] {
+  if (!raw) return fallback;
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.map((entry) => String(entry));
+    } catch {
+      // fall through
+    }
+  }
+  if (trimmed.includes(',')) {
+    return trimmed
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+  return trimmed.split(/\s+/).filter(Boolean);
+}
+
 function makeTransport(): StdioClientTransport {
   return new StdioClientTransport({
     command: process.env.VRCHAT_MCP_SERVER_COMMAND ?? 'node',
-    args: (process.env.VRCHAT_MCP_SERVER_ARGS ?? 'dist/bin/cli.js')
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean),
+    args: parseArgList(process.env.VRCHAT_MCP_SERVER_ARGS, ['dist/bin/cli.js']),
     cwd: process.env.VRCHAT_MCP_SERVER_CWD ?? process.cwd(),
     env: {
       ...process.env,

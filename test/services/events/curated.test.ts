@@ -129,6 +129,46 @@ describe('events curated service', () => {
     expect(result.truncated).toBe(false);
   });
 
+  it('marks discovery truncated and clears cursor when maxItems clips a fetched page', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: {
+        results: [{ id: 'evt_1' }, { id: 'evt_2' }, { id: 'evt_3' }],
+        nextCursor: 'cursor_after_full_page',
+      },
+    });
+
+    const result = await discoverEvents({ pageSize: 3, maxPages: 1, maxItems: 2 });
+
+    expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
+    expect(result.truncated).toBe(true);
+    expect(result.nextCursor).toBeUndefined();
+    expect(result.page.nextCursor).toBeUndefined();
+  });
+
+  it('keeps valid discovery cursor when page ends exactly at maxItems', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { results: [{ id: 'evt_1' }, { id: 'evt_2' }], nextCursor: 'cursor_2' },
+    });
+
+    const result = await discoverEvents({ pageSize: 2, maxPages: 2, maxItems: 2 });
+
+    expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
+    expect(result.truncated).toBe(true);
+    expect(result.nextCursor).toBe('cursor_2');
+  });
+
+  it('marks discovery truncated when maxItems clips the final page', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { results: [{ id: 'evt_1' }, { id: 'evt_2' }, { id: 'evt_3' }], nextCursor: '' },
+    });
+
+    const result = await discoverEvents({ pageSize: 3, maxPages: 1, maxItems: 2 });
+
+    expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
+    expect(result.truncated).toBe(true);
+    expect(result.nextCursor).toBeUndefined();
+  });
+
   it('builds calendar create and update requests', () => {
     const create = buildCalendarCreateRequest({
       groupId: 'grp_1',
