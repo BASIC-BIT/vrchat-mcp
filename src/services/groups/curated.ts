@@ -16,7 +16,13 @@ import {
   type GroupSearchInput,
   type GroupSummary,
 } from '../../models/groups.js';
-import { getMonthKeys, parseEventTime, parseIsoDate, toMonthKey } from '../events/utils.js';
+import {
+  getMonthKeys,
+  monthKeyToDateTime,
+  parseEventTime,
+  parseIsoDate,
+  toMonthDateTime,
+} from '../events/utils.js';
 import type { CalendarEventRecord } from '../events/utils.js';
 
 interface PageInfo {
@@ -303,7 +309,7 @@ export async function listGroupEvents(
   if (dateInput && !parsedDate) {
     throw new Error('date must be a valid ISO date/time string.');
   }
-  const monthDate = parsedDate ? toMonthKey(parsedDate) : undefined;
+  const monthDate = parsedDate ? toMonthDateTime(parsedDate) : undefined;
   const pageSize =
     typeof input.pageSize === 'number' ? Math.floor(input.pageSize) : DEFAULT_GROUP_EVENT_PAGE_SIZE;
   const maxPages =
@@ -327,7 +333,7 @@ export async function listGroupEvents(
     async () => {
       const result = await callReadOperationParsed(
         'getGroupCalendarEvents',
-        { groupId, monthDate },
+        { groupId, date: monthDate },
         {
           page: {
             enabled: true,
@@ -466,7 +472,7 @@ export async function listGroupEventsUpcoming(
         }
         const result = await callReadOperationParsed(
           'getGroupCalendarEvents',
-          { groupId, monthDate: date },
+          { groupId, date: monthKeyToDateTime(date) },
           {
             page: {
               enabled: true,

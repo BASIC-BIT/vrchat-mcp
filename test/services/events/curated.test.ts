@@ -21,6 +21,10 @@ import {
   updateCalendarEvent,
 } from '../../../src/services/events/curated.js';
 
+function expectPage(value: Record<string, unknown>) {
+  return expect.objectContaining(value) as Record<string, unknown>;
+}
+
 describe('events curated service', () => {
   beforeEach(() => {
     vi.mocked(callReadOperation).mockReset();
@@ -42,6 +46,11 @@ describe('events curated service', () => {
     });
     expect(result.totalEvents).toBe(1);
     expect(result.events[0]).toMatchObject({ id: 'evt_1', startsAt: '2025-12-22T13:00:00Z' });
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getCalendarEvents',
+      { date: '2025-12-01T00:00:00.000Z' },
+      expect.objectContaining({ page: expectPage({ size: 50 }) }),
+    );
   });
 
   it('rejects invalid from values', async () => {

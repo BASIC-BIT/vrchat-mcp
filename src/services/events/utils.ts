@@ -28,6 +28,14 @@ export function toMonthKey(value: Date): string {
   return `${year}-${month}-01`;
 }
 
+export function monthKeyToDateTime(value: string): string {
+  return `${value}T00:00:00.000Z`;
+}
+
+export function toMonthDateTime(value: Date): string {
+  return monthKeyToDateTime(toMonthKey(value));
+}
+
 export function getMonthKeys(start: Date, end: Date): string[] {
   const keys: string[] = [];
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);

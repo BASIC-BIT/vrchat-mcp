@@ -163,6 +163,18 @@ function getOperationOrThrow(
   return op;
 }
 
+function validateOperationParams(op: OperationDef, params: Record<string, unknown>): void {
+  const allowed = new Set(op.parameters.map((param) => param.name));
+  const unknown = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key]) => key)
+    .filter((key) => !allowed.has(key));
+  if (unknown.length === 0) return;
+  throw new CallError(
+    `Unknown parameter(s) for ${op.operationId}: ${unknown.join(', ')}`,
+  );
+}
+
 function enforceOperationPolicy(
   op: OperationDef,
   params: Record<string, unknown>,
@@ -282,6 +294,7 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
   const { operationId, params = {}, body, options } = input;
   const index = await getSpecIndex();
   const op = getOperationOrThrow(index, operationId);
+  validateOperationParams(op, params);
   enforceOperationPolicy(op, params, body);
 
   const url = buildUrl(op, params);
