@@ -127,6 +127,8 @@ describe('events curated service', () => {
     );
     expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
     expect(result.truncated).toBe(false);
+    expect(result.nextCursor).toBeUndefined();
+    expect(result.page.nextCursor).toBeUndefined();
   });
 
   it('marks discovery truncated and clears cursor when maxItems clips a fetched page', async () => {
