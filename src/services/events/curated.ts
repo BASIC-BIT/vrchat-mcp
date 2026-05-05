@@ -66,7 +66,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
 
     const result = await callReadOperationParsed(
       'getCalendarEvents',
-      { monthDate: date },
+      { date },
       {
         fields: input.fields,
         compact: input.compact,

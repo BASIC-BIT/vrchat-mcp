@@ -42,6 +42,11 @@ describe('events curated service', () => {
     });
     expect(result.totalEvents).toBe(1);
     expect(result.events[0]).toMatchObject({ id: 'evt_1', startsAt: '2025-12-22T13:00:00Z' });
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getCalendarEvents',
+      { date: '2025-12-01' },
+      expect.objectContaining({ page: expect.objectContaining({ size: 50 }) }),
+    );
   });
 
   it('rejects invalid from values', async () => {

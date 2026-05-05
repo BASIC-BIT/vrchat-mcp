@@ -170,7 +170,7 @@ describe('groups curated service', () => {
     const result = await listGroupEvents('grp_1', { date: '2025-12-01', pageSize: 5, maxPages: 1 });
     expect(callReadOperation).toHaveBeenCalledWith(
       'getGroupCalendarEvents',
-      { groupId: 'grp_1', monthDate: '2025-12-01' },
+      { groupId: 'grp_1', date: '2025-12-01' },
       expect.objectContaining({
         page: expectPage({ size: 5, maxPages: 1, maxItems: 5 }),
       }),
@@ -221,6 +221,11 @@ describe('groups curated service', () => {
     });
     expect(result.events[0]).toMatchObject({ id: 'evt_in', startsAt: '2025-12-20T10:00:00Z' });
     expect(result.segments[0]?.date).toBe('2025-12-01');
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getGroupCalendarEvents',
+      { groupId: 'grp_1', date: '2025-12-01' },
+      expect.objectContaining({ page: expectPage({ size: 50 }) }),
+    );
   });
 
   it('rejects invalid upcoming from date', async () => {

@@ -327,7 +327,7 @@ export async function listGroupEvents(
     async () => {
       const result = await callReadOperationParsed(
         'getGroupCalendarEvents',
-        { groupId, monthDate },
+        { groupId, date: monthDate },
         {
           page: {
             enabled: true,
@@ -466,7 +466,7 @@ export async function listGroupEventsUpcoming(
         }
         const result = await callReadOperationParsed(
           'getGroupCalendarEvents',
-          { groupId, monthDate: date },
+          { groupId, date },
           {
             page: {
               enabled: true,
