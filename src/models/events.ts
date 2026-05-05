@@ -60,6 +60,42 @@ export const EventsSearchOutputSchema = z.object({
   events: z.array(schemas.CalendarEvent.partial()),
 });
 
+export const EventsDiscoverInputSchema = EventListShapeSchema.extend({
+  scope: schemas.CalendarEventDiscoveryScope.optional(),
+  categories: z.array(schemas.CalendarEventCategory).optional(),
+  tags: z.array(z.string()).optional(),
+  featuredResults: schemas.CalendarEventDiscoveryInclusion.optional(),
+  nonFeaturedResults: schemas.CalendarEventDiscoveryInclusion.optional(),
+  personalizedResults: schemas.CalendarEventDiscoveryInclusion.optional(),
+  minimumInterestCount: z.number().int().min(0).optional(),
+  minimumRemainingMinutes: z.number().int().min(0).optional(),
+  upcomingOffsetMinutes: z.number().int().min(0).optional(),
+  nextCursor: z.string().optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+  maxPages: z.number().int().min(1).max(20).optional(),
+  maxItems: z.number().int().min(1).optional(),
+});
+
+export const EventsCursorPageSchema = z.object({
+  pages: z.number().int().min(0),
+  items: z.number().int().min(0),
+  pageSize: z.number().int().min(1),
+  nextCursor: z.string().optional(),
+  truncated: z.boolean(),
+});
+
+export const EventsDiscoverOutputSchema = z.object({
+  scope: schemas.CalendarEventDiscoveryScope.optional(),
+  pageSize: z.number().int().min(1),
+  maxPages: z.number().int().min(1),
+  maxItems: z.number().int().min(1),
+  totalEvents: z.number().int().min(0),
+  truncated: z.boolean(),
+  nextCursor: z.string().optional(),
+  page: EventsCursorPageSchema,
+  events: z.array(schemas.CalendarEvent.partial()),
+});
+
 export const CalendarEventCreateSchema = schemas.CreateCalendarEventRequest.extend({
   groupId: schemas.GroupID,
   accessType: schemas.CreateCalendarEventRequest.shape.accessType
@@ -83,14 +119,22 @@ export const CalendarEventDeleteSchema = z.object({
   calendarId: schemas.CalendarID,
 });
 
+export const CalendarEventFollowSchema = z.object({
+  groupId: schemas.GroupID,
+  calendarId: schemas.CalendarID,
+  isFollowing: z.boolean(),
+});
+
 export const CalendarEventWriteOutputSchema = z.object({
-  status: z.enum(['created', 'updated', 'deleted']),
-  event: schemas.CalendarEvent.optional(),
-  result: schemas.Success.optional(),
+  status: z.enum(['created', 'updated', 'deleted', 'followed', 'unfollowed']),
+  event: schemas.CalendarEvent.nullable().optional(),
+  result: schemas.Success.nullable().optional(),
 });
 
 export type EventsUpcomingInput = z.infer<typeof EventsUpcomingInputSchema>;
 export type EventsSearchInput = z.infer<typeof EventsSearchInputSchema>;
+export type EventsDiscoverInput = z.infer<typeof EventsDiscoverInputSchema>;
 export type CalendarEventCreateInput = z.infer<typeof CalendarEventCreateSchema>;
 export type CalendarEventUpdateInput = z.infer<typeof CalendarEventUpdateSchema>;
 export type CalendarEventDeleteInput = z.infer<typeof CalendarEventDeleteSchema>;
+export type CalendarEventFollowInput = z.infer<typeof CalendarEventFollowSchema>;

@@ -25,6 +25,17 @@ type MockContext = Context<
   Record<string, string | string[]>,
   Record<string, string>
 >;
+interface ResponseValidationContext {
+  response?: unknown;
+  operation?: { operationId?: string };
+  api: {
+    validateResponse: (
+      payload: unknown,
+      operation: { operationId?: string },
+      statusCode: number
+    ) => { errors?: unknown[] };
+  };
+}
 
 type ZodSchema<T> = ZodType<T>;
 
@@ -81,6 +92,31 @@ async function loadSpec(specPath?: string | URL): Promise<unknown> {
   }
 
   return YAML.parse(text);
+}
+
+function collectOperationIds(spec: unknown): Set<string> {
+  const paths = (spec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {};
+  const ids = new Set<string>();
+  for (const pathItem of Object.values(paths)) {
+    for (const operation of Object.values(pathItem)) {
+      const operationId = (operation as { operationId?: unknown }).operationId;
+      if (typeof operationId === 'string') ids.add(operationId);
+    }
+  }
+  return ids;
+}
+
+function collectSecuritySchemes(spec: unknown): Set<string> {
+  const schemes = (spec as { components?: { securitySchemes?: Record<string, unknown> } }).components
+    ?.securitySchemes;
+  return new Set(Object.keys(schemes ?? {}));
+}
+
+function filterHandlers(handlers: Record<string, unknown>, operationIds: Set<string>) {
+  const frameworkHandlers = new Set(['notFound', 'validationFail', 'postResponseHandler']);
+  return Object.fromEntries(
+    Object.entries(handlers).filter(([key]) => frameworkHandlers.has(key) || operationIds.has(key))
+  );
 }
 
 function parseArray<T>(schema: ZodSchema<T>, value: unknown, label: string): T[] {
@@ -373,6 +409,17 @@ function sendError(res: ServerResponse, status: number, message: string, details
   sendJson(res, status, payload);
 }
 
+function isIgnoredValidationNoise(operationId: string | undefined, error: unknown): boolean {
+  if (operationId !== 'inviteMyselfTo' && operationId !== 'inviteUser') return false;
+  const record = error as { instancePath?: unknown; keyword?: unknown; schemaPath?: unknown };
+  return (
+    record.instancePath === '/details' &&
+    record.keyword === 'oneOf' &&
+    typeof record.schemaPath === 'string' &&
+    record.schemaPath.endsWith('/properties/details/oneOf')
+  );
+}
+
 export interface MockServerOptions {
   specPath?: string | URL;
 }
@@ -381,6 +428,8 @@ export async function createMockServer(
   options: MockServerOptions = {}
 ): Promise<MockTypes.MockServer> {
   const spec = await loadSpec(options.specPath);
+  const operationIds = collectOperationIds(spec);
+  const securitySchemes = collectSecuritySchemes(spec);
   const data = parseMockData(mockData);
   let instanceCounter = Object.keys(data.instances).length;
   let notificationCounter = data.notifications.length;
@@ -403,11 +452,13 @@ export async function createMockServer(
     },
   }) as OpenAPIBackendType;
 
-  api.registerSecurityHandler('authCookie', () => true);
-  api.registerSecurityHandler('authHeader', () => true);
-  api.registerSecurityHandler('twoFactorAuthCookie', () => true);
+  if (securitySchemes.has('authCookie')) api.registerSecurityHandler('authCookie', () => true);
+  if (securitySchemes.has('authHeader')) api.registerSecurityHandler('authHeader', () => true);
+  if (securitySchemes.has('twoFactorAuthCookie')) {
+    api.registerSecurityHandler('twoFactorAuthCookie', () => true);
+  }
 
-  api.register({
+  const handlers = {
     getConfig: (_c, _req, res) => {
       sendJson(toResponse(res), 200, data.config);
     },
@@ -474,6 +525,7 @@ export async function createMockServer(
     },
     getUserGroups: (_c, _req, res) => {
       const groups = data.groups.map((group) => ({
+        id: group.id,
         groupId: group.id,
         name: group.name,
         shortCode: group.shortCode,
@@ -613,6 +665,8 @@ export async function createMockServer(
         type: typeof body?.type === 'string' ? body.type : undefined,
         region: typeof body?.region === 'string' ? body.region : undefined,
         displayName: typeof body?.displayName === 'string' ? body.displayName : undefined,
+        calendarEntryId:
+          typeof body?.calendarEntryId === 'string' ? body.calendarEntryId : undefined,
       });
       data.instances[location] = instance;
       sendJson(toResponse(res), 200, instance);
@@ -637,7 +691,7 @@ export async function createMockServer(
         id,
         type: 'invite',
         message,
-        details: {},
+        details: { worldId, worldName: worldId },
       });
       data.notifications.push(storedNotification);
       sendJson(toResponse(res), 200, sentNotification);
@@ -663,7 +717,7 @@ export async function createMockServer(
         id,
         type: 'invite',
         message,
-        details: {},
+        details: { worldId: instanceId, worldName: instanceId },
       });
       data.notifications.push(storedNotification);
       sendJson(toResponse(res), 200, sentNotification);
@@ -752,7 +806,7 @@ export async function createMockServer(
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const posts = data.groupPosts[groupId] ?? [];
-      sendJson(toResponse(res), 200, applyPagination(posts, context.request.query));
+      sendJson(toResponse(res), 200, { posts: applyPagination(posts, context.request.query) });
     },
     getGroupInstances: (c, _req, res) => {
       const context = toContext(c);
@@ -761,15 +815,25 @@ export async function createMockServer(
     },
     getCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPagination(data.calendarEvents, context.request.query));
+      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarEvents, context.request.query));
     },
     getFeaturedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPagination(data.calendarFeatured, context.request.query));
+      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarFeatured, context.request.query));
     },
     getFollowedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPagination(data.calendarFollowed, context.request.query));
+      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarFollowed, context.request.query));
+    },
+    discoverCalendarEvents: (c, _req, res) => {
+      const context = toContext(c);
+      const query = context.request.query;
+      const matches = applySearch(data.calendarEvents, query, ['title'], 'search');
+      const page = applyPaginatedList(matches, query);
+      sendJson(toResponse(res), 200, {
+        results: page.results,
+        nextCursor: page.hasNext ? `mock-cursor-${page.results.length}` : '',
+      });
     },
     searchCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
@@ -783,7 +847,31 @@ export async function createMockServer(
       const events = data.calendarGroupEvents[groupId] ?? [];
       sendJson(toResponse(res), 200, applyPaginatedList(events, context.request.query));
     },
+    getGroupNextCalendarEvent: (c, _req, res) => {
+      const context = toContext(c);
+      const groupId = getParamValue(context.request.params, 'groupId') ?? '';
+      const events = data.calendarGroupEvents[groupId] ?? [];
+      const sorted = [...events].sort((a, b) => String(a.startsAt).localeCompare(String(b.startsAt)));
+      const event = sorted[0];
+      if (!event) {
+        sendError(toResponse(res), 404, 'Calendar event not found');
+        return;
+      }
+      sendJson(toResponse(res), 200, event);
+    },
     getGroupCalendarEvent: (c, _req, res) => {
+      const context = toContext(c);
+      const groupId = getParamValue(context.request.params, 'groupId') ?? '';
+      const calendarId = getParamValue(context.request.params, 'calendarId');
+      const events = data.calendarGroupEvents[groupId] ?? [];
+      const event = events.find((entry) => entry.id === calendarId);
+      if (!event) {
+        sendError(toResponse(res), 404, 'Calendar event not found');
+        return;
+      }
+      sendJson(toResponse(res), 200, event);
+    },
+    followGroupCalendarEvent: (c, _req, res) => {
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const calendarId = getParamValue(context.request.params, 'calendarId');
@@ -812,7 +900,7 @@ export async function createMockServer(
         groupId,
         title: typeof body?.title === 'string' ? body.title : 'Mock Group Event',
         description: typeof body?.description === 'string' ? body.description : 'Mock event',
-        category: typeof body?.category === 'string' ? body.category : 'meetup',
+        category: typeof body?.category === 'string' ? body.category : 'hangout',
         startsAt,
         endsAt,
         accessType: typeof body?.accessType === 'string' ? body.accessType : 'group',
@@ -889,21 +977,27 @@ export async function createMockServer(
       const context = toContext(c);
       sendError(toResponse(res), 400, 'Validation failed', context.validation.errors);
     },
-    postResponseHandler: (c, _req, res: ServerResponse) => {
+    postResponseHandler: (c: ResponseValidationContext, _req, res: ServerResponse) => {
       const response = res as ResponseCarrier;
-      const payload: unknown = response.__mockPayload ?? (c.response as unknown);
+      const payload: unknown = response.__mockPayload ?? c.response;
       const statusCode = response.__mockStatus ?? response.statusCode;
-      if (payload !== undefined && c.operation) {
-        const validation = c.api.validateResponse(payload, c.operation, statusCode);
-        if (validation.errors?.length) {
+      const operation = c.operation;
+      if (payload !== undefined && operation) {
+        const validation = c.api.validateResponse(payload, operation, statusCode);
+        const errors = validation.errors?.filter(
+          (error) => !isIgnoredValidationNoise(operation.operationId, error)
+        );
+        if (errors?.length) {
           console.warn(
-            `[mock] Response validation failed for ${c.operation.operationId} (${statusCode})`,
-            validation.errors
+            `[mock] Response validation failed for ${operation.operationId} (${statusCode})`,
+            errors
           );
         }
       }
     },
-  });
+  };
+
+  api.register(filterHandlers(handlers, operationIds));
 
   await api.init();
 

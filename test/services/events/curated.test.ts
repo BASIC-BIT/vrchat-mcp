@@ -14,6 +14,8 @@ import {
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
+  discoverEvents,
+  followCalendarEvent,
   listUpcomingEvents,
   searchEvents,
   updateCalendarEvent,
@@ -39,7 +41,7 @@ describe('events curated service', () => {
       windowHours: 24,
     });
     expect(result.totalEvents).toBe(1);
-    expect(result.events).toEqual([{ id: 'evt_1', startsAt: '2025-12-22T13:00:00Z' }]);
+    expect(result.events[0]).toMatchObject({ id: 'evt_1', startsAt: '2025-12-22T13:00:00Z' });
   });
 
   it('rejects invalid from values', async () => {
@@ -95,12 +97,44 @@ describe('events curated service', () => {
     expect(result.truncated).toBe(true);
   });
 
+  it('discovers events with cursor pagination', async () => {
+    vi.mocked(callReadOperation)
+      .mockResolvedValueOnce({
+        data: { results: [{ id: 'evt_1' }], nextCursor: 'cursor_2' },
+      })
+      .mockResolvedValueOnce({
+        data: { results: [{ id: 'evt_2' }], nextCursor: '' },
+      });
+
+    const result = await discoverEvents({
+      scope: 'upcoming',
+      categories: ['music'],
+      pageSize: 1,
+      maxPages: 2,
+    });
+
+    expect(callReadOperation).toHaveBeenNthCalledWith(
+      1,
+      'discoverCalendarEvents',
+      expect.objectContaining({ scope: 'upcoming', categories: 'music', n: 1 }),
+      undefined,
+    );
+    expect(callReadOperation).toHaveBeenNthCalledWith(
+      2,
+      'discoverCalendarEvents',
+      expect.objectContaining({ nextCursor: 'cursor_2' }),
+      undefined,
+    );
+    expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
+    expect(result.truncated).toBe(false);
+  });
+
   it('builds calendar create and update requests', () => {
     const create = buildCalendarCreateRequest({
       groupId: 'grp_1',
       title: 'Party',
       description: 'Party time',
-      category: 'meetup',
+      category: 'hangout',
       startsAt: '2025-12-31T10:00:00Z',
       endsAt: '2025-12-31T12:00:00Z',
     });
@@ -112,7 +146,7 @@ describe('events curated service', () => {
     expect(create).toMatchObject({
       title: 'Party',
       startsAt: '2025-12-31T10:00:00Z',
-      category: 'meetup',
+      category: 'hangout',
       accessType: 'group',
       sendCreationNotification: false,
     });
@@ -131,7 +165,7 @@ describe('events curated service', () => {
     const created = await createCalendarEvent('grp_1', {
       title: 'Party',
       description: 'Party time',
-      category: 'meetup',
+      category: 'hangout',
       startsAt: '2025-12-31T10:00:00Z',
       endsAt: '2025-12-31T12:00:00Z',
       accessType: 'group',
@@ -140,8 +174,25 @@ describe('events curated service', () => {
     const updated = await updateCalendarEvent('grp_1', 'cal_1', { title: 'Updated' });
     const deleted = await deleteCalendarEvent('grp_1', 'cal_1');
 
-    expect(created).toEqual({ id: 'evt_new' });
-    expect(updated).toEqual({ id: 'evt_updated' });
+    expect(created).toMatchObject({ id: 'evt_new' });
+    expect(updated).toMatchObject({ id: 'evt_updated' });
     expect(deleted).toEqual({ id: 'evt_deleted' });
+  });
+
+  it('follows events via API', async () => {
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'evt_followed' } });
+
+    const result = await followCalendarEvent({
+      groupId: 'grp_1',
+      calendarId: 'cal_1',
+      isFollowing: true,
+    });
+
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'followGroupCalendarEvent',
+      params: { groupId: 'grp_1', calendarId: 'cal_1' },
+      body: { isFollowing: true },
+    });
+    expect(result).toMatchObject({ id: 'evt_followed' });
   });
 });

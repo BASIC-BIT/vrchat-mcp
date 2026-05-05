@@ -3,7 +3,7 @@ import { callOperation } from '../../core/client.js';
 import { callReadOperation, type ReadToolOptions } from '../../core/readTools.js';
 import { schemas } from '../../generated/vrchat-schemas.js';
 import { parseArrayWithSchema, parseWithSchema } from '../../utils/schema.js';
-import { parseCalendarEvents } from '../events/utils.js';
+import { parseCalendarEventDiscovery, parseCalendarEvents } from '../events/utils.js';
 
 const UserSchema = schemas.User.partial();
 const CurrentUserSchema = schemas.CurrentUser.partial();
@@ -41,14 +41,6 @@ const readParsers = {
     parseArrayWithSchema(schemas.GroupMember.partial(), data, 'getGroupMembers'),
   getGroupPosts: (data: unknown) =>
     parseArrayWithSchema(schemas.GroupPost.partial(), data, 'getGroupPosts'),
-  getGroupAnnouncements: (data: unknown) => {
-    const normalized = Array.isArray(data) ? data : data ? [data] : [];
-    return parseArrayWithSchema(
-      schemas.GroupAnnouncement.partial(),
-      normalized,
-      'getGroupAnnouncements'
-    );
-  },
   getGroupInstances: (data: unknown) =>
     parseArrayWithSchema(
       schemas.GroupInstance.extend({ world: WorldSchema.optional() }).partial(),
@@ -57,7 +49,10 @@ const readParsers = {
     ),
   getCalendarEvents: (data: unknown) => parseCalendarEvents(data),
   searchCalendarEvents: (data: unknown) => parseCalendarEvents(data),
+  discoverCalendarEvents: (data: unknown) => parseCalendarEventDiscovery(data),
   getGroupCalendarEvents: (data: unknown) => parseCalendarEvents(data),
+  getGroupNextCalendarEvent: (data: unknown) =>
+    parseNullable(CalendarEventSchema, data, 'getGroupNextCalendarEvent'),
   getGroupCalendarEvent: (data: unknown) =>
     parseNullable(CalendarEventSchema, data, 'getGroupCalendarEvent'),
 } as const;
@@ -73,6 +68,8 @@ const writeParsers = {
     parseNullable(CalendarEventSchema, data, 'updateGroupCalendarEvent'),
   deleteGroupCalendarEvent: (data: unknown) =>
     parseNullable(schemas.Success.partial(), data, 'deleteGroupCalendarEvent'),
+  followGroupCalendarEvent: (data: unknown) =>
+    parseNullable(CalendarEventSchema, data, 'followGroupCalendarEvent'),
 } as const;
 
 export type ReadOperationId = keyof typeof readParsers;

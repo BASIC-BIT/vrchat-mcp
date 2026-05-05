@@ -60,6 +60,7 @@ const DEFAULT_ALL_MAX_PAGES = 200;
 const DEFAULT_ONLINE_MAX_PAGES = 50;
 const DEFAULT_SEARCH_MAX_PAGES = 100;
 const DEFAULT_SEARCH_MAX_RESULTS = 10;
+const DEFAULT_OVERVIEW_MAX_LOCATIONS = 25;
 function normalizePageSize(value: number | undefined, fallback: number): number {
   return typeof value === 'number' ? Math.floor(value) : fallback;
 }
@@ -205,17 +206,21 @@ export async function listFriends(input: FriendsListInput) {
     input.maxPages,
     includeOffline ? DEFAULT_ALL_MAX_PAGES : DEFAULT_ONLINE_MAX_PAGES
   );
+  const maxItems =
+    typeof input.maxItems === 'number' ? Math.max(1, Math.floor(input.maxItems)) : undefined;
 
   const { friends, meta } = await fetchFriendsWithMeta({
     includeOffline,
     pageSize,
     maxPages,
+    maxItems,
   });
 
   return {
     includeOffline,
     pageSize,
     maxPages,
+    maxItems,
     friends,
     meta,
   };
@@ -475,6 +480,10 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
       : undefined;
   const instanceDetailLevel = input.instanceDetailLevel === 'full' ? 'full' : 'summary';
   const strictInstanceFilter = minInstanceUserCount !== undefined;
+  const maxLocations =
+    typeof input.maxLocations === 'number'
+      ? Math.max(1, Math.floor(input.maxLocations))
+      : DEFAULT_OVERVIEW_MAX_LOCATIONS;
   const pageSize = DEFAULT_LIST_PAGE_SIZE;
   const maxPages = DEFAULT_ALL_MAX_PAGES;
 
@@ -499,7 +508,9 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
 
   const locationList = buildLocationList(buckets.locations);
   const filteredLocations = filterLocationsByMinUserCount(locationList, minInstanceUserCount);
+  const returnedLocations = filteredLocations.slice(0, maxLocations);
   const online = computeOnlineStatusCounts(filteredLocations);
+  const omittedLocations = Math.max(0, filteredLocations.length - returnedLocations.length);
 
   const statusCounts: Record<string, number> = { ...buckets.filteredOfflineStatusCounts };
   for (const [key, count] of Object.entries(online.statusCounts)) {
@@ -518,6 +529,11 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
     onlineCount: online.onlineCount,
     offlineCount: buckets.filteredOfflineCount,
     statusCounts,
+    maxLocations,
+    totalLocations: filteredLocations.length,
+    returnedLocations: returnedLocations.length,
+    omittedLocations,
+    locationsTruncated: omittedLocations > 0,
     totals: {
       all: {
         totalFriends: overallTotal,
@@ -532,7 +548,7 @@ export async function getFriendsOverview(input: FriendsOverviewInput) {
         statusCounts,
       },
     },
-    locations: filteredLocations,
+    locations: returnedLocations,
     meta,
   };
 }

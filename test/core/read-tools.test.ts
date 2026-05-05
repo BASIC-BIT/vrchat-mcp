@@ -82,6 +82,24 @@ describe('read tools', () => {
     });
   });
 
+  it('paginates object responses with posts arrays', async () => {
+    const mock = vi.mocked(callOperation);
+    mock.mockImplementation(({ params }) => {
+      const offset = Number(params?.offset ?? 0);
+      const posts = [{ id: `post_${offset}` }];
+      return Promise.resolve({ url: 'https://api.vrchat.cloud/api/1/friends', data: { posts } });
+    });
+
+    const result = await callReadOperation(
+      'getFriends',
+      {},
+      { page: { enabled: true, size: 1, maxPages: 2 } },
+    );
+
+    expect(result.data).toEqual([{ id: 'post_0' }, { id: 'post_1' }]);
+    expect(result.page).toMatchObject({ pages: 2, items: 2, truncated: true });
+  });
+
   it('maps number to n in params', async () => {
     const mock = vi.mocked(callOperation);
     mock.mockResolvedValue({ url: 'https://api.vrchat.cloud/api/1/friends', data: [] });

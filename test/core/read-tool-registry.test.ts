@@ -144,6 +144,7 @@ describe('read tool registry', () => {
 
     interface ToolResponse {
       isError?: boolean;
+      content: { type: string; text?: string }[];
       structuredContent?: { error?: string };
     }
     const handlers: Record<string, (args: unknown) => Promise<ToolResponse>> = {};
@@ -166,6 +167,6 @@ describe('read tool registry', () => {
       expect.objectContaining({ includeMeta: undefined }),
     );
     expect(response?.isError).toBe(true);
-    expect(response?.structuredContent?.error).toBe('boom');
+    expect(response?.content[0]?.text).toBe('boom');
   });
 });

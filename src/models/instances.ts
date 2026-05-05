@@ -14,8 +14,11 @@ export const InstanceCreateSchema = z.object({
   canRequestInvite: z.boolean().optional(),
   queueEnabled: z.boolean().optional(),
   ageGate: z.boolean().optional(),
+  calendarEntryId: schemas.CreateInstanceRequest.shape.calendarEntryId,
   instancePersistenceEnabled:
     schemas.CreateInstanceRequest.shape.instancePersistenceEnabled,
+  playerPersistenceEnabled:
+    schemas.CreateInstanceRequest.shape.playerPersistenceEnabled,
   closedAt: schemas.CreateInstanceRequest.shape.closedAt,
   hardClose: z.boolean().optional(),
   contentSettings: schemas.InstanceContentSettings.optional(),
@@ -34,6 +37,7 @@ export const InstanceSummarySchema = schemas.Instance.pick({
   hasCapacityForYou: true,
   queueEnabled: true,
   queueSize: true,
+  calendarEntryId: true,
   type: true,
   groupAccessType: true,
   region: true,

@@ -53,6 +53,7 @@ Each MCP server is exposed under its own route (e.g., `http://localhost:8000/vrc
 - `test:e2e` - run E2E tests (mock + live if configured)
 - `test:e2e:live` - run only the live E2E tests
 - `test:evals` - run opt-in LLM evaluation tests
+- `smoke:live` - opt-in read-only live MCP smoke matrix against the built server (`dist/bin/cli.js` by default)
 - `check` - lint + typecheck + tests
 - `generate:tools-docs` - regenerate `docs/tools.md`
 - `mcpo` - run MCP-to-OpenAPI proxy with Swagger UI (see above; requires `uvx`)
@@ -94,6 +95,10 @@ Live E2E config (local only):
 - Create `test/fixtures/e2e.live.json` (gitignored) to enable live tests.       
 - See `test/fixtures/e2e.live.example.json` for the expected shape.
 - Run live tests with `npm run test:e2e:live` (or `npm run test:e2e`).
+- Run read-only live smoke checks with `npm run build && npm run smoke:live` after `npm run mcp:login`.
+  The smoke runner uses `VRCHAT_MCP_COOKIE_STORE=file` by default and does not call write tools.
+  Override the server with `VRCHAT_MCP_SERVER_COMMAND`, `VRCHAT_MCP_SERVER_ARGS`, and `VRCHAT_MCP_SERVER_CWD`.
+  Override sampled live targets with `VRCHAT_MCP_SMOKE_GROUP_ID`, `VRCHAT_MCP_SMOKE_WORLD_ID`, `VRCHAT_MCP_SMOKE_WORLD_QUERY`, `VRCHAT_MCP_SMOKE_FRIEND_USER_ID`, or `VRCHAT_MCP_SMOKE_FRIEND_NAME`.
 - To exercise write tools, set `writeTests.enabled=true` and fill in `worldId` (required) and optionally `inviteUserId`. This automatically enables writes for the live harness.
 
 LLM eval config (local only):
@@ -158,4 +163,3 @@ Note: Most list endpoints use query param `n` (not `number`). For convenience, c
 ## Notes
 - Stdout is reserved for MCP protocol; all logging goes to stderr.
 - Cookie persistence currently uses tough-cookie jar with optional keychain/file backends.
-

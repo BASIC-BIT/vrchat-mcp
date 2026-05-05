@@ -2,7 +2,9 @@ import type { z } from 'zod';
 import {
   CalendarEventCreateSchema,
   type CalendarEventCreateInput,
+  type CalendarEventFollowInput,
   type CalendarEventUpdateInput,
+  type EventsDiscoverInput,
   type EventsSearchInput,
   type EventsUpcomingInput,
 } from '../../models/events.js';
@@ -167,6 +169,71 @@ export async function searchEvents(input: EventsSearchInput) {
   };
 }
 
+function buildDiscoveryParams(
+  input: EventsDiscoverInput,
+  pageSize: number,
+  nextCursor?: string,
+): Record<string, unknown> {
+  const params: Record<string, unknown> = { n: pageSize };
+  if (input.scope) params.scope = input.scope;
+  if (input.categories?.length) params.categories = input.categories.join(',');
+  if (input.tags?.length) params.tags = input.tags.join(',');
+  if (input.featuredResults) params.featuredResults = input.featuredResults;
+  if (input.nonFeaturedResults) params.nonFeaturedResults = input.nonFeaturedResults;
+  if (input.personalizedResults) params.personalizedResults = input.personalizedResults;
+  if (typeof input.minimumInterestCount === 'number') {
+    params.minimumInterestCount = Math.floor(input.minimumInterestCount);
+  }
+  if (typeof input.minimumRemainingMinutes === 'number') {
+    params.minimumRemainingMinutes = Math.floor(input.minimumRemainingMinutes);
+  }
+  if (typeof input.upcomingOffsetMinutes === 'number') {
+    params.upcomingOffsetMinutes = Math.floor(input.upcomingOffsetMinutes);
+  }
+  if (nextCursor) params.nextCursor = nextCursor;
+  return params;
+}
+
+export async function discoverEvents(input: EventsDiscoverInput) {
+  const pageSize = parseNumber(input.pageSize, DEFAULT_PAGE_SIZE);
+  const maxPages = parseNumber(input.maxPages, DEFAULT_MAX_PAGES);
+  const maxItems = parseNumber(input.maxItems, pageSize * maxPages);
+  const events: CalendarEventRecord[] = [];
+  let nextCursor = input.nextCursor;
+  let pages = 0;
+
+  while (pages < maxPages && events.length < maxItems) {
+    const result = await callReadOperationParsed(
+      'discoverCalendarEvents',
+      buildDiscoveryParams(input, pageSize, nextCursor),
+    );
+    pages += 1;
+    events.push(...result.data.results);
+    nextCursor = result.data.nextCursor;
+    if (!nextCursor || result.data.results.length === 0) break;
+  }
+
+  const sliced = events.slice(0, maxItems);
+  const truncated = Boolean(nextCursor) && (pages >= maxPages || events.length >= maxItems);
+  return {
+    scope: input.scope,
+    pageSize,
+    maxPages,
+    maxItems,
+    totalEvents: sliced.length,
+    truncated,
+    nextCursor,
+    page: {
+      pages,
+      items: sliced.length,
+      pageSize,
+      nextCursor,
+      truncated,
+    },
+    events: sliced,
+  };
+}
+
 export function buildCalendarCreateRequest(
   input: CalendarEventCreateInput,
 ): CalendarEventCreateRequest {
@@ -208,5 +275,14 @@ export async function deleteCalendarEvent(groupId: string, calendarId: string) {
     groupId,
     calendarId,
   });
+  return result.data ?? null;
+}
+
+export async function followCalendarEvent(input: CalendarEventFollowInput) {
+  const result = await callWriteOperationParsed(
+    'followGroupCalendarEvent',
+    { groupId: input.groupId, calendarId: input.calendarId },
+    { isFollowing: input.isFollowing },
+  );
   return result.data ?? null;
 }

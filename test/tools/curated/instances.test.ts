@@ -24,6 +24,7 @@ describe('curated instance tools', () => {
         type: 'private',
         region: 'us',
         displayName: 'Test Instance',
+        calendarEntryId: 'cal_1',
       },
     });
     vi.mocked(createInstance).mockResolvedValue({ id: 'inst_1' });
@@ -38,6 +39,7 @@ describe('curated instance tools', () => {
       type: 'private',
       region: 'us',
       displayName: 'Test Instance',
+      calendarEntryId: 'cal_1',
     });
 
     expect(createInstance).toHaveBeenCalledWith(
@@ -46,6 +48,7 @@ describe('curated instance tools', () => {
         type: 'private',
         region: 'us',
         displayName: 'Test Instance',
+        calendarEntryId: 'cal_1',
       }),
     );
     expect(result).toMatchObject({

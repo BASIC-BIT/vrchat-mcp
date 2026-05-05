@@ -10,6 +10,7 @@ vi.mock('../../../src/services/groups/index.js', () => ({
   listGroupPosts: vi.fn(),
   listGroupEvents: vi.fn(),
   getGroupEvent: vi.fn(),
+  getGroupNextEvent: vi.fn(),
   listGroupEventsUpcoming: vi.fn(),
   getGroupInstancesOverview: vi.fn(),
 }));
@@ -22,6 +23,7 @@ import { registerCuratedGroupTools } from '../../../src/tools/curated/groups.js'
 import {
   getGroupEvent,
   getGroupInstancesOverview,
+  getGroupNextEvent,
   getGroupProfile,
   listGroupEvents,
   listGroupEventsUpcoming,
@@ -93,10 +95,9 @@ describe('curated group tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_group_profile');
     const result = await tool!.handler({ groupId: 'grp_missing' });
 
-    expect(result).toMatchObject({
-      isError: true,
-      structuredContent: { status: 'not_found' },
-    });
+    expect(result).toMatchObject({ isError: true });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('not_found');
   });
 
   it('lists recent group posts', async () => {
@@ -154,6 +155,21 @@ describe('curated group tools', () => {
 
     expect(result).toMatchObject({
       structuredContent: { groupId: 'grp_1', calendarId: 'evt_9' },
+    });
+  });
+
+  it('gets the next group event', async () => {
+    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
+    vi.mocked(getGroupNextEvent).mockResolvedValue({ event: { id: 'evt_next' }, stale: false });
+
+    const server = new FakeServer();
+    registerCuratedGroupTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_event_next');
+    const result = await tool!.handler({ groupId: 'grp_1' });
+
+    expect(getGroupNextEvent).toHaveBeenCalledWith('grp_1');
+    expect(result).toMatchObject({
+      structuredContent: { groupId: 'grp_1', event: { id: 'evt_next' } },
     });
   });
 

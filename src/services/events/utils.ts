@@ -8,6 +8,9 @@ const CalendarEventArraySchema = CalendarEventSchema.array();
 const PaginatedCalendarEventListSchema = schemas.PaginatedCalendarEventList.extend({
   results: CalendarEventArraySchema.optional(),
 });
+const CalendarEventDiscoverySchema = schemas.CalendarEventDiscovery.partial().extend({
+  results: CalendarEventArraySchema.optional(),
+});
 
 export function parseIsoDate(value: string | null | undefined): Date | null {
   if (typeof value !== 'string' || !value.trim()) return null;
@@ -67,4 +70,22 @@ export function parseCalendarEvents(value: unknown): CalendarEventRecord[] {
     );
   }
   return [];
+}
+
+export function parseCalendarEventDiscovery(value: unknown) {
+  const parsed = parseWithSchema(
+    CalendarEventDiscoverySchema,
+    value ?? {},
+    'calendarEventDiscovery',
+  );
+  return {
+    nextCursor: typeof parsed.nextCursor === 'string' ? parsed.nextCursor : undefined,
+    results: Array.isArray(parsed.results)
+      ? parseWithSchema(
+          CalendarEventArraySchema,
+          parsed.results,
+          'calendarEventDiscovery.results',
+        )
+      : [],
+  };
 }

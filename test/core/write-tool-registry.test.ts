@@ -121,6 +121,7 @@ describe('write tool registry', () => {
 
     interface ToolResponse {
       isError?: boolean;
+      content: { type: string; text?: string }[];
       structuredContent?: { error?: string };
     }
     const handlers: Record<string, (args: unknown) => Promise<ToolResponse>> = {};
@@ -144,7 +145,7 @@ describe('write tool registry', () => {
       options: undefined,
     });
     expect(response?.isError).toBe(true);
-    expect(response?.structuredContent?.error).toBe('boom');
+    expect(response?.content[0]?.text).toBe('boom');
   });
 
   it('marks required body as required in the schema', async () => {

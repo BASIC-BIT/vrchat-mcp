@@ -1,12 +1,10 @@
 import { callReadOperationParsed, type ReadOperationData } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import {
-  toGroupAnnouncement,
   toGroupInstanceSummary,
   toGroupMemberSummary,
   toGroupPostSummary,
   toGroupSummary,
-  type GroupAnnouncement,
   type GroupEventsListInput,
   type GroupEventsUpcomingInput,
   type GroupEventGetInput,
@@ -39,6 +37,7 @@ const DEFAULT_GROUP_EVENT_PAGE_SIZE = 50;
 const DEFAULT_GROUP_EVENT_MAX_PAGES = 10;
 type GroupRecord = ReadOperationData<'getGroup'>;
 type GroupCalendarEvent = ReadOperationData<'getGroupCalendarEvent'>;
+type GroupNextCalendarEvent = ReadOperationData<'getGroupNextCalendarEvent'>;
 
 export async function searchGroups(
   input: GroupSearchInput,
@@ -224,30 +223,6 @@ export async function listGroupMembers(
   };
 }
 
-export async function getGroupAnnouncement(
-  groupId: string,
-): Promise<{ announcement: GroupAnnouncement | null; stale: boolean }> {
-  const cacheKey = buildCacheKey('groups:announcement', { groupId });
-  const tags = ['groups', `groups:${groupId}`];
-  const { value, stale } = await cacheManager.getOrSetStale(
-    cacheKey,
-    cacheConfig.groupsTtlMs,
-    cacheConfig.groupsStaleTtlMs,
-    tags,
-    async () => {
-      const result = await callReadOperationParsed('getGroupAnnouncements', { groupId });
-      const announcements = result.data;
-      return {
-        announcement: announcements[0]
-          ? toGroupAnnouncement(announcements[0])
-          : null,
-      };
-    },
-  );
-
-  return { announcement: value.announcement ?? null, stale };
-}
-
 export async function listGroupPosts(
   groupId: string,
   input: GroupPostsRecentInput,
@@ -404,6 +379,26 @@ export async function getGroupEvent(
         { groupId, calendarId },
         {},
       );
+      const event = result.data ?? null;
+      return { event };
+    },
+  );
+
+  return { event: value.event ?? null, stale };
+}
+
+export async function getGroupNextEvent(
+  groupId: string,
+): Promise<{ event: GroupNextCalendarEvent | null; stale: boolean }> {
+  const cacheKey = buildCacheKey('groups:event:next', { groupId });
+  const tags = ['groups', `groups:${groupId}`];
+  const { value, stale } = await cacheManager.getOrSetStale(
+    cacheKey,
+    cacheConfig.groupsTtlMs,
+    cacheConfig.groupsStaleTtlMs,
+    tags,
+    async () => {
+      const result = await callReadOperationParsed('getGroupNextCalendarEvent', { groupId }, {});
       const event = result.data ?? null;
       return { event };
     },

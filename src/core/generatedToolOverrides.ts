@@ -19,9 +19,11 @@ const CURATED_READ_TOOL_MAP = new Map<string, string>([
   ['getGroupPosts', toToolName('vrchat.group.posts_recent')],
   ['getGroupInstances', toToolName('vrchat.group.instances.overview')],
   ['getGroupCalendarEvents', toToolName('vrchat.group.events.list')],
+  ['getGroupNextCalendarEvent', toToolName('vrchat.group.event.next')],
   ['getGroupCalendarEvent', toToolName('vrchat.group.event.get')],
   ['getNotifications', toToolName('vrchat.notifications.recent')],
   ['getCalendarEvents', toToolName('vrchat.events.upcoming')],
+  ['discoverCalendarEvents', toToolName('vrchat.events.discover')],
   ['searchCalendarEvents', toToolName('vrchat.events.search')],
 ]);
 
@@ -32,6 +34,7 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['createGroupCalendarEvent', toToolName('vrchat.event.create')],
   ['updateGroupCalendarEvent', toToolName('vrchat.event.update')],
   ['deleteGroupCalendarEvent', toToolName('vrchat.event.delete')],
+  ['followGroupCalendarEvent', toToolName('vrchat.event.follow')],
   ['updateUser', toToolName('vrchat.profile.update')],
 ]);
 
@@ -56,8 +59,10 @@ const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
     'List group calendar events (raw API). Prefer vrchat_group_events_list.',
   ],
   ['getGroupCalendarEvent', 'Get a group calendar event (raw API). Prefer vrchat_group_event_get.'],
+  ['getGroupNextCalendarEvent', 'Get the next group calendar event (raw API). Prefer vrchat_group_event_next.'],
   ['getNotifications', 'List recent notifications (raw API). Prefer vrchat_notifications_recent.'],
   ['getCalendarEvents', 'List upcoming calendar events (raw API). Prefer vrchat_events_upcoming.'],
+  ['discoverCalendarEvents', 'Discover calendar events (raw API). Prefer vrchat_events_discover.'],
   ['searchCalendarEvents', 'Search calendar events (raw API). Prefer vrchat_events_search.'],
 ]);
 
@@ -79,6 +84,10 @@ const GENERATED_WRITE_TOOL_DESCRIPTIONS = new Map<string, string>([
   [
     'deleteGroupCalendarEvent',
     'Delete a group calendar event (raw API). Prefer vrchat_event_delete.',
+  ],
+  [
+    'followGroupCalendarEvent',
+    'Follow or unfollow a group calendar event (raw API). Prefer vrchat_event_follow.',
   ],
   [
     'updateUser',

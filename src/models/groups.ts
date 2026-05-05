@@ -24,15 +24,6 @@ export const GroupPostSummarySchema = z.object({
   visibility: z.string().optional(),
 });
 
-export const GroupAnnouncementSchema = z.object({
-  id: schemas.GroupAnnouncementID.optional(),
-  title: z.string().optional(),
-  text: z.string().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  authorId: schemas.UserID.optional(),
-});
-
 export const GroupInstanceSummarySchema = z.object({
   worldId: schemas.WorldID.optional(),
   worldName: z.string().optional(),
@@ -103,17 +94,6 @@ export const GroupMembersOutputSchema = z.object({
   members: z.array(GroupMemberSchema).optional(),
 });
 
-export const GroupAnnouncementInputSchema = z.object({
-  groupId: schemas.GroupID.optional(),
-  shortCode: z.string().optional(),
-});
-
-export const GroupAnnouncementOutputSchema = z.object({
-  groupId: schemas.GroupID,
-  stale: z.boolean(),
-  announcement: GroupAnnouncementSchema.nullable(),
-});
-
 export const GroupPostsRecentInputSchema = z.object({
   groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
@@ -166,7 +146,18 @@ export const GroupEventGetOutputSchema = z.object({
   groupId: schemas.GroupID,
   calendarId: schemas.CalendarID,
   stale: z.boolean(),
-  event: schemas.CalendarEvent.partial().optional(),
+  event: schemas.CalendarEvent.partial().nullable().optional(),
+});
+
+export const GroupEventNextInputSchema = GroupShapeSchema.extend({
+  groupId: schemas.GroupID.optional(),
+  shortCode: z.string().optional(),
+});
+
+export const GroupEventNextOutputSchema = z.object({
+  groupId: schemas.GroupID,
+  stale: z.boolean(),
+  event: schemas.CalendarEvent.partial().nullable().optional(),
 });
 
 export const GroupEventsUpcomingInputSchema = GroupShapeSchema.extend({
@@ -215,17 +206,16 @@ export const GroupInstancesOverviewOutputSchema = z.object({
 
 export type GroupSummary = z.infer<typeof GroupSummarySchema>;
 export type GroupPostSummary = z.infer<typeof GroupPostSummarySchema>;
-export type GroupAnnouncement = z.infer<typeof GroupAnnouncementSchema>;
 export type GroupInstanceSummary = z.infer<typeof GroupInstanceSummarySchema>;
 export type GroupMemberSummary = z.infer<typeof GroupMemberSchema>;
 export type GroupSearchInput = z.infer<typeof GroupSearchInputSchema>;
 export type GroupSearchOutput = z.infer<typeof GroupSearchOutputSchema>;
 export type GroupProfileInput = z.infer<typeof GroupProfileInputSchema>;
 export type GroupMembersInput = z.infer<typeof GroupMembersInputSchema>;
-export type GroupAnnouncementInput = z.infer<typeof GroupAnnouncementInputSchema>;
 export type GroupPostsRecentInput = z.infer<typeof GroupPostsRecentInputSchema>;
 export type GroupEventsListInput = z.infer<typeof GroupEventsListInputSchema>;
 export type GroupEventGetInput = z.infer<typeof GroupEventGetInputSchema>;
+export type GroupEventNextInput = z.infer<typeof GroupEventNextInputSchema>;
 export type GroupEventsUpcomingInput = z.infer<typeof GroupEventsUpcomingInputSchema>;
 export type GroupInstancesOverviewInput = z.infer<typeof GroupInstancesOverviewInputSchema>;
 
@@ -234,7 +224,6 @@ export type GroupResolution =
   | { ok: false; reason: string; status: 'not_found'; nextSteps: string[] };
 
 type LimitedGroupRecord = Partial<z.infer<typeof schemas.LimitedGroup>>;
-type GroupAnnouncementRecord = Partial<z.infer<typeof schemas.GroupAnnouncement>>;
 type GroupPostRecord = Partial<z.infer<typeof schemas.GroupPost>>;
 type GroupMemberRecord = Partial<z.infer<typeof schemas.GroupMember>>;
 type GroupInstanceRecord = Partial<
@@ -253,30 +242,6 @@ export function toGroupSummary(group: LimitedGroupRecord): GroupSummary | null {
     memberCount:
       typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
   };
-}
-
-export function toGroupAnnouncement(
-  announcement: GroupAnnouncementRecord,
-): GroupAnnouncement | null {
-  const content: GroupAnnouncement = {
-    id: announcement.id ?? undefined,
-    title: announcement.title ?? undefined,
-    text: announcement.text ?? undefined,
-    createdAt: announcement.createdAt ?? undefined,
-    updatedAt: announcement.updatedAt ?? undefined,
-    authorId: announcement.authorId ?? undefined,
-  };
-  if (
-    !content.id &&
-    !content.title &&
-    !content.text &&
-    !content.createdAt &&
-    !content.updatedAt &&
-    !content.authorId
-  ) {
-    return null;
-  }
-  return content;
 }
 
 export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | null {

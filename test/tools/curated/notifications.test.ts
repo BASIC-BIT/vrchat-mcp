@@ -65,7 +65,8 @@ describe('curated notification tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'No access' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('No access');
   });
 });

@@ -73,7 +73,8 @@ describe('curated status page tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'Boom' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('Boom');
   });
 });

@@ -64,9 +64,41 @@ describe('curated world tools', () => {
             name: 'Mock World',
             authorName: 'Author',
             visits: 42,
+          },
+        ],
+      },
+    });
+    const structured = result.structuredContent as { worlds?: Record<string, unknown>[] };
+    expect(structured.worlds?.[0]).not.toHaveProperty('tags');
+  });
+
+  it('includes world tags only when requested', async () => {
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
+      data: [
+        {
+          id: 'wrld_1',
+          name: 'Mock World',
+          tags: ['tag_a'],
+        },
+      ],
+      page: { pages: 1, items: 1, pageSize: 50, offsetStart: 0, truncated: false },
+    });
+
+    const server = new FakeServer();
+    registerCuratedWorldTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_worlds_search');
+    const result = await tool!.handler({ query: 'mock', includeTags: true });
+
+    expect(result).toMatchObject({
+      structuredContent: {
+        worlds: [
+          {
+            worldId: 'wrld_1',
+            name: 'Mock World',
             tags: ['tag_a'],
           },
         ],
+        notes: ['Tags are included verbatim and may be noisy.'],
       },
     });
   });
@@ -175,10 +207,9 @@ describe('curated world tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_world_profile');
     const result = await tool!.handler({ name: 'Same' });
 
-    expect(result).toMatchObject({
-      isError: true,
-      structuredContent: { nextSteps: ['vrchat_worlds_search'] },
-    });
+    expect(result).toMatchObject({ isError: true });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('vrchat_worlds_search');
   });
 
   it('summarizes world instances without listing samples', async () => {

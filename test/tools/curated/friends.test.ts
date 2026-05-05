@@ -179,6 +179,7 @@ describe('curated friend tools', () => {
 
     const result = await Promise.resolve(tool!.handler({ name: 'Missing' }));
     expect(result).toMatchObject({ isError: true });
-    expect(result.structuredContent).toMatchObject({ status: 'not_found' });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('not_found');
   });
 });

@@ -1,8 +1,8 @@
 # Tool Catalog (generated)
 
-Generated: 2026-03-02T06:35:07.858Z
+Generated: 2026-05-04T22:14:24.918Z
 
-Spec: VRChat API Documentation (1.20.5)
+Spec: VRChat API Documentation (1.20.7)
 
 This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).
 
@@ -59,6 +59,9 @@ Output schema:
       "type": "object",
       "properties": {
         "acknowledgements": {
+          "type": "string"
+        },
+        "activeAssetReviewId": {
           "type": "string"
         },
         "assetUrl": {
@@ -123,6 +126,10 @@ Output schema:
         "name": {
           "type": "string",
           "minLength": 1
+        },
+        "pendingUpload": {
+          "default": false,
+          "type": "boolean"
         },
         "performance": {
           "type": "object",
@@ -432,7 +439,23 @@ Input schema:
       ]
     },
     "category": {
-      "type": "string"
+      "default": "other",
+      "type": "string",
+      "enum": [
+        "arts",
+        "avatars",
+        "dance",
+        "education",
+        "exploration",
+        "film_media",
+        "gaming",
+        "hangout",
+        "music",
+        "other",
+        "performance",
+        "roleplaying",
+        "wellness"
+      ]
     },
     "closeInstanceAfterEndMinutes": {
       "type": "integer",
@@ -468,6 +491,7 @@ Input schema:
       "type": "boolean"
     },
     "languages": {
+      "maxItems": 3,
       "type": "array",
       "items": {
         "type": "string"
@@ -479,7 +503,12 @@ Input schema:
     "platforms": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "enum": [
+          "android",
+          "ios",
+          "standalonewindows"
+        ]
       }
     },
     "roleIds": {
@@ -498,14 +527,18 @@ Input schema:
       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
     },
     "tags": {
+      "maxItems": 5,
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
       }
     },
     "title": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 64
     },
     "usesInstanceOverflow": {
       "type": "boolean"
@@ -540,193 +573,247 @@ Output schema:
       "enum": [
         "created",
         "updated",
-        "deleted"
+        "deleted",
+        "followed",
+        "unfollowed"
       ]
     },
     "event": {
-      "type": "object",
-      "properties": {
-        "accessType": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string"
-        },
-        "closeInstanceAfterEndMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "deletedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "description": {
-          "type": "string"
-        },
-        "endsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "featured": {
-          "type": "boolean"
-        },
-        "guestEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "hostEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "id": {
-          "type": "string"
-        },
-        "imageId": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "interestedUserCount": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "isDraft": {
-          "type": "boolean"
-        },
-        "languages": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ownerId": {
-          "type": "string"
-        },
-        "platforms": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "roleIds": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "startsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "type": {
-          "type": "string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "userInterest": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             },
-            "isFollowing": {
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
               "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string"
             },
             "updatedAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "accessType",
+            "category",
+            "description",
+            "endsAt",
+            "id",
+            "startsAt",
+            "title"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status_code": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "status_code"
+              ],
+              "additionalProperties": {}
             }
           },
           "additionalProperties": {}
         },
-        "usesInstanceOverflow": {
-          "type": "boolean"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "accessType",
-        "category",
-        "description",
-        "endsAt",
-        "id",
-        "startsAt",
-        "title"
-      ],
-      "additionalProperties": {}
-    },
-    "result": {
-      "type": "object",
-      "properties": {
-        "success": {
-          "type": "object",
-          "properties": {
-            "message": {
-              "type": "string",
-              "minLength": 1
-            },
-            "status_code": {
-              "type": "integer",
-              "minimum": 100,
-              "maximum": 9007199254740991
-            }
-          },
-          "required": [
-            "status_code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "additionalProperties": {}
+      ]
     }
   },
   "required": [
@@ -773,193 +860,538 @@ Output schema:
       "enum": [
         "created",
         "updated",
-        "deleted"
+        "deleted",
+        "followed",
+        "unfollowed"
       ]
     },
     "event": {
-      "type": "object",
-      "properties": {
-        "accessType": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string"
-        },
-        "closeInstanceAfterEndMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "deletedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "description": {
-          "type": "string"
-        },
-        "endsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "featured": {
-          "type": "boolean"
-        },
-        "guestEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "hostEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "id": {
-          "type": "string"
-        },
-        "imageId": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "interestedUserCount": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "isDraft": {
-          "type": "boolean"
-        },
-        "languages": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ownerId": {
-          "type": "string"
-        },
-        "platforms": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "roleIds": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "startsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "type": {
-          "type": "string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "userInterest": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             },
-            "isFollowing": {
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
               "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string"
             },
             "updatedAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "accessType",
+            "category",
+            "description",
+            "endsAt",
+            "id",
+            "startsAt",
+            "title"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status_code": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "status_code"
+              ],
+              "additionalProperties": {}
             }
           },
           "additionalProperties": {}
         },
-        "usesInstanceOverflow": {
-          "type": "boolean"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "accessType",
-        "category",
-        "description",
-        "endsAt",
-        "id",
-        "startsAt",
-        "title"
-      ],
-      "additionalProperties": {}
+      ]
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_event_follow
+Follow or unfollow a group calendar event. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string"
     },
-    "result": {
-      "type": "object",
-      "properties": {
-        "success": {
+    "calendarId": {
+      "type": "string"
+    },
+    "isFollowing": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "groupId",
+    "calendarId",
+    "isFollowing"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated",
+        "deleted",
+        "followed",
+        "unfollowed"
+      ]
+    },
+    "event": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "message": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
+              "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
               "type": "string",
               "minLength": 1
             },
-            "status_code": {
-              "type": "integer",
-              "minimum": 100,
-              "maximum": 9007199254740991
+            "type": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
             }
           },
           "required": [
-            "status_code"
+            "accessType",
+            "category",
+            "description",
+            "endsAt",
+            "id",
+            "startsAt",
+            "title"
           ],
           "additionalProperties": {}
+        },
+        {
+          "type": "null"
         }
-      },
-      "additionalProperties": {}
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status_code": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "status_code"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -1085,197 +1517,653 @@ Output schema:
       "enum": [
         "created",
         "updated",
-        "deleted"
+        "deleted",
+        "followed",
+        "unfollowed"
       ]
     },
     "event": {
-      "type": "object",
-      "properties": {
-        "accessType": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string"
-        },
-        "closeInstanceAfterEndMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "deletedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "description": {
-          "type": "string"
-        },
-        "endsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "featured": {
-          "type": "boolean"
-        },
-        "guestEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "hostEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "id": {
-          "type": "string"
-        },
-        "imageId": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "interestedUserCount": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "isDraft": {
-          "type": "boolean"
-        },
-        "languages": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ownerId": {
-          "type": "string"
-        },
-        "platforms": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "roleIds": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "startsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "type": {
-          "type": "string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "userInterest": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             },
-            "isFollowing": {
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
               "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string"
             },
             "updatedAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "accessType",
+            "category",
+            "description",
+            "endsAt",
+            "id",
+            "startsAt",
+            "title"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status_code": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "status_code"
+              ],
+              "additionalProperties": {}
             }
           },
           "additionalProperties": {}
         },
-        "usesInstanceOverflow": {
-          "type": "boolean"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "accessType",
-        "category",
-        "description",
-        "endsAt",
-        "id",
-        "startsAt",
-        "title"
-      ],
-      "additionalProperties": {}
-    },
-    "result": {
-      "type": "object",
-      "properties": {
-        "success": {
-          "type": "object",
-          "properties": {
-            "message": {
-              "type": "string",
-              "minLength": 1
-            },
-            "status_code": {
-              "type": "integer",
-              "minimum": 100,
-              "maximum": 9007199254740991
-            }
-          },
-          "required": [
-            "status_code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "additionalProperties": {}
+      ]
     }
   },
   "required": [
     "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_events_discover
+Discover public calendar events with optional category/tag filters (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compact": {
+      "type": "boolean"
+    },
+    "maxArrayLength": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "all",
+        "live",
+        "upcoming"
+      ]
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "arts",
+          "avatars",
+          "dance",
+          "education",
+          "exploration",
+          "film_media",
+          "gaming",
+          "hangout",
+          "music",
+          "other",
+          "performance",
+          "roleplaying",
+          "wellness"
+        ]
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "featuredResults": {
+      "type": "string",
+      "enum": [
+        "exclude",
+        "include",
+        "skip"
+      ]
+    },
+    "nonFeaturedResults": {
+      "type": "string",
+      "enum": [
+        "exclude",
+        "include",
+        "skip"
+      ]
+    },
+    "personalizedResults": {
+      "type": "string",
+      "enum": [
+        "exclude",
+        "include",
+        "skip"
+      ]
+    },
+    "minimumInterestCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "minimumRemainingMinutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "upcomingOffsetMinutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "nextCursor": {
+      "type": "string"
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "maxPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "enum": [
+        "all",
+        "live",
+        "upcoming"
+      ]
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "maxPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "totalEvents": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "nextCursor": {
+      "type": "string"
+    },
+    "page": {
+      "type": "object",
+      "properties": {
+        "pages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pages",
+        "items",
+        "pageSize",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "accessType": {
+            "default": "public",
+            "type": "string",
+            "enum": [
+              "group",
+              "public"
+            ]
+          },
+          "category": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "arts",
+              "avatars",
+              "dance",
+              "education",
+              "exploration",
+              "film_media",
+              "gaming",
+              "hangout",
+              "music",
+              "other",
+              "performance",
+              "roleplaying",
+              "wellness"
+            ]
+          },
+          "closeInstanceAfterEndMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "deletedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationInMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "guestEarlyJoinMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "hostEarlyJoinMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "id": {
+            "type": "string"
+          },
+          "imageId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interestedUserCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "isDraft": {
+            "type": "boolean"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "android",
+                "ios",
+                "standalonewindows"
+              ]
+            }
+          },
+          "roleIds": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "userInterest": {
+            "type": "object",
+            "properties": {
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "isFollowing": {
+                "type": "boolean"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "additionalProperties": {}
+          },
+          "usesInstanceOverflow": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "pageSize",
+    "maxPages",
+    "maxItems",
+    "totalEvents",
+    "truncated",
+    "page",
+    "events"
   ],
   "additionalProperties": false
 }
@@ -1411,10 +2299,31 @@ Output schema:
         "type": "object",
         "properties": {
           "accessType": {
-            "type": "string"
+            "default": "public",
+            "type": "string",
+            "enum": [
+              "group",
+              "public"
+            ]
           },
           "category": {
-            "type": "string"
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "arts",
+              "avatars",
+              "dance",
+              "education",
+              "exploration",
+              "film_media",
+              "gaming",
+              "hangout",
+              "music",
+              "other",
+              "performance",
+              "roleplaying",
+              "wellness"
+            ]
           },
           "closeInstanceAfterEndMinutes": {
             "type": "integer",
@@ -1441,6 +2350,11 @@ Output schema:
           "description": {
             "type": "string"
           },
+          "durationInMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "endsAt": {
             "type": "string",
             "format": "date-time",
@@ -1463,7 +2377,14 @@ Output schema:
             "type": "string"
           },
           "imageId": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "imageUrl": {
             "anyOf": [
@@ -1495,7 +2416,12 @@ Output schema:
           "platforms": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "android",
+                "ios",
+                "standalonewindows"
+              ]
             }
           },
           "roleIds": {
@@ -1723,10 +2649,31 @@ Output schema:
         "type": "object",
         "properties": {
           "accessType": {
-            "type": "string"
+            "default": "public",
+            "type": "string",
+            "enum": [
+              "group",
+              "public"
+            ]
           },
           "category": {
-            "type": "string"
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "arts",
+              "avatars",
+              "dance",
+              "education",
+              "exploration",
+              "film_media",
+              "gaming",
+              "hangout",
+              "music",
+              "other",
+              "performance",
+              "roleplaying",
+              "wellness"
+            ]
           },
           "closeInstanceAfterEndMinutes": {
             "type": "integer",
@@ -1753,6 +2700,11 @@ Output schema:
           "description": {
             "type": "string"
           },
+          "durationInMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "endsAt": {
             "type": "string",
             "format": "date-time",
@@ -1775,7 +2727,14 @@ Output schema:
             "type": "string"
           },
           "imageId": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "imageUrl": {
             "anyOf": [
@@ -1807,7 +2766,12 @@ Output schema:
           "platforms": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "android",
+                "ios",
+                "standalonewindows"
+              ]
             }
           },
           "roleIds": {
@@ -2369,6 +3333,16 @@ Output schema:
               "minimum": 0,
               "maximum": 9007199254740991
             },
+            "calendarEntryId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "type": {
               "type": "string",
               "enum": [
@@ -2778,6 +3752,9 @@ Output schema:
               "type": "number"
             },
             "ageVerificationSlotsAvailable": {
+              "type": "boolean"
+            },
+            "allowGroupJoinPrompt": {
               "type": "boolean"
             },
             "badges": {
@@ -3310,6 +4287,11 @@ Input schema:
       "minimum": 1,
       "maximum": 500
     },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
     "detailLevel": {
       "type": "string",
       "enum": [
@@ -3338,6 +4320,11 @@ Output schema:
       "maximum": 9007199254740991
     },
     "maxPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "maxItems": {
       "type": "integer",
       "minimum": 1,
       "maximum": 9007199254740991
@@ -3612,6 +4599,11 @@ Input schema:
         "summary",
         "full"
       ]
+    },
+    "maxLocations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
     }
   },
   "additionalProperties": false
@@ -3671,6 +4663,29 @@ Output schema:
         "minimum": 0,
         "maximum": 9007199254740991
       }
+    },
+    "maxLocations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "totalLocations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "returnedLocations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "omittedLocations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "locationsTruncated": {
+      "type": "boolean"
     },
     "totals": {
       "type": "object",
@@ -3855,6 +4870,16 @@ Output schema:
                     "minimum": 0,
                     "maximum": 9007199254740991
                   },
+                  "calendarEntryId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "type": {
                     "type": "string",
                     "enum": [
@@ -3953,6 +4978,16 @@ Output schema:
                       }
                     ]
                   },
+                  "calendarEntryId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "canRequestInvite": {
                     "default": true,
                     "type": "boolean"
@@ -4008,6 +5043,9 @@ Output schema:
                     },
                     "additionalProperties": {}
                   },
+                  "creatorId": {
+                    "type": "string"
+                  },
                   "displayName": {
                     "anyOf": [
                       {
@@ -4026,9 +5064,16 @@ Output schema:
                     "type": "boolean"
                   },
                   "gameServerVersion": {
-                    "type": "integer",
-                    "minimum": -9007199254740991,
-                    "maximum": 9007199254740991
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "groupAccessType": {
                     "default": "members",
@@ -4064,7 +5109,7 @@ Output schema:
                   "instancePersistenceEnabled": {
                     "anyOf": [
                       {
-                        "type": "string"
+                        "type": "boolean"
                       },
                       {
                         "type": "null"
@@ -4380,7 +5425,6 @@ Output schema:
                         "id",
                         "isFriend",
                         "last_activity",
-                        "last_mobile",
                         "last_platform",
                         "pronouns",
                         "state",
@@ -4729,7 +5773,6 @@ Output schema:
                 "required": [
                   "active",
                   "canRequestInvite",
-                  "capacity",
                   "clientNumber",
                   "full",
                   "groupAccessType",
@@ -4855,6 +5898,11 @@ Output schema:
     "onlineCount",
     "offlineCount",
     "statusCounts",
+    "maxLocations",
+    "totalLocations",
+    "returnedLocations",
+    "omittedLocations",
+    "locationsTruncated",
     "totals",
     "locations",
     "truncated",
@@ -4958,81 +6006,6 @@ Output schema:
 }
 ```
 
-### vrchat_group_announcement
-Get the current group announcement (read-only). (read-only)
-
-Input schema:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "groupId": {
-      "type": "string"
-    },
-    "shortCode": {
-      "type": "string"
-    }
-  },
-  "additionalProperties": false
-}
-```
-
-Output schema:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "groupId": {
-      "type": "string"
-    },
-    "stale": {
-      "type": "boolean"
-    },
-    "announcement": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "string"
-            },
-            "title": {
-              "type": "string"
-            },
-            "text": {
-              "type": "string"
-            },
-            "createdAt": {
-              "type": "string"
-            },
-            "updatedAt": {
-              "type": "string"
-            },
-            "authorId": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "groupId",
-    "stale",
-    "announcement"
-  ],
-  "additionalProperties": false
-}
-```
-
 ### vrchat_group_event_get
 Get a single group calendar event (read-only). (read-only)
 
@@ -5091,161 +6064,460 @@ Output schema:
       "type": "boolean"
     },
     "event": {
-      "type": "object",
-      "properties": {
-        "accessType": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string"
-        },
-        "closeInstanceAfterEndMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "deletedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "description": {
-          "type": "string"
-        },
-        "endsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "featured": {
-          "type": "boolean"
-        },
-        "guestEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "hostEarlyJoinMinutes": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "id": {
-          "type": "string"
-        },
-        "imageId": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "interestedUserCount": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        },
-        "isDraft": {
-          "type": "boolean"
-        },
-        "languages": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ownerId": {
-          "type": "string"
-        },
-        "platforms": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "roleIds": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "startsAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "type": {
-          "type": "string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-        },
-        "userInterest": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             },
-            "isFollowing": {
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
               "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string"
             },
             "updatedAt": {
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
             }
           },
           "additionalProperties": {}
         },
-        "usesInstanceOverflow": {
-          "type": "boolean"
+        {
+          "type": "null"
         }
-      },
-      "additionalProperties": {}
+      ]
     }
   },
   "required": [
     "groupId",
     "calendarId",
+    "stale"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_event_next
+Get the next upcoming calendar event for a group (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compact": {
+      "type": "boolean"
+    },
+    "maxArrayLength": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "shortCode": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "event": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "accessType": {
+              "default": "public",
+              "type": "string",
+              "enum": [
+                "group",
+                "public"
+              ]
+            },
+            "category": {
+              "default": "other",
+              "type": "string",
+              "enum": [
+                "arts",
+                "avatars",
+                "dance",
+                "education",
+                "exploration",
+                "film_media",
+                "gaming",
+                "hangout",
+                "music",
+                "other",
+                "performance",
+                "roleplaying",
+                "wellness"
+              ]
+            },
+            "closeInstanceAfterEndMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "durationInMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "endsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "featured": {
+              "type": "boolean"
+            },
+            "guestEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "hostEarlyJoinMinutes": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "id": {
+              "type": "string"
+            },
+            "imageId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestedUserCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isDraft": {
+              "type": "boolean"
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ownerId": {
+              "type": "string"
+            },
+            "platforms": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "standalonewindows"
+                ]
+              }
+            },
+            "roleIds": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "userInterest": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "isFollowing": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "usesInstanceOverflow": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "groupId",
     "stale"
   ],
   "additionalProperties": false
@@ -5386,10 +6658,31 @@ Output schema:
         "type": "object",
         "properties": {
           "accessType": {
-            "type": "string"
+            "default": "public",
+            "type": "string",
+            "enum": [
+              "group",
+              "public"
+            ]
           },
           "category": {
-            "type": "string"
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "arts",
+              "avatars",
+              "dance",
+              "education",
+              "exploration",
+              "film_media",
+              "gaming",
+              "hangout",
+              "music",
+              "other",
+              "performance",
+              "roleplaying",
+              "wellness"
+            ]
           },
           "closeInstanceAfterEndMinutes": {
             "type": "integer",
@@ -5416,6 +6709,11 @@ Output schema:
           "description": {
             "type": "string"
           },
+          "durationInMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "endsAt": {
             "type": "string",
             "format": "date-time",
@@ -5438,7 +6736,14 @@ Output schema:
             "type": "string"
           },
           "imageId": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "imageUrl": {
             "anyOf": [
@@ -5470,7 +6775,12 @@ Output schema:
           "platforms": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "android",
+                "ios",
+                "standalonewindows"
+              ]
             }
           },
           "roleIds": {
@@ -5712,10 +7022,31 @@ Output schema:
         "type": "object",
         "properties": {
           "accessType": {
-            "type": "string"
+            "default": "public",
+            "type": "string",
+            "enum": [
+              "group",
+              "public"
+            ]
           },
           "category": {
-            "type": "string"
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "arts",
+              "avatars",
+              "dance",
+              "education",
+              "exploration",
+              "film_media",
+              "gaming",
+              "hangout",
+              "music",
+              "other",
+              "performance",
+              "roleplaying",
+              "wellness"
+            ]
           },
           "closeInstanceAfterEndMinutes": {
             "type": "integer",
@@ -5742,6 +7073,11 @@ Output schema:
           "description": {
             "type": "string"
           },
+          "durationInMs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "endsAt": {
             "type": "string",
             "format": "date-time",
@@ -5764,7 +7100,14 @@ Output schema:
             "type": "string"
           },
           "imageId": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "imageUrl": {
             "anyOf": [
@@ -5796,7 +7139,12 @@ Output schema:
           "platforms": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "android",
+                "ios",
+                "standalonewindows"
+              ]
             }
           },
           "roleIds": {
@@ -6315,6 +7663,9 @@ Output schema:
           "type": "number"
         },
         "ageVerificationSlotsAvailable": {
+          "type": "boolean"
+        },
+        "allowGroupJoinPrompt": {
           "type": "boolean"
         },
         "badges": {
@@ -7041,7 +8392,20 @@ Input schema:
     "ageGate": {
       "type": "boolean"
     },
+    "calendarEntryId": {
+      "type": "string"
+    },
     "instancePersistenceEnabled": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "playerPersistenceEnabled": {
       "anyOf": [
         {
           "type": "boolean"
@@ -7161,6 +8525,16 @@ Output schema:
               "type": "integer",
               "minimum": 0,
               "maximum": 9007199254740991
+            },
+            "calendarEntryId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "type": {
               "type": "string",
@@ -7300,9 +8674,108 @@ Output schema:
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "details": {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "emojiId": {
+                  "type": "string"
+                },
+                "emojiVersion": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "inventoryItemId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inviteMessage": {
+                  "type": "string"
+                },
+                "worldId": {
+                  "type": "string"
+                },
+                "worldName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "worldId",
+                "worldName"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "responseMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo",
+                "responseMessage"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "initiatorUserId": {
+                  "type": "string"
+                },
+                "userToKickId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "initiatorUserId",
+                "userToKickId"
+              ],
+              "additionalProperties": {}
+            }
+          ]
         },
         "id": {
           "type": "string",
@@ -7325,6 +8798,7 @@ Output schema:
           "default": "friendRequest",
           "type": "string",
           "enum": [
+            "boop",
             "friendRequest",
             "invite",
             "inviteResponse",
@@ -7397,9 +8871,108 @@ Output schema:
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "details": {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "emojiId": {
+                  "type": "string"
+                },
+                "emojiVersion": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "inventoryItemId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inviteMessage": {
+                  "type": "string"
+                },
+                "worldId": {
+                  "type": "string"
+                },
+                "worldName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "worldId",
+                "worldName"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "responseMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo",
+                "responseMessage"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "initiatorUserId": {
+                  "type": "string"
+                },
+                "userToKickId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "initiatorUserId",
+                "userToKickId"
+              ],
+              "additionalProperties": {}
+            }
+          ]
         },
         "id": {
           "type": "string",
@@ -7422,6 +8995,7 @@ Output schema:
           "default": "friendRequest",
           "type": "string",
           "enum": [
+            "boop",
             "friendRequest",
             "invite",
             "inviteResponse",
@@ -7500,9 +9074,108 @@ Output schema:
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "details": {
-          "type": "object",
-          "properties": {},
-          "additionalProperties": {}
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "emojiId": {
+                  "type": "string"
+                },
+                "emojiVersion": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "inventoryItemId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inviteMessage": {
+                  "type": "string"
+                },
+                "worldId": {
+                  "type": "string"
+                },
+                "worldName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "worldId",
+                "worldName"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "responseMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo",
+                "responseMessage"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "inResponseTo": {
+                  "type": "string"
+                },
+                "requestMessage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "inResponseTo"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "object",
+              "properties": {
+                "initiatorUserId": {
+                  "type": "string"
+                },
+                "userToKickId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "initiatorUserId",
+                "userToKickId"
+              ],
+              "additionalProperties": {}
+            }
+          ]
         },
         "id": {
           "type": "string",
@@ -7525,6 +9198,7 @@ Output schema:
           "default": "friendRequest",
           "type": "string",
           "enum": [
+            "boop",
             "friendRequest",
             "invite",
             "inviteResponse",
@@ -8196,7 +9870,14 @@ Input schema:
     "contentFilters": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "enum": [
+          "content_adult",
+          "content_gore",
+          "content_horror",
+          "content_sex",
+          "content_violence"
+        ]
       }
     }
   },
@@ -8820,6 +10501,9 @@ Output schema:
         },
         "username": {
           "type": "string"
+        },
+        "usesGeneratedPassword": {
+          "type": "boolean"
         },
         "viveId": {
           "type": "string"
@@ -10069,6 +11753,9 @@ Input schema:
     },
     "userId": {
       "type": "string"
+    },
+    "includeTags": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false
@@ -10269,6 +11956,9 @@ Input schema:
     },
     "platform": {
       "type": "string"
+    },
+    "includeTags": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -11860,8 +13550,10 @@ Output schema:
 - `vrchat_read_getAvatarStyles` (GET /avatarStyles) - Get Avatar Styles
 - `vrchat_read_getBalance` (GET /user/{userId}/balance) - Get Balance
 - `vrchat_read_getBalanceEarnings` (GET /user/{userId}/balance/earnings) - Get Balance Earnings
+- `vrchat_read_getBlockedGroups` (GET /users/{userId}/groups/userblocked) - Get User Group Blocks
 - `vrchat_read_getBulkGiftPurchases` (GET /user/bulk/gift/purchases) - Get Bulk Gift Purchases
 - `vrchat_read_getCalendarEvents` (GET /calendar) - List calendar events (curated: vrchat_events_upcoming)
+- `vrchat_read_getContentAgreementStatus` (GET /agreement) - Get Content Agreement Status
 - `vrchat_read_getCSS` (GET /css/app.css) - Download CSS
 - `vrchat_read_getCurrentOnlineUsers` (GET /visits) - Current Online Users
 - `vrchat_read_getCurrentSubscriptions` (GET /auth/user/subscription) - Get Current Subscriptions
@@ -11883,7 +13575,7 @@ Output schema:
 - `vrchat_read_getFollowedCalendarEvents` (GET /calendar/following) - List followed calendar events
 - `vrchat_read_getFriendStatus` (GET /user/{userId}/friendStatus) - Check Friend Status
 - `vrchat_read_getGlobalAvatarModerations` (GET /auth/user/avatarmoderations) - Get Global Avatar Moderations
-- `vrchat_read_getGroupAnnouncements` (GET /groups/{groupId}/announcement) - Get Group Announcement (curated: vrchat_group_announcement)
+- `vrchat_read_getGroupAuditLogEntryTypes` (GET /groups/{groupId}/auditLogTypes) - Get Group Audit Log Entry Types
 - `vrchat_read_getGroupAuditLogs` (GET /groups/{groupId}/auditLogs) - Get Group Audit Logs
 - `vrchat_read_getGroupBans` (GET /groups/{groupId}/bans) - Get Group Bans
 - `vrchat_read_getGroupCalendarEventICS` (GET /calendar/{groupId}/{calendarId}.ics) - Download calendar event as ICS
@@ -11897,14 +13589,17 @@ Output schema:
 - `vrchat_read_getGroupRequests` (GET /groups/{groupId}/requests) - Get Group Join Requests
 - `vrchat_read_getGroupRoles` (GET /groups/{groupId}/roles) - Get Group Roles
 - `vrchat_read_getGroupRoleTemplates` (GET /groups/roleTemplates) - Get Group Role Templates
+- `vrchat_read_getGroupTransferability` (GET /groups/{groupId}/transfer) - Get Group Transferability
 - `vrchat_read_getHealth` (GET /health) - Check API Health
 - `vrchat_read_getImpostorQueueStats` (GET /avatars/impostor/queue/stats) - Get Impostor Queue Stats
 - `vrchat_read_getInfoPush` (GET /infoPush) - Show Information Notices
 - `vrchat_read_getInstance` (GET /instances/{worldId}:{instanceId}) - Get Instance
 - `vrchat_read_getInstanceByShortName` (GET /instances/s/{shortName}) - Get Instance By Short Name
 - `vrchat_read_getInventory` (GET /inventory) - Get Inventory
+- `vrchat_read_getInventoryCollections` (GET /inventory/collections) - List Inventory Collections
 - `vrchat_read_getInventoryDrops` (GET /inventory/drops) - List Inventory Drops
 - `vrchat_read_getInventoryTemplate` (GET /inventory/template/{inventoryTemplateId}) - Get Inventory Template
+- `vrchat_read_getInvitedGroups` (GET /users/{userId}/groups/invited) - Get User Group Invited
 - `vrchat_read_getInviteMessage` (GET /message/{userId}/{messageType}/{slot}) - Get Invite Message
 - `vrchat_read_getInviteMessages` (GET /message/{userId}/{messageType}) - List Invite Messages
 - `vrchat_read_getJam` (GET /jams/{jamId}) - Show jam information
@@ -11913,16 +13608,25 @@ Output schema:
 - `vrchat_read_getJavaScript` (GET /js/app.js) - Download JavaScript
 - `vrchat_read_getLicensedAvatars` (GET /avatars/licensed) - List Licensed Avatars
 - `vrchat_read_getLicenseGroup` (GET /licenseGroups/{licenseGroupId}) - Get License Group
+- `vrchat_read_getModerationReports` (GET /moderationReports) - Get Moderation Reports
+- `vrchat_read_getMutualFriends` (GET /users/{userId}/mutuals/friends) - Get User Mutual Friends
+- `vrchat_read_getMutualGroups` (GET /users/{userId}/mutuals/groups) - Get User Mutual Groups
+- `vrchat_read_getMutuals` (GET /users/{userId}/mutuals) - Get User Mutuals
 - `vrchat_read_getNotification` (GET /auth/user/notifications/{notificationId}) - Show notification
 - `vrchat_read_getNotifications` (GET /auth/user/notifications) - List Notifications (curated: vrchat_notifications_recent)
+- `vrchat_read_getNotificationV2` (GET /notifications/{notificationId}) - Get NotificationV2
+- `vrchat_read_getNotificationV2s` (GET /notifications) - List NotificationV2s
 - `vrchat_read_getOwnAvatar` (GET /users/{userId}/avatar) - Get Own Avatar
 - `vrchat_read_getOwnInventoryItem` (GET /inventory/{inventoryItemId}) - Get Own Inventory Item
 - `vrchat_read_getPermission` (GET /permissions/{permissionId}) - Get Permission
 - `vrchat_read_getPlayerModerations` (GET /auth/user/playermoderations) - Search Player Moderations
 - `vrchat_read_getPrint` (GET /prints/{printId}) - Get Print
 - `vrchat_read_getProductListing` (GET /listing/{productId}) - Get Product Listing
+- `vrchat_read_getProductListingAlternate` (GET /products/{productId}) - Get Product Listing (alternate)
 - `vrchat_read_getProductListings` (GET /user/{userId}/listings) - Get User Product Listings
+- `vrchat_read_getProductPurchases` (GET /economy/purchases) - Get Product Purchases
 - `vrchat_read_getProp` (GET /props/{propId}) - Get Prop
+- `vrchat_read_getPropPublishStatus` (GET /props/{propId}/publish) - Get Prop Publish Status
 - `vrchat_read_getRecentLocations` (GET /instances/recent) - List Recent Locations
 - `vrchat_read_getRecentSubscription` (GET /user/subscription/recent) - Get Recent Subscription
 - `vrchat_read_getRecentWorlds` (GET /worlds/recent) - List Recent Worlds
@@ -11936,12 +13640,14 @@ Output schema:
 - `vrchat_read_getTiliaStatus` (GET /tilia/status) - Get Tilia Status
 - `vrchat_read_getTiliaTos` (GET /user/{userId}/tilia/tos) - Get Tilia TOS Agreement Status
 - `vrchat_read_getTokenBundles` (GET /tokenBundles) - List Token Bundles
+- `vrchat_read_getUserAllGroupPermissions` (GET /users/{userId}/groups/permissions) - Get user's permissions for all joined groups.
 - `vrchat_read_getUserCreditsEligible` (GET /users/{userId}/credits/eligible) - Get User Credits Eligiblity
 - `vrchat_read_getUserFeedback` (GET /users/{userId}/feedback) - Get User Feedback
 - `vrchat_read_getUserGroupInstances` (GET /users/{userId}/instances/groups) - Get User Group Instances
 - `vrchat_read_getUserGroupInstancesForGroup` (GET /users/{userId}/instances/groups/{groupId}) - Get User Group Instances for a specific Group
 - `vrchat_read_getUserGroupRequests` (GET /users/{userId}/groups/requested) - Get User Group Requests
 - `vrchat_read_getUserGroups` (GET /users/{userId}/groups) - Get User Groups (curated: vrchat_user_groups)
+- `vrchat_read_getUserInventoryItem` (GET /user/{userId}/inventory/{inventoryItemId}) - Get User Inventory Item
 - `vrchat_read_getUserNote` (GET /userNotes/{userNoteId}) - Get User Note
 - `vrchat_read_getUserNotes` (GET /userNotes) - Get User Notes
 - `vrchat_read_getUserPrints` (GET /prints/user/{userId}) - Get Own Prints
@@ -11950,7 +13656,9 @@ Output schema:
 - `vrchat_read_getWorldInstance` (GET /worlds/{worldId}/{instanceId}) - Get World Instance
 - `vrchat_read_getWorldMetadata` (GET /worlds/{worldId}/metadata) - Get World Metadata
 - `vrchat_read_getWorldPublishStatus` (GET /worlds/{worldId}/publish) - Get World Publish Status
+- `vrchat_read_listProps` (GET /props) - List Props
 - `vrchat_read_searchAvatars` (GET /avatars) - Search Avatars
+- `vrchat_read_searchGroupMembers` (GET /groups/{groupId}/members/search) - Search Group Members
 - `vrchat_read_searchGroups` (GET /groups) - Search Group (curated: vrchat_groups_search)
 - `vrchat_read_searchUsers` (GET /users) - Search All Users
 - `vrchat_read_searchWorlds` (GET /worlds) - Search All Worlds (curated: vrchat_worlds_search)
@@ -12020,44 +13728,54 @@ Output schema:
 ```
 
 - `vrchat_write_acceptFriendRequest` (PUT /auth/user/notifications/{notificationId}/accept) - Accept Friend Request
+- `vrchat_write_acknowledgeNotificationV2` (POST /notifications/{notificationId}/see) - Acknowledge NotificationV2
 - `vrchat_write_addFavorite` (POST /favorites) - Add Favorite
 - `vrchat_write_addGroupGalleryImage` (POST /groups/{groupId}/galleries/{groupGalleryId}/images) - Add Group Gallery Image
 - `vrchat_write_addGroupMemberRole` (PUT /groups/{groupId}/members/{userId}/roles/{groupRoleId}) - Add Role to GroupMember
 - `vrchat_write_addGroupPost` (POST /groups/{groupId}/posts) - Create a post in a Group
 - `vrchat_write_addTags` (POST /users/{userId}/addTags) - Add User Tags
 - `vrchat_write_banGroupMember` (POST /groups/{groupId}/bans) - Ban Group Member
+- `vrchat_write_blockGroup` (POST /groups/{groupId}/block) - Block Group
+- `vrchat_write_boop` (POST /users/{userId}/boop) - Send Boop
 - `vrchat_write_cancelGroupRequest` (DELETE /groups/{groupId}/requests) - Cancel Group Join Request
+- `vrchat_write_cancelGroupTransfer` (DELETE /groups/{groupId}/transfer) - Cancel Group Transfer
 - `vrchat_write_cancelPending2FA` (DELETE /auth/twofactorauth/totp/pending) - Cancel pending enabling of time-based 2FA codes
 - `vrchat_write_clearAllPlayerModerations` (DELETE /auth/user/playermoderations) - Clear All Player Moderations
 - `vrchat_write_clearFavoriteGroup` (DELETE /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Clear Favorite Group
 - `vrchat_write_clearNotifications` (PUT /auth/user/notifications/clear) - Clear All Notifications
 - `vrchat_write_closeInstance` (DELETE /instances/{worldId}:{instanceId}) - Close Instance
+- `vrchat_write_consumeOwnInventoryItem` (PUT /inventory/{inventoryItemId}/consume) - Consume Own Inventory Item
 - `vrchat_write_createAvatar` (POST /avatars) - Create Avatar
 - `vrchat_write_createFile` (POST /file) - Create File
 - `vrchat_write_createFileVersion` (POST /file/{fileId}) - Create File Version
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Create Global Avatar Moderation
 - `vrchat_write_createGroup` (POST /groups) - Create Group
-- `vrchat_write_createGroupAnnouncement` (POST /groups/{groupId}/announcement) - Create Group Announcement
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Create Group Gallery
 - `vrchat_write_createGroupInvite` (POST /groups/{groupId}/invites) - Invite User to Group
 - `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Create GroupRole
+- `vrchat_write_createProp` (POST /props) - Create Prop
 - `vrchat_write_createWorld` (POST /worlds) - Create World
+- `vrchat_write_declineGroupInvite` (PUT /groups/{groupId}/invites) - Decline Invite from Group
+- `vrchat_write_deleteAllNotificationV2s` (DELETE /notifications) - Delete All NotificationV2s
+- `vrchat_write_deleteAllUserPersistenceData` (DELETE /users/{userId}/persist) - Delete All User Persistence Data
 - `vrchat_write_deleteAvatar` (DELETE /avatars/{avatarId}) - Delete Avatar
 - `vrchat_write_deleteFile` (DELETE /file/{fileId}) - Delete File
 - `vrchat_write_deleteFileVersion` (DELETE /file/{fileId}/{versionId}) - Delete File Version
 - `vrchat_write_deleteFriendRequest` (DELETE /user/{userId}/friendRequest) - Delete Friend Request
 - `vrchat_write_deleteGlobalAvatarModeration` (DELETE /auth/user/avatarmoderations) - Delete Global Avatar Moderation
 - `vrchat_write_deleteGroup` (DELETE /groups/{groupId}) - Delete Group
-- `vrchat_write_deleteGroupAnnouncement` (DELETE /groups/{groupId}/announcement) - Delete Group Announcement
 - `vrchat_write_deleteGroupGallery` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Delete Group Gallery
 - `vrchat_write_deleteGroupGalleryImage` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Delete Group Gallery Image
 - `vrchat_write_deleteGroupInvite` (DELETE /groups/{groupId}/invites/{userId}) - Delete User Invite
 - `vrchat_write_deleteGroupPost` (DELETE /groups/{groupId}/posts/{notificationId}) - Delete a Group post
 - `vrchat_write_deleteGroupRole` (DELETE /groups/{groupId}/roles/{groupRoleId}) - Delete Group Role
 - `vrchat_write_deleteImpostor` (DELETE /avatars/{avatarId}/impostor) - Delete generated Impostor
+- `vrchat_write_deleteModerationReport` (DELETE /moderationReports/{moderationReportId}) - Delete Moderation Report
 - `vrchat_write_deleteNotification` (PUT /auth/user/notifications/{notificationId}/hide) - Delete Notification
+- `vrchat_write_deleteNotificationV2` (DELETE /notifications/{notificationId}) - Delete NotificationV2
 - `vrchat_write_deleteOwnInventoryItem` (DELETE /inventory/{inventoryItemId}) - Delete Own Inventory Item
 - `vrchat_write_deletePrint` (DELETE /prints/{printId}) - Delete Print
+- `vrchat_write_deleteProp` (DELETE /props/{propId}) - Delete Prop
 - `vrchat_write_deleteUser` (PUT /users/{userId}/delete) - Delete User
 - `vrchat_write_deleteUserPersistence` (DELETE /users/{userId}/{worldId}/persist) - Delete User Persistence
 - `vrchat_write_deleteWorld` (DELETE /worlds/{worldId}) - Delete World
@@ -12065,9 +13783,10 @@ Output schema:
 - `vrchat_write_editPrint` (POST /prints/{printId}) - Edit Print
 - `vrchat_write_enable2FA` (POST /auth/twofactorauth/totp/pending) - Enable time-based 2FA codes
 - `vrchat_write_enqueueImpostor` (POST /avatars/{avatarId}/impostor/enqueue) - Enqueue Impostor generation
+- `vrchat_write_equipOwnInventoryItem` (PUT /inventory/{inventoryItemId}/equip) - Equip Own Inventory Item
 - `vrchat_write_finishFileDataUpload` (PUT /file/{fileId}/{versionId}/{fileType}/finish) - Finish FileData Upload
-- `vrchat_write_followGroupCalendarEvent` (POST /calendar/{groupId}/{calendarId}/follow) - Follow a calendar event
 - `vrchat_write_friend` (POST /user/{userId}/friendRequest) - Send Friend Request
+- `vrchat_write_initiateOrAcceptGroupTransfer` (POST /groups/{groupId}/transfer) - Initiate or Accept Group Transfer
 - `vrchat_write_inviteUserWithPhoto` (POST /invite/{userId}/photo) - Invite User with photo
 - `vrchat_write_joinGroup` (POST /groups/{groupId}/join) - Join Group
 - `vrchat_write_kickGroupMember` (DELETE /groups/{groupId}/members/{userId}) - Kick Group Member
@@ -12075,11 +13794,14 @@ Output schema:
 - `vrchat_write_logout` (PUT /logout) - Logout
 - `vrchat_write_markNotificationAsRead` (PUT /auth/user/notifications/{notificationId}/see) - Mark Notification As Read
 - `vrchat_write_moderateUser` (POST /auth/user/playermoderations) - Moderate User
+- `vrchat_write_publishProp` (PUT /props/{propId}/publish) - Publish Prop
 - `vrchat_write_publishWorld` (PUT /worlds/{worldId}/publish) - Publish World
+- `vrchat_write_purchaseProductListing` (POST /economy/purchase/listing) - Purchase Product Listing
 - `vrchat_write_registerUserAccount` (POST /auth/register) - Register User Account
 - `vrchat_write_removeFavorite` (DELETE /favorites/{favoriteId}) - Remove Favorite
 - `vrchat_write_removeGroupMemberRole` (DELETE /groups/{groupId}/members/{userId}/roles/{groupRoleId}) - Remove Role from GroupMember
 - `vrchat_write_removeTags` (POST /users/{userId}/removeTags) - Remove User Tags
+- `vrchat_write_replyNotificationV2` (POST /notifications/{notificationId}/reply) - Reply NotificationV2
 - `vrchat_write_requestInvite` (POST /requestInvite/{userId}) - Request Invite
 - `vrchat_write_requestInviteWithPhoto` (POST /requestInvite/{userId}/photo) - Request Invite with photo
 - `vrchat_write_resendEmailConfirmation` (POST /auth/user/resendEmail) - Resend Email Confirmation
@@ -12087,14 +13809,21 @@ Output schema:
 - `vrchat_write_respondGroupJoinRequest` (PUT /groups/{groupId}/requests/{userId}) - Respond Group Join request
 - `vrchat_write_respondInvite` (POST /invite/{notificationId}/response) - Respond Invite
 - `vrchat_write_respondInviteWithPhoto` (POST /invite/{notificationId}/response/photo) - Respond Invite with photo
+- `vrchat_write_respondNotificationV2` (POST /notifications/{notificationId}/respond) - Respond NotificationV2
 - `vrchat_write_selectAvatar` (PUT /avatars/{avatarId}/select) - Select Avatar
 - `vrchat_write_selectFallbackAvatar` (PUT /avatars/{avatarId}/selectFallback) - Select Fallback Avatar
+- `vrchat_write_setGroupGalleryFileOrder` (PUT /files/order) - Set Group Gallery File Order
 - `vrchat_write_shareInventoryItemDirect` (POST /inventory/cloning/direct) - Share Inventory Item Direct
 - `vrchat_write_startFileDataUpload` (PUT /file/{fileId}/{versionId}/{fileType}/start) - Start FileData Upload
+- `vrchat_write_submitContentAgreement` (POST /agreement) - Submit Content Agreement
+- `vrchat_write_submitModerationReport` (POST /moderationReports) - Submit Moderation Report
 - `vrchat_write_unbanGroupMember` (DELETE /groups/{groupId}/bans/{userId}) - Unban Group Member
+- `vrchat_write_unequipOwnInventorySlot` (DELETE /inventory/{inventoryItemId}/equip) - Unequip Own Inventory Slot
 - `vrchat_write_unfriend` (DELETE /auth/user/friends/{userId}) - Unfriend
 - `vrchat_write_unmoderateUser` (PUT /auth/user/unplayermoderate) - Unmoderate User
+- `vrchat_write_unpublishProp` (DELETE /props/{propId}/publish) - Unpublish Prop
 - `vrchat_write_unpublishWorld` (DELETE /worlds/{worldId}/publish) - Unpublish World
+- `vrchat_write_updateAssetReviewNotes` (PUT /assetReview/{assetReviewId}/notes) - Update Asset Review Notes
 - `vrchat_write_updateAvatar` (PUT /avatars/{avatarId}) - Update Avatar
 - `vrchat_write_updateBadge` (PUT /users/{userId}/badges/{badgeId}) - Update User Badge
 - `vrchat_write_updateFavoriteGroup` (PUT /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Update Favorite Group
@@ -12106,6 +13835,7 @@ Output schema:
 - `vrchat_write_updateGroupRole` (PUT /groups/{groupId}/roles/{groupRoleId}) - Update Group Role
 - `vrchat_write_updateInviteMessage` (PUT /message/{userId}/{messageType}/{slot}) - Update Invite Message
 - `vrchat_write_updateOwnInventoryItem` (PUT /inventory/{inventoryItemId}) - Update Own Inventory Item
+- `vrchat_write_updateProp` (PUT /props/{propId}) - Update Prop
 - `vrchat_write_updateTiliaTos` (PUT /user/{userId}/tilia/tos) - Update Tilia TOS Agreement Status
 - `vrchat_write_updateUserNote` (POST /userNotes) - Update User Note
 - `vrchat_write_updateWorld` (PUT /worlds/{worldId}) - Update World
