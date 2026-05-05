@@ -21,6 +21,7 @@
     "test:e2e": "vitest run test/e2e",
     "test:e2e:live": "vitest run test/e2e/live.test.ts",
     "test:evals": "vitest run test/evals",
+    "smoke:live": "tsx scripts/live-smoke.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "mcp:login": "tsx scripts/mcp-client.ts login",
     "mcp:status": "tsx scripts/mcp-client.ts status",

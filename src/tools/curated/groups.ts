@@ -3,6 +3,8 @@ import { shapeReadData } from '../../core/readTools.js';
 import {
   GroupEventGetInputSchema,
   GroupEventGetOutputSchema,
+  GroupEventNextInputSchema,
+  GroupEventNextOutputSchema,
   GroupEventsListInputSchema,
   GroupEventsListOutputSchema,
   GroupEventsUpcomingInputSchema,
@@ -21,6 +23,7 @@ import {
 import {
   getGroupEvent,
   getGroupInstancesOverview,
+  getGroupNextEvent,
   getGroupProfile,
   listGroupEvents,
   listGroupEventsUpcoming,
@@ -284,6 +287,50 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const payload = {
           groupId: resolved.groupId,
           calendarId: args?.calendarId,
+          stale: result.stale,
+          event,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.group.event.next'),
+    {
+      description: 'Get the next upcoming calendar event for a group (read-only).',
+      inputSchema: GroupEventNextInputSchema,
+      outputSchema: GroupEventNextOutputSchema,
+      annotations: readOnlyToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const resolved = await resolveGroupId({
+          groupId: args?.groupId,
+          shortCode: args?.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+
+        const result = await getGroupNextEvent(resolved.groupId);
+        const event = shapeReadData(result.event, {
+          fields: args?.fields,
+          compact: args?.compact,
+          maxArrayLength: args?.maxArrayLength,
+        });
+        const payload = {
+          groupId: resolved.groupId,
           stale: result.stale,
           event,
         };

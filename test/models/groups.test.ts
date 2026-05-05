@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { schemas } from '../../src/generated/vrchat-schemas.js';
 import {
-  toGroupAnnouncement,
   toGroupInstanceSummary,
   toGroupMemberSummary,
   toGroupPostSummary,
@@ -24,24 +23,6 @@ describe('group model mappers', () => {
       name: 'Group One',
       shortCode: 'ABC',
       memberCount: 42,
-    });
-  });
-
-  it('maps group announcement when content exists', () => {
-    const announcement = toGroupAnnouncement(
-      schemas.GroupAnnouncement.parse({
-        title: 'Update',
-        text: 'Hello',
-      }),
-    );
-
-    expect(announcement).toEqual({
-      id: undefined,
-      title: 'Update',
-      text: 'Hello',
-      createdAt: undefined,
-      updatedAt: undefined,
-      authorId: undefined,
     });
   });
 

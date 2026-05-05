@@ -13,6 +13,5 @@ export function toolError(message: string, payload?: Record<string, unknown>) {
   return {
     isError: true,
     content: textContent(text),
-    structuredContent: body,
   };
 }

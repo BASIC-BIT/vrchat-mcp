@@ -326,6 +326,26 @@ components:
         groupId:
           type: string
       required: [id, title]
+    PaginatedCalendarEventList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        totalCount:
+          type: integer
+        hasNext:
+          type: boolean
+      required: [results, totalCount, hasNext]
+    GroupPostsResponse:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupPost'
+      required: [posts]
 paths:
   /config:
     get:
@@ -877,9 +897,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GroupPost'
+                $ref: '#/components/schemas/GroupPostsResponse'
   /groups/{groupId}/instances:
     get:
       operationId: getGroupInstances
@@ -911,9 +929,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarEvent'
+                $ref: '#/components/schemas/PaginatedCalendarEventList'
   /calendar/events/featured:
     get:
       operationId: getFeaturedCalendarEvents
@@ -931,9 +947,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarEvent'
+                $ref: '#/components/schemas/PaginatedCalendarEventList'
   /calendar/events/followed:
     get:
       operationId: getFollowedCalendarEvents
@@ -951,9 +965,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarEvent'
+                $ref: '#/components/schemas/PaginatedCalendarEventList'
   /calendar/events/search:
     get:
       operationId: searchCalendarEvents
@@ -967,9 +979,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarEvent'
+                $ref: '#/components/schemas/PaginatedCalendarEventList'
   /calendar/groups/{groupId}/events:
     get:
       operationId: getGroupCalendarEvents
@@ -988,9 +998,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarEvent'
+                $ref: '#/components/schemas/PaginatedCalendarEventList'
     post:
       operationId: createGroupCalendarEvent
       parameters:

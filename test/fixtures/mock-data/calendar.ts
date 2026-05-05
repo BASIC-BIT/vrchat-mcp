@@ -12,7 +12,7 @@ export const calendarEvents: CalendarEventSchema[] = [
     startsAt: '2025-12-30T12:00:00Z',
     endsAt: '2025-12-30T13:00:00Z',
     description: 'General event',
-    category: 'social',
+    category: 'hangout',
     accessType: 'public',
   }),
 ];
@@ -24,7 +24,7 @@ export const calendarFeatured: CalendarEventSchema[] = [
     startsAt: '2025-12-30T14:00:00Z',
     endsAt: '2025-12-30T15:00:00Z',
     description: 'Featured event',
-    category: 'showcase',
+    category: 'performance',
     accessType: 'public',
   }),
 ];
@@ -36,7 +36,7 @@ export const calendarFollowed: CalendarEventSchema[] = [
     startsAt: '2025-12-30T16:00:00Z',
     endsAt: '2025-12-30T17:00:00Z',
     description: 'Followed event',
-    category: 'social',
+    category: 'hangout',
     accessType: 'public',
   }),
 ];
@@ -50,7 +50,7 @@ export const calendarGroupEvents: Record<string, CalendarEventSchema[]> = {
       startsAt: '2025-12-30T18:00:00Z',
       endsAt: '2025-12-30T19:00:00Z',
       description: 'Group event description',
-      category: 'meetup',
+      category: 'hangout',
       accessType: 'group',
     }),
   ],

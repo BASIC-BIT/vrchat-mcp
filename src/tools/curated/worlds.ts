@@ -48,7 +48,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
           stale,
           page,
           worlds,
-          notes: ['Tags are included verbatim and may be noisy.'],
+          notes: args?.includeTags ? ['Tags are included verbatim and may be noisy.'] : undefined,
         };
 
         return {
@@ -81,7 +81,7 @@ export function registerCuratedWorldTools(server: McpServer): void {
           stale,
           page,
           worlds,
-          notes: ['Tags are included verbatim and may be noisy.'],
+          notes: args?.includeTags ? ['Tags are included verbatim and may be noisy.'] : undefined,
         };
 
         return {

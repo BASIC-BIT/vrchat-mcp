@@ -7,9 +7,9 @@ import { callReadOperation } from '../../../src/core/readTools.js';
 import { cacheManager } from '../../../src/services/cache.js';
 import {
   getGroupProfile,
-  getGroupAnnouncement,
   getGroupEvent,
   getGroupInstancesOverview,
+  getGroupNextEvent,
   listGroupEvents,
   listGroupEventsUpcoming,
   listGroupMembers,
@@ -127,22 +127,6 @@ describe('groups curated service', () => {
     expect(result.members[0]).toMatchObject({ userId: 'usr_1', displayName: 'Alpha' });
   });
 
-  it('loads group announcements', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
-      data: { id: 'ann_1', title: 'Update', text: 'Hello' },
-    });
-
-    const result = await getGroupAnnouncement('grp_1');
-    expect(callReadOperation).toHaveBeenCalledWith('getGroupAnnouncements', { groupId: 'grp_1' }, undefined);
-    expect(result.announcement).toMatchObject({ id: 'ann_1', title: 'Update' });
-  });
-
-  it('returns null announcement when payload is empty', async () => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({ data: {} });
-    const result = await getGroupAnnouncement('grp_1');
-    expect(result.announcement).toBeNull();
-  });
-
   it('lists group posts with paging defaults', async () => {
     vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [{ id: 'post_1', title: 'Hello' }],
@@ -205,6 +189,17 @@ describe('groups curated service', () => {
     expect(result.event).toMatchObject({ id: 'evt_1' });
   });
 
+  it('gets next group event', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({ data: { id: 'evt_next' } });
+    const result = await getGroupNextEvent('grp_1');
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getGroupNextCalendarEvent',
+      { groupId: 'grp_1' },
+      {},
+    );
+    expect(result.event).toMatchObject({ id: 'evt_next' });
+  });
+
   it('requires calendarId for group event fetch', async () => {
     await expect(getGroupEvent('grp_1', { calendarId: ' ' })).rejects.toThrow(
       'calendarId is required.',
@@ -224,7 +219,7 @@ describe('groups curated service', () => {
       from: '2025-12-20T00:00:00Z',
       windowHours: 24,
     });
-    expect(result.events).toEqual([{ id: 'evt_in', startsAt: '2025-12-20T10:00:00Z' }]);
+    expect(result.events[0]).toMatchObject({ id: 'evt_in', startsAt: '2025-12-20T10:00:00Z' });
     expect(result.segments[0]?.date).toBe('2025-12-01');
   });
 

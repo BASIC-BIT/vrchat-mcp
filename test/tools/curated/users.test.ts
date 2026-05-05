@@ -182,8 +182,9 @@ describe('curated user tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'User not found' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('User not found');
   });
 
   it('returns tool error when user group resolution fails', async () => {
@@ -199,8 +200,9 @@ describe('curated user tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'Missing user' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('Missing user');
   });
 
   it('updates profile and returns shaped user', async () => {

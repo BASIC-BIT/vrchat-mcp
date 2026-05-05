@@ -115,14 +115,16 @@ describe('friends curated service', () => {
       meta: { segments: [], truncated: false, total: 1, stale: false },
     });
 
-    const result = await listFriends({ pageSize: 75.9, maxPages: 10.2 });
+    const result = await listFriends({ pageSize: 75.9, maxPages: 10.2, maxItems: 123.8 });
     expect(fetchFriendsWithMeta).toHaveBeenCalledWith({
       includeOffline: false,
       pageSize: 75,
       maxPages: 10,
+      maxItems: 123,
     });
     expect(result.pageSize).toBe(75);
     expect(result.maxPages).toBe(10);
+    expect(result.maxItems).toBe(123);
   });
 
   it('includes offline friends when requested', async () => {
@@ -282,6 +284,35 @@ describe('friends curated service', () => {
     expect(result.onlineCount).toBe(1);
     expect(result.totals.all.totalFriends).toBe(2);
     expect(result.totals.filtered.totalFriends).toBe(1);
+  });
+
+  it('limits overview locations and reports omitted count', async () => {
+    vi.mocked(fetchFriendsWithMeta).mockResolvedValue({
+      friends: [
+        { id: 'u1', displayName: 'A', status: 'active', location: 'wrld_1:inst' },
+        { id: 'u2', displayName: 'B', status: 'active', location: 'wrld_2:inst' },
+        { id: 'u3', displayName: 'C', status: 'active', location: 'wrld_3:inst' },
+      ],
+      meta: { segments: [], truncated: false, total: 3, stale: false },
+    });
+    vi.mocked(parseLocation).mockImplementation((raw?: string) => ({
+      raw: raw ?? null,
+      type: 'instance',
+      worldId: raw?.split(':')[0],
+      instanceId: raw?.split(':')[1],
+    }));
+    vi.mocked(getInstanceDetails).mockResolvedValue({
+      instance: { id: 'inst', userCount: 7 },
+      stale: false,
+    });
+
+    const result = await getFriendsOverview({ maxLocations: 2 });
+    expect(result.locations).toHaveLength(2);
+    expect(result.maxLocations).toBe(2);
+    expect(result.totalLocations).toBe(3);
+    expect(result.returnedLocations).toBe(2);
+    expect(result.omittedLocations).toBe(1);
+    expect(result.locationsTruncated).toBe(true);
   });
 
   it('throws when min instance user count is set and instance fetch fails', async () => {

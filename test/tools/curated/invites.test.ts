@@ -79,8 +79,9 @@ describe('curated invite tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'blocked' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('blocked');
   });
 
   it('invites user to current instance with userId only', async () => {

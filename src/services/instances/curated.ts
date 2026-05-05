@@ -35,8 +35,12 @@ function applyOptionalFields(request: InstanceCreateRequest, input: InstanceCrea
   if (input.canRequestInvite !== undefined) request.canRequestInvite = input.canRequestInvite;
   if (input.queueEnabled !== undefined) request.queueEnabled = input.queueEnabled;
   if (input.ageGate !== undefined) request.ageGate = input.ageGate;
+  if (input.calendarEntryId !== undefined) request.calendarEntryId = input.calendarEntryId;
   if (input.instancePersistenceEnabled !== undefined) {
     request.instancePersistenceEnabled = input.instancePersistenceEnabled;
+  }
+  if (input.playerPersistenceEnabled !== undefined) {
+    request.playerPersistenceEnabled = input.playerPersistenceEnabled;
   }
   if (input.closedAt) request.closedAt = input.closedAt;
   if (input.hardClose !== undefined) request.hardClose = input.hardClose;

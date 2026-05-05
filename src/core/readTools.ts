@@ -31,6 +31,17 @@ interface ReadOperationResult {
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
+interface PaginatedObjectData {
+  results: JsonValue[];
+  hasNext?: boolean;
+}
+
+function pickPaginatedResults(record: Record<string, unknown>): JsonValue[] | null {
+  if (Array.isArray(record.results)) return record.results as JsonValue[];
+  if (Array.isArray(record.posts)) return record.posts as JsonValue[];
+  return null;
+}
+
 function pickFields(value: JsonValue, fields: string[]): JsonValue {
   if (Array.isArray(value)) {
     return value.map((entry) => pickFields(entry, fields));
@@ -71,6 +82,22 @@ export function shapeReadData(data: unknown, options?: ReadToolOptions): unknown
     shaped = pruneArrays(shaped, max);
   }
   return shaped;
+}
+
+function getPaginatedObjectData(data: unknown): PaginatedObjectData | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  const results = pickPaginatedResults(record);
+  if (!results) return null;
+  return {
+    results,
+    hasNext: typeof record.hasNext === 'boolean' ? record.hasNext : undefined,
+  };
+}
+
+function getPageBatch(data: unknown): PaginatedObjectData | null {
+  if (Array.isArray(data)) return { results: data as JsonValue[] };
+  return getPaginatedObjectData(data);
 }
 
 function normalizeParams(params: Record<string, unknown>): Record<string, unknown> {
@@ -201,16 +228,18 @@ async function callReadOperationPaginated(
     const result = await callOperation({ operationId, params: pageParams });
     firstUrl ??= result.url;
 
-    if (!Array.isArray(result.data)) {
+    const pageBatch = getPageBatch(result.data);
+    if (!pageBatch) {
       const data = shapeReadData(result.data, options);
       return buildReadResponse({ data, options, url: result.url });
     }
 
-    const batch = result.data as JsonValue[];
+    const batch = pageBatch.results;
     lastBatchSize = batch.length;
     collected.push(...batch);
     pages += 1;
 
+    if (pageBatch.hasNext === false) break;
     if (batch.length < pageSize) break;
 
     if (reachedPagingLimit(pages, maxPages, collected.length, maxItems)) {

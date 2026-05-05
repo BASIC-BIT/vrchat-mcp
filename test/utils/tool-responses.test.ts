@@ -9,7 +9,7 @@ describe('toolResponses', () => {
   it('builds default error payload', () => {
     const result = toolError('boom');
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({ error: 'boom' });
+    expect(result).not.toHaveProperty('structuredContent');
     expect(result.content).toEqual([{ type: 'text', text: 'boom' }]);
   });
 
@@ -17,7 +17,7 @@ describe('toolResponses', () => {
     const payload = { error: 'bad', hint: 'try-again' };
     const result = toolError('bad', payload);
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual(payload);
+    expect(result).not.toHaveProperty('structuredContent');
     expect(result.content[0]?.text).toContain('try-again');
   });
 });

@@ -71,8 +71,9 @@ describe('curated status tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'Boom' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('Boom');
   });
 
   it('returns tool error when status set fails', async () => {
@@ -84,8 +85,9 @@ describe('curated status tools', () => {
 
     expect(result).toMatchObject({
       isError: true,
-      structuredContent: { error: 'Nope' },
     });
+    const content = (result as { content: { text?: string }[] }).content;
+    expect(content[0]?.text).toContain('Nope');
   });
 
   it('rejects description-only status set at schema level', async () => {
@@ -94,13 +96,13 @@ describe('curated status tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_status_set');
     const result = (await tool!.handler({ description: '' })) as {
       isError?: boolean;
-      structuredContent?: { error?: string };
+      content: { type: string; text?: string }[];
     };
 
     expect(result).toMatchObject({
       isError: true,
     });
-    expect(result.structuredContent?.error).toContain('Provide status or color.');
+    expect(result.content[0]?.text).toContain('Provide status or color.');
     expect(updateStatus).not.toHaveBeenCalled();
   });
 
@@ -110,13 +112,13 @@ describe('curated status tools', () => {
     const tool = server.tools.find((entry) => entry.name === 'vrchat_status_set');
     const result = (await tool!.handler({ status: 'active', color: 'red' })) as {
       isError?: boolean;
-      structuredContent?: { error?: string };
+      content: { type: string; text?: string }[];
     };
 
     expect(result).toMatchObject({
       isError: true,
     });
-    expect(result.structuredContent?.error).toContain('maps to status');
+    expect(result.content[0]?.text).toContain('maps to status');
     expect(updateStatus).not.toHaveBeenCalled();
   });
 });

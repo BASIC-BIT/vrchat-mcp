@@ -109,6 +109,36 @@ const AdminAssetBundle = z
     unityPackages: z.array(AdminUnityPackage).min(1),
   })
   .passthrough();
+const AgreementCode = z.literal('content.copyright.owned');
+const AgreementStatus = z
+  .object({
+    agreed: z.boolean(),
+    agreementCode: AgreementCode.default('content.copyright.owned'),
+    contentId: z.string(),
+    userId: UserID,
+    version: z.number().int(),
+  })
+  .passthrough();
+const AgreementRequest = z
+  .object({
+    agreementCode: AgreementCode.default('content.copyright.owned'),
+    agreementFulltext: z.string(),
+    contentId: z.string(),
+    version: z.number().int(),
+  })
+  .passthrough();
+const Agreement = z
+  .object({
+    agreementCode: AgreementCode.default('content.copyright.owned'),
+    agreementFulltext: z.string().optional(),
+    contentId: z.string(),
+    created: z.string(),
+    id: z.string(),
+    tags: z.array(Tag),
+    userId: UserID,
+    version: z.number().int(),
+  })
+  .passthrough();
 const FileAnalysisAvatarStats = z
   .object({
     animatorCount: z.number().int(),
@@ -168,14 +198,26 @@ const FileAnalysis = z
     uncompressedSize: z.number().int(),
   })
   .passthrough();
+const UpdateAssetReviewNotesRequest = z.object({ reviewNotes: z.string() }).passthrough();
 const VerifyAuthTokenResult = z.object({ ok: z.boolean(), token: z.string().min(1) }).passthrough();
 const UserExists = z
   .object({ nameOk: z.boolean().optional().default(false), userExists: z.boolean().default(false) })
   .passthrough();
+const BadgeID = z.string();
 const PermissionID = z.string();
 const Permission = z
   .object({
-    data: z.object({}).partial().passthrough().optional(),
+    data: z
+      .object({
+        badges: z.array(BadgeID),
+        max: z.number().int(),
+        maxFavoriteGroups: z.record(z.string(), z.number().int()),
+        maxFavoritesPerGroup: z.record(z.string(), z.number().int()),
+        tags: z.array(Tag),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
     description: z.string().optional(),
     displayName: z.string().optional(),
     id: PermissionID,
@@ -203,7 +245,6 @@ const AccountDeletionLog = z
   .passthrough();
 const AgeVerificationStatus = z.enum(['18+', 'hidden', 'verified']);
 const AgeVerified = z.boolean();
-const BadgeID = z.string();
 const Badge = z
   .object({
     assignedAt: z.string().datetime({ offset: true }).nullish(),
@@ -338,8 +379,13 @@ const CurrentUser = z
     userLanguage: z.string().nullish(),
     userLanguageCode: z.string().nullish(),
     username: z.string().optional(),
+    usesGeneratedPassword: z.boolean(),
     viveId: z.string().optional(),
   })
+  .passthrough();
+const TwoFactorAuthType = z.enum(['emailOtp', 'otp', 'totp']);
+const RequiresTwoFactorAuth = z
+  .object({ requiresTwoFactorAuth: z.array(TwoFactorAuthType) })
   .passthrough();
 const OkStatus2 = z.object({ OK: z.string() }).passthrough();
 const AvatarModerationType = z.literal('block');
@@ -361,7 +407,12 @@ const AvatarModerationCreated = z
   })
   .passthrough();
 const FavoriteGroupLimits = z
-  .object({ avatar: z.number().int(), friend: z.number().int(), world: z.number().int() })
+  .object({
+    avatar: z.number().int(),
+    friend: z.number().int(),
+    vrcPlusWorld: z.number().int(),
+    world: z.number().int(),
+  })
   .passthrough();
 const FavoriteLimits = z
   .object({
@@ -400,6 +451,7 @@ const LimitedUserFriend = z
   .passthrough();
 const Success = z.object({ success: Response }).partial().passthrough();
 const NotificationType = z.enum([
+  'boop',
   'friendRequest',
   'invite',
   'inviteResponse',
@@ -485,9 +537,9 @@ const UnityPackage = z
   .object({
     assetUrl: z.string().nullish(),
     assetUrlObject: z.object({}).partial().passthrough().optional(),
-    assetVersion: z.number().int().gte(0),
-    created_at: z.string().datetime({ offset: true }).optional(),
-    id: UnityPackageID,
+    assetVersion: z.number().int().gte(0).optional(),
+    created_at: z.string().datetime({ offset: true }).optional().nullish(),
+    id: UnityPackageID.optional(),
     impostorUrl: z.string().nullish(),
     impostorizerVersion: z.string().optional(),
     performanceRating: PerformanceRatings.optional(),
@@ -504,6 +556,7 @@ const UnityPackage = z
 const Avatar = z
   .object({
     acknowledgements: z.string().optional(),
+    activeAssetReviewId: z.string().optional(),
     assetUrl: z.string().min(1).optional(),
     assetUrlObject: z.object({}).partial().passthrough().optional(),
     authorId: UserID,
@@ -518,6 +571,7 @@ const Avatar = z
     lock: z.boolean().optional(),
     lowestPrice: z.number().int().optional(),
     name: z.string().min(1),
+    pendingUpload: z.boolean().optional().default(false),
     performance: z
       .object({
         android: z.string(),
@@ -615,29 +669,48 @@ const ServiceStatus = z
     updated_at: z.string().datetime({ offset: true }),
   })
   .passthrough();
+const CalendarEventAccess = z.enum(['group', 'public']);
+const CalendarEventCategory = z.enum([
+  'arts',
+  'avatars',
+  'dance',
+  'education',
+  'exploration',
+  'film_media',
+  'gaming',
+  'hangout',
+  'music',
+  'other',
+  'performance',
+  'roleplaying',
+  'wellness',
+]);
 const CalendarID = z.string();
 const FileID = z.string();
+const LanguageCode = z.string();
+const CalendarEventPlatform = z.enum(['android', 'ios', 'standalonewindows']);
 const GroupRoleID = z.string();
 const CalendarEvent = z
   .object({
-    accessType: z.string(),
-    category: z.string(),
+    accessType: CalendarEventAccess.default('public'),
+    category: CalendarEventCategory.default('other'),
     closeInstanceAfterEndMinutes: z.number().int().optional(),
     createdAt: z.string().datetime({ offset: true }).optional(),
     deletedAt: z.string().datetime({ offset: true }).nullish(),
     description: z.string(),
+    durationInMs: z.number().int().optional(),
     endsAt: z.string().datetime({ offset: true }),
     featured: z.boolean().optional(),
     guestEarlyJoinMinutes: z.number().int().optional(),
     hostEarlyJoinMinutes: z.number().int().optional(),
     id: CalendarID,
-    imageId: FileID.optional(),
+    imageId: FileID.nullish(),
     imageUrl: z.string().nullish(),
     interestedUserCount: z.number().int().optional(),
     isDraft: z.boolean().optional(),
-    languages: z.array(z.string()).optional(),
+    languages: z.array(LanguageCode).optional(),
     ownerId: GroupID.optional(),
-    platforms: z.array(z.string()).optional(),
+    platforms: z.array(CalendarEventPlatform).optional(),
     roleIds: z.array(GroupRoleID).nullish(),
     startsAt: z.string().datetime({ offset: true }),
     tags: z.array(Tag).optional(),
@@ -660,10 +733,13 @@ const PaginatedCalendarEventList = z
   .object({ hasNext: z.boolean(), results: z.array(CalendarEvent), totalCount: z.number().int() })
   .partial()
   .passthrough();
+const CalendarEventDiscovery = z
+  .object({ nextCursor: z.string(), results: z.array(CalendarEvent) })
+  .passthrough();
 const CreateCalendarEventRequest = z
   .object({
-    accessType: z.enum(['group', 'public']),
-    category: z.string(),
+    accessType: CalendarEventAccess.default('public'),
+    category: CalendarEventCategory.default('other'),
     closeInstanceAfterEndMinutes: z.number().int().optional(),
     description: z.string().min(1),
     endsAt: z.string().datetime({ offset: true }),
@@ -672,14 +748,14 @@ const CreateCalendarEventRequest = z
     hostEarlyJoinMinutes: z.number().int().optional(),
     imageId: FileID.optional(),
     isDraft: z.boolean().optional(),
-    languages: z.array(z.string()).optional(),
-    parentId: z.string().optional(),
-    platforms: z.array(z.string()).optional(),
-    roleIds: z.array(z.string()).optional(),
+    languages: z.array(LanguageCode).max(3).optional(),
+    parentId: CalendarID.optional(),
+    platforms: z.array(CalendarEventPlatform).optional(),
+    roleIds: z.array(GroupRoleID).optional(),
     sendCreationNotification: z.boolean(),
     startsAt: z.string().datetime({ offset: true }),
-    tags: z.array(z.string()).optional(),
-    title: z.string().min(1),
+    tags: z.array(z.string().min(1).max(100)).max(5).optional(),
+    title: z.string().min(1).max(64),
     usesInstanceOverflow: z.boolean().optional(),
   })
   .passthrough();
@@ -709,6 +785,21 @@ const UpdateCalendarEventRequest = z
 const FollowCalendarEventRequest = z.object({ isFollowing: z.boolean() }).passthrough();
 const APIConfigAnnouncement = z
   .object({ name: z.string().min(1), text: z.string().min(1) })
+  .passthrough();
+const APIConfigAudioConfig = z
+  .object({
+    eq: z.number(),
+    nearFieldILDNudge: z.number(),
+    nearFieldILDNudgeDistance: z.number(),
+    nearFieldILDNudgeEarRadius: z.number(),
+    perEarDirectionalityEarRadius: z.number(),
+    perEarDirectionalityFadeDistance: z.number(),
+    perEarDirectionalityMaxScale: z.number(),
+    perEarDirectionalityPCFactor: z.number(),
+    trackingScaleMax: z.number(),
+    trackingScaleMin: z.number(),
+    trackingScaleMultiplier: z.number(),
+  })
   .passthrough();
 const PerformanceLimiterInfo = z.object({ maxSeats: z.number().int() }).passthrough();
 const APIConfigConstants = z
@@ -783,6 +874,7 @@ const APIConfigEvents = z
     playerOrderBucketSize: z.number().int(),
     playerOrderFactor: z.number().int(),
     slowUpdateFactorThreshold: z.number().int(),
+    useDirectPlayerSerialization: z.boolean(),
     viewSegmentLength: z.number().int(),
   })
   .passthrough();
@@ -800,6 +892,9 @@ const ReportCategory = z
 const ReportReason = z.object({ text: z.string(), tooltip: z.string() }).passthrough();
 const APIConfig = z
   .object({
+    CampaignStatus: z.string(),
+    DisableBackgroundPreloads: z.boolean().default(true),
+    LocationGiftingNonSubPrioEnabled: z.boolean().default(true),
     VoiceEnableDegradation: z.boolean().default(false),
     VoiceEnableReceiverLimiting: z.boolean().default(true),
     accessLogsUrls: z
@@ -820,6 +915,7 @@ const APIConfig = z
     analyticsSegment_NewUI_PctOfUsers: z.number().int(),
     analyticsSegment_NewUI_Salt: z.string(),
     announcements: z.array(APIConfigAnnouncement),
+    audioConfig: APIConfigAudioConfig.optional(),
     availableLanguageCodes: z.array(z.string()),
     availableLanguages: z.array(z.string()),
     avatarPerfLimiter: z
@@ -852,7 +948,8 @@ const APIConfig = z
     constants: APIConfigConstants,
     contactEmail: z.string().min(1),
     copyrightEmail: z.string().min(1),
-    currentPrivacyVersion: z.number().int().optional().default(1),
+    copyrightFormUrl: z.string().min(1),
+    currentPrivacyVersion: z.number().int().default(1),
     currentTOSVersion: z.number().int().gte(0),
     defaultAvatar: AvatarID,
     defaultStickerSet: z.string(),
@@ -881,9 +978,13 @@ const APIConfig = z
     downloadLinkWindows: z.string().min(1),
     downloadUrls: APIConfigDownloadURLList,
     dynamicWorldRows: z.array(DynamicContentRow).min(1),
-    economyPauseEnd: z.string().optional(),
-    economyPauseStart: z.string().optional(),
-    economyState: z.number().int().optional().default(1),
+    economyLedgerBackfill: z.boolean(),
+    economyLedgerMigrationStop: z.string(),
+    economyLedgerMode: z.string(),
+    economyPauseEnd: z.string().datetime({ offset: true }),
+    economyPauseStart: z.string().datetime({ offset: true }),
+    economyPurchaseRepairEnabled: z.boolean(),
+    economyState: z.number().int().default(1),
     events: APIConfigEvents,
     forceUseLatestWorld: z.boolean().default(true),
     giftDisplayType: z.string(),
@@ -894,7 +995,11 @@ const APIConfig = z
     homepageRedirectTarget: z.string().min(1).default('https://hello.vrchat.com'),
     hubWorldId: WorldID,
     imageHostUrlList: z.array(z.string()),
+    iosAppVersion: z.array(z.string()),
+    iosVersion: z.object({ major: z.number().int(), minor: z.number().int() }).passthrough(),
     jobsEmail: z.string().min(1),
+    maxUserEmoji: z.number().int().default(18),
+    maxUserStickers: z.number().int().default(18),
     minSupportedClientBuildNumber: z
       .object({
         AppStore: PlatformBuildInfo,
@@ -922,96 +1027,14 @@ const APIConfig = z
     'player-url-resolver-sha1': z.string().min(1),
     'player-url-resolver-version': z.string().min(1),
     publicKey: z.string(),
-    reportCategories: z
-      .object({
-        avatar: ReportCategory,
-        avatarpage: ReportCategory.optional(),
-        behavior: ReportCategory,
-        chat: ReportCategory,
-        emoji: ReportCategory.optional(),
-        environment: ReportCategory,
-        groupstore: ReportCategory,
-        image: ReportCategory,
-        sticker: ReportCategory.optional(),
-        text: ReportCategory,
-        warnings: ReportCategory,
-        worldimage: ReportCategory,
-        worldstore: ReportCategory,
-      })
-      .passthrough(),
+    reportCategories: z.record(z.string(), ReportCategory),
     reportFormUrl: z
       .string()
       .default(
         'https://help.vrchat.com/hc/en-us/requests/new?ticket_form_id=1500000182242&tf_360056455174=user_report&tf_360057451993={userId}&tf_1500001445142={reportedId}&tf_subject={reason} {category} By {contentType} {reportedName}&tf_description={description}'
       ),
-    reportOptions: z
-      .object({
-        avatar: z
-          .object({
-            avatar: z.array(z.string()),
-            avatarpage: z.array(z.string()),
-            warnings: z.array(z.string()),
-          })
-          .partial()
-          .passthrough(),
-        group: z
-          .object({
-            groupstore: z.array(z.string()),
-            image: z.array(z.string()),
-            text: z.array(z.string()),
-          })
-          .partial()
-          .passthrough(),
-        user: z
-          .object({
-            behavior: z.array(z.string()),
-            chat: z.array(z.string()),
-            emoji: z.array(z.string()),
-            image: z.array(z.string()),
-            sticker: z.array(z.string()),
-            text: z.array(z.string()),
-          })
-          .partial()
-          .passthrough(),
-        world: z
-          .object({
-            environment: z.array(z.string()),
-            text: z.array(z.string()),
-            warnings: z.array(z.string()),
-            worldimage: z.array(z.string()),
-            worldstore: z.array(z.string()),
-          })
-          .partial()
-          .passthrough(),
-      })
-      .partial()
-      .passthrough(),
-    reportReasons: z
-      .object({
-        billing: ReportReason,
-        botting: ReportReason,
-        cancellation: ReportReason,
-        copyright: ReportReason.optional(),
-        fraud: ReportReason.optional(),
-        gore: ReportReason,
-        hacking: ReportReason,
-        harassing: ReportReason,
-        hateful: ReportReason,
-        impersonation: ReportReason,
-        inappropriate: ReportReason,
-        leaking: ReportReason,
-        malicious: ReportReason,
-        missing: ReportReason,
-        nudity: ReportReason,
-        renewal: ReportReason,
-        security: ReportReason,
-        service: ReportReason,
-        sexual: ReportReason,
-        technical: ReportReason.optional(),
-        threatening: ReportReason,
-        visuals: ReportReason,
-      })
-      .passthrough(),
+    reportOptions: z.record(z.string(), z.record(z.string(), z.array(z.string()))),
+    reportReasons: z.record(z.string(), ReportReason),
     requireAgeVerificationBetaTag: z.boolean(),
     sdkDeveloperFaqUrl: z.string().min(1),
     sdkDiscordUrl: z.string().min(1),
@@ -1047,13 +1070,63 @@ const License = z
     forType: LicenseType.default('permission'),
   })
   .passthrough();
-const StoreID = z.string();
 const ProductID = z.string();
-const ProductType = z.enum(['listing', 'role', 'udon']);
+const PurchaseProductListingRequest = z
+  .object({
+    listingId: ProductID,
+    quantity: z.number().int().gte(1).lte(99).default(1),
+    totalPrice: z.number().int().gte(0),
+  })
+  .passthrough();
+const ProductListingType = z.enum(['duration', 'permanent', 'subscription']);
+const ProductPurchaseID = z.string();
+const ProductPurchase = z
+  .object({
+    buyerDisplayName: z.string(),
+    buyerId: UserID,
+    firstParty: z.boolean().optional(),
+    isBuyer: z.boolean(),
+    isGift: z.boolean(),
+    isReceiver: z.boolean(),
+    isSeller: z.boolean(),
+    listingCurrentlyAvailable: z.boolean(),
+    listingDisplayName: z.string(),
+    listingId: ProductID,
+    listingImageId: FileID,
+    listingSubtitle: z.string(),
+    listingType: ProductListingType.default('subscription'),
+    products: z.array(z.object({}).partial().passthrough()),
+    purchaseActive: z.boolean(),
+    purchaseContext: z.object({ locationType: z.string() }).partial().passthrough(),
+    purchaseCurrentStatus: z.string(),
+    purchaseDate: z.string().datetime({ offset: true }),
+    purchaseDuration: z.number().int().optional(),
+    purchaseDurationType: z.string().optional(),
+    purchaseEndDate: z.string().datetime({ offset: true }),
+    purchaseId: ProductPurchaseID,
+    purchaseLatest: z.boolean(),
+    purchasePrice: z.number().int(),
+    purchaseQuantity: z.number().int(),
+    purchaseStartDate: z.string().datetime({ offset: true }),
+    purchaseToken: z.object({}).partial().passthrough().nullable(),
+    purchaseType: z.string(),
+    purchaseUnitPrice: z.number().int(),
+    receiverDisplayName: z.string(),
+    receiverId: UserID,
+    recurrable: z.boolean(),
+    refundable: z.boolean(),
+    sellerDisplayName: z.string(),
+    sellerId: UserID,
+    stackable: z.boolean(),
+    willRecur: z.boolean(),
+  })
+  .passthrough();
+const StoreID = z.string();
+const ProductType = z.enum(['inventory', 'listing', 'role', 'udon']);
 const Product = z
   .object({
-    archived: z.boolean(),
-    created: z.string().datetime({ offset: true }),
+    archived: z.boolean().optional(),
+    created: z.string().datetime({ offset: true }).optional(),
     description: z.string(),
     displayName: z.string(),
     groupAccess: z.boolean().optional().default(false),
@@ -1067,11 +1140,10 @@ const Product = z
     sellerDisplayName: z.string(),
     sellerId: z.string(),
     tags: z.array(Tag),
-    updated: z.string().datetime({ offset: true }).nullable(),
+    updated: z.string().datetime({ offset: true }).nullish(),
     useForSubscriberList: z.boolean().optional().default(false),
   })
   .passthrough();
-const ProductListingType = z.literal('subscription');
 const ProductListingVariantID = z.string();
 const ProductListingVariant = z
   .object({
@@ -1112,21 +1184,27 @@ const ProductListing = z
     refundable: z.boolean(),
     sellerDisplayName: z.string(),
     sellerId: z.string(),
+    soldByVrc: z.boolean().optional(),
     stackable: z.boolean(),
     storeIds: z.array(z.string()),
+    subtitle: z.string().optional(),
     tags: z.array(Tag).optional(),
+    vrcPlusDiscountPrice: z.number().int().optional(),
+    whenToExpire: z.string().datetime({ offset: true }).nullish(),
   })
   .passthrough();
 const StoreShelfID = z.string();
 const StoreShelf = z
   .object({
+    highlightListing: ProductListing.optional(),
+    highlightListingId: ProductID.optional(),
     id: StoreShelfID,
     listingIds: z.array(ProductID),
     listings: z.array(ProductListing).optional(),
     shelfDescription: z.string(),
     shelfLayout: z.string(),
     shelfTitle: z.string(),
-    updatedAt: z.string(),
+    updatedAt: z.string().datetime({ offset: true }),
   })
   .passthrough();
 const StoreType = z.enum(['group', 'house', 'world']);
@@ -1207,6 +1285,37 @@ const CreateFileRequest = z
     tags: z.array(Tag).optional(),
   })
   .passthrough();
+const ImageAnimationStyle = z.enum([
+  'aura',
+  'bats',
+  'bees',
+  'bounce',
+  'cloud',
+  'confetti',
+  'crying',
+  'dislike',
+  'fire',
+  'idea',
+  'lasers',
+  'like',
+  'magnet',
+  'mistletoe',
+  'money',
+  'noise',
+  'orbit',
+  'pizza',
+  'rain',
+  'rotate',
+  'shake',
+  'snow',
+  'snowball',
+  'spin',
+  'splash',
+  'stop',
+  'zzz',
+]);
+const ImageLoopStyle = z.enum(['linear', 'pingpong']);
+const ImageMask = z.enum(['circle', 'flower', 'heart', 'pow', 'square', 'star']);
 const FileStatus = z.enum(['complete', 'none', 'queued', 'waiting']);
 const FileData = z
   .object({
@@ -1232,25 +1341,43 @@ const FileVersion = z
   .passthrough();
 const File = z
   .object({
-    animationStyle: z.string().optional(),
+    animationStyle: ImageAnimationStyle.optional(),
     extension: z.string().min(1),
+    frames: z.number().int().gte(2).lte(64).optional(),
+    framesOverTime: z.number().int().gte(1).lte(64).optional(),
     id: FileID,
-    maskTag: z.string().optional(),
+    loopStyle: ImageLoopStyle.optional().default('linear'),
+    maskTag: ImageMask.optional().default('square'),
     mimeType: MIMEType.default('image/jpeg'),
+    modifiedThumbnailFileName: z.string().optional(),
     name: z.string().min(0),
     ownerId: UserID,
     tags: z.array(Tag),
     versions: z.array(FileVersion).min(1),
   })
   .passthrough();
+const ImagePurpose = z.enum([
+  'admin',
+  'avatargallery',
+  'avatarimage',
+  'bundle',
+  'emoji',
+  'emojianimated',
+  'gallery',
+  'icon',
+  'listinggallery',
+  'product',
+  'sticker',
+]);
 const uploadImage_Body = z
   .object({
-    animationStyle: z.string().optional(),
+    animationStyle: ImageAnimationStyle.optional(),
     file: z.any(),
-    frames: z.number().int().optional(),
-    framesOverTime: z.number().int().optional(),
-    maskTag: z.string().optional(),
-    tag: z.string(),
+    frames: z.number().int().gte(2).lte(64).optional(),
+    framesOverTime: z.number().int().gte(1).lte(64).optional(),
+    loopStyle: ImageLoopStyle.optional().default('linear'),
+    maskTag: ImageMask.optional().default('square'),
+    tag: ImagePurpose.default('gallery'),
   })
   .passthrough();
 const CreateFileVersionRequest = z
@@ -1279,8 +1406,12 @@ const FileVersionUploadStatus = z
     uploadId: z.string().min(1),
   })
   .passthrough();
-const GroupDiscriminator = z.string();
 const GroupGalleryID = z.string();
+const GroupGalleryFileOrderRequest = z
+  .object({ galleryId: GroupGalleryID, ids: z.array(FileID) })
+  .passthrough();
+const GroupGalleryFileOrder = z.object({ ids: z.array(FileID) }).passthrough();
+const GroupDiscriminator = z.string();
 const GroupGallery = z
   .object({
     createdAt: z.string().datetime({ offset: true }),
@@ -1418,6 +1549,7 @@ const Group = z
     ageVerificationBetaCode: z.string(),
     ageVerificationBetaSlots: z.number(),
     ageVerificationSlotsAvailable: z.boolean(),
+    allowGroupJoinPrompt: z.boolean(),
     badges: z.array(z.string()),
     bannerId: z.string().nullable(),
     bannerUrl: z.string().nullable(),
@@ -1504,6 +1636,7 @@ const CreateGroupAnnouncementRequest = z
     title: z.string().min(1),
   })
   .passthrough();
+const GroupAuditLogEntryType = z.string();
 const GroupAuditLogID = z.string();
 const GroupAuditLogEntry = z
   .object({
@@ -1512,7 +1645,7 @@ const GroupAuditLogEntry = z
     created_at: z.string().datetime({ offset: true }),
     data: z.object({}).partial().passthrough(),
     description: z.string(),
-    eventType: z.string().default('group.update'),
+    eventType: GroupAuditLogEntryType.default('group.update'),
     groupId: GroupID,
     id: GroupAuditLogID,
     targetId: z.string(),
@@ -1630,7 +1763,7 @@ const World = z
     heat: z.number().int().gte(0).default(0),
     id: WorldID,
     imageUrl: z.string().min(1),
-    instances: z.array(z.array(z.unknown()).min(2).max(2)).optional(),
+    instances: z.array(z.array(z.unknown()).min(2)).optional(),
     labsPublicationDate: z.string().min(1),
     name: z.string().min(1),
     namespace: z.string().optional(),
@@ -1662,9 +1795,14 @@ const GroupInstance = z
     world: World,
   })
   .passthrough();
+const DeclineGroupInviteRequest = z
+  .object({ block: z.boolean().default(false) })
+  .partial()
+  .passthrough();
 const CreateGroupInviteRequest = z
   .object({ confirmOverrideBlock: z.boolean().optional().default(true), userId: UserID })
   .passthrough();
+const JoinGroupRequest = z.object({ inviteId: z.string() }).partial().passthrough();
 const GroupLimitedMember = z
   .object({
     bannedAt: z.string().datetime({ offset: true }).nullable(),
@@ -1713,10 +1851,10 @@ const GroupPost = z
   .object({
     authorId: UserID,
     createdAt: z.string().datetime({ offset: true }),
-    editorId: UserID,
+    editorId: UserID.nullish(),
     groupId: GroupID,
     id: NotificationID,
-    imageId: FileID,
+    imageId: FileID.nullish(),
     imageUrl: z.string().nullable(),
     roleId: GroupRoleIDList,
     text: z.string(),
@@ -1760,6 +1898,20 @@ const UpdateGroupRoleRequest = z
   })
   .partial()
   .passthrough();
+const GroupTransferable = z
+  .object({
+    requirements: z
+      .object({
+        groupNotMonetized: z.boolean().default(false),
+        hasVRCPlus: z.boolean().default(false),
+        hasVerifiedEmail: z.boolean().default(false),
+        targetCanOwnMoreGroups: z.boolean().default(false),
+        targetIsGroupMember: z.boolean().default(false),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+const TransferGroupRequest = z.object({ transferTargetId: UserID }).partial().passthrough();
 const InfoPushDataClickable = z
   .object({
     parameters: z.array(z.string()).optional(),
@@ -1809,6 +1961,7 @@ const InstanceType = z.enum(['friends', 'group', 'hidden', 'private', 'public'])
 const CreateInstanceRequest = z
   .object({
     ageGate: z.boolean().optional().default(false),
+    calendarEntryId: z.string().optional(),
     canRequestInvite: z.boolean().optional().default(false),
     closedAt: z.string().datetime({ offset: true }).optional(),
     contentSettings: InstanceContentSettings.optional(),
@@ -1818,6 +1971,7 @@ const CreateInstanceRequest = z
     instancePersistenceEnabled: z.boolean().nullish(),
     inviteOnly: z.boolean().optional().default(false),
     ownerId: InstanceOwnerId.nullish(),
+    playerPersistenceEnabled: z.boolean().nullish(),
     queueEnabled: z.boolean().optional().default(false),
     region: InstanceRegion.default('us'),
     roleIds: z.array(GroupRoleID).optional(),
@@ -1849,13 +2003,13 @@ const LimitedUserInstance = z
     imageUrl: z.string().optional(),
     isFriend: z.boolean(),
     last_activity: z.string().datetime({ offset: true }).nullable(),
-    last_mobile: z.string().datetime({ offset: true }).nullable(),
+    last_mobile: z.string().datetime({ offset: true }).nullish(),
     last_platform: Platform,
     platform: Platform.optional(),
     profilePicOverride: z.string().optional(),
     profilePicOverrideThumbnail: z.string().optional(),
     pronouns: z.string(),
-    state: UserState.default('offline'),
+    state: UserState.optional().default('offline'),
     status: UserStatus.default('offline'),
     statusDescription: z.string(),
     tags: z.array(Tag),
@@ -1864,24 +2018,26 @@ const LimitedUserInstance = z
   .passthrough();
 const Instance = z
   .object({
-    active: z.boolean().default(true),
+    active: z.boolean().optional().default(true),
     ageGate: z.boolean().nullish(),
-    canRequestInvite: z.boolean().default(true),
-    capacity: z.number().int().gte(0),
+    calendarEntryId: z.string().nullish(),
+    canRequestInvite: z.boolean().optional().default(true),
+    capacity: z.number().int().gte(0).optional(),
     clientNumber: z.string().min(1),
     closedAt: z.string().datetime({ offset: true }).nullish(),
     contentSettings: InstanceContentSettings.optional(),
+    creatorId: UserID.optional(),
     displayName: z.string().nullish(),
     friends: UserID.optional(),
     full: z.boolean().default(false),
-    gameServerVersion: z.number().int().optional(),
+    gameServerVersion: z.number().int().nullish(),
     groupAccessType: GroupAccessType.optional().default('members'),
     hardClose: z.boolean().nullish(),
     hasCapacityForYou: z.boolean().optional(),
     hidden: UserID.optional(),
     id: InstanceID,
     instanceId: InstanceID,
-    instancePersistenceEnabled: z.string().nullish(),
+    instancePersistenceEnabled: z.boolean().nullish(),
     location: LocationID,
     n_users: z.number().int().gte(0),
     name: z.string().min(1),
@@ -1920,9 +2076,17 @@ const InventoryDefaultAttributes = z.record(z.string(),
     .partial()
     .passthrough()
 );
-const InventoryEquipSlot = z.enum(['', 'drone', 'portal']);
+const InventoryEquipSlot = z.enum(['', 'drone', 'portal', 'warp']);
 const InventoryItemID = z.string();
-const InventoryItemType = z.enum(['bundle', 'droneskin', 'emoji', 'portalskin', 'prop', 'sticker']);
+const InventoryItemType = z.enum([
+  'bundle',
+  'droneskin',
+  'emoji',
+  'portalskin',
+  'prop',
+  'sticker',
+  'warpeffect',
+]);
 const InventoryTemplateID = z.string();
 const PropID = z.string();
 const InventoryMetadata = z
@@ -1950,7 +2114,7 @@ const InventoryItem = z
     description: z.string(),
     equipSlot: InventoryEquipSlot.optional().default(''),
     equipSlots: z.array(InventoryEquipSlot).optional(),
-    expiryDate: z.string().datetime({ offset: true }).nullable(),
+    expiryDate: z.string().datetime({ offset: true }).nullish(),
     flags: z.array(z.string()),
     holderId: UserID,
     id: InventoryItemID,
@@ -1961,6 +2125,7 @@ const InventoryItem = z
     itemTypeLabel: z.string(),
     metadata: InventoryMetadata,
     name: z.string(),
+    quantifiable: z.boolean(),
     tags: z.array(Tag),
     templateId: InventoryTemplateID,
     template_created_at: z.string().datetime({ offset: true }),
@@ -1989,6 +2154,7 @@ const InventoryDrop = z
     dropExpiryDate: z.string().datetime({ offset: true }).nullable(),
     endDropDate: z.string().datetime({ offset: true }),
     id: InventoryDropID,
+    isDisabled: z.boolean(),
     name: z.string(),
     notificationDetails: InventoryNotificationDetails,
     startDropDate: z.string().datetime({ offset: true }),
@@ -2004,7 +2170,9 @@ const InventoryTemplate = z
     authorId: UserID,
     collections: z.array(z.string()),
     created_at: z.string().datetime({ offset: true }),
+    defaultAttributes: z.object({}).partial().passthrough(),
     description: z.string(),
+    equipSlots: z.array(z.string()),
     flags: z.array(z.string()),
     id: InventoryTemplateID,
     imageUrl: z.string(),
@@ -2016,6 +2184,7 @@ const InventoryTemplate = z
     status: z.string(),
     tags: z.array(Tag),
     updated_at: z.string().datetime({ offset: true }),
+    validateUserAttributes: z.boolean(),
   })
   .passthrough();
 const UpdateInventoryItemRequest = z
@@ -2023,10 +2192,49 @@ const UpdateInventoryItemRequest = z
   .partial()
   .passthrough();
 const SuccessFlag = z.object({ success: z.boolean() }).passthrough();
+const InventoryConsumptionResults = z
+  .object({
+    errors: z.array(z.object({}).partial().passthrough()),
+    inventoryItems: z.array(InventoryItem),
+    inventoryItemsCreated: z.number().int(),
+  })
+  .passthrough();
+const EquipInventoryItemRequest = z
+  .object({ equipSlot: InventoryEquipSlot.default('') })
+  .passthrough();
+const NotificationDetailEmpty = z.object({}).partial().passthrough();
+const NotificationDetailBoop = z
+  .object({ emojiId: FileID, emojiVersion: z.number().int(), inventoryItemId: InventoryItemID })
+  .partial()
+  .passthrough();
+const NotificationDetailInvite = z
+  .object({ inviteMessage: z.string().optional(), worldId: LocationID, worldName: z.string() })
+  .passthrough();
+const NotificationDetailInviteResponse = z
+  .object({ inResponseTo: NotificationID, responseMessage: z.string() })
+  .passthrough();
+const NotificationDetailRequestInvite = z
+  .object({ platform: Platform, requestMessage: z.string() })
+  .partial()
+  .passthrough();
+const NotificationDetailRequestInviteResponse = z
+  .object({ inResponseTo: NotificationID, requestMessage: z.string().optional() })
+  .passthrough();
+const NotificationDetailVoteToKick = z
+  .object({ initiatorUserId: UserID, userToKickId: UserID })
+  .passthrough();
 const SentNotification = z
   .object({
     created_at: z.string().datetime({ offset: true }),
-    details: z.object({}).partial().passthrough(),
+    details: z.union([
+      NotificationDetailEmpty,
+      NotificationDetailBoop,
+      NotificationDetailInvite,
+      NotificationDetailInviteResponse,
+      NotificationDetailRequestInvite,
+      NotificationDetailRequestInviteResponse,
+      NotificationDetailVoteToKick,
+    ]),
     id: z.string().min(1),
     message: z.string(),
     receiverUserId: UserID,
@@ -2100,6 +2308,171 @@ const InviteMessage = z
   })
   .passthrough();
 const UpdateInviteMessageRequest = z.object({ message: z.string() }).passthrough();
+const ModerationReportID = z.string();
+const ModerationReport = z
+  .object({
+    category: z.string(),
+    contentId: z.string(),
+    contentName: z.string(),
+    contentThumbnailImageUrl: z.string().nullable(),
+    description: z.string(),
+    evidenceRequired: z.boolean(),
+    id: ModerationReportID,
+    reason: z.string(),
+    supportRequired: z.boolean(),
+    type: z.string(),
+  })
+  .passthrough();
+const PaginatedModerationReportList = z
+  .object({
+    hasNext: z.boolean(),
+    results: z.array(ModerationReport),
+    totalCount: z.number().int(),
+  })
+  .partial()
+  .passthrough();
+const ContentFilter = z.enum([
+  'content_adult',
+  'content_gore',
+  'content_horror',
+  'content_sex',
+  'content_violence',
+]);
+const SubmitModerationReportRequest = z
+  .object({
+    category: z.string(),
+    contentId: z.string(),
+    description: z.string().optional(),
+    details: z
+      .object({
+        fileId: FileID,
+        holderId: UserID,
+        imageType: z.string(),
+        instanceAgeGated: z.boolean(),
+        instanceType: z.string(),
+        suggestedWarnings: z.array(ContentFilter),
+        userInSameInstance: z.boolean(),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+    reason: z.string(),
+    type: z.string(),
+  })
+  .passthrough();
+const NotificationV2Category = z.string();
+const NotificationV2DataEmpty = z.object({}).partial().passthrough();
+const NotificationV2DataBadgeEarned = z
+  .object({ badgeDescription: z.string(), badgeId: BadgeID, badgeName: z.string() })
+  .passthrough();
+const NotificationV2DataBoop = z.object({ boopingUserDisplayName: z.string() }).passthrough();
+const NotificationV2DataEventAnnouncement = z
+  .object({ ownerId: GroupID, ownerName: z.string(), title: z.string() })
+  .passthrough();
+const NotificationV2DataGroupAnnouncement = z
+  .object({ announcementTitle: z.string(), groupId: GroupID, groupName: z.string() })
+  .passthrough();
+const NotificationV2DataGroupInformative = z
+  .object({
+    groupId: GroupID,
+    groupName: z.string(),
+    transferTargetDisplayName: z.string().optional(),
+  })
+  .passthrough();
+const NotificationV2DataGroupTransfer = z
+  .object({ groupName: z.string(), ownerUserDisplayName: z.string() })
+  .passthrough();
+const EmojiID = z.string();
+const NotificationV2DetailsBoop = z
+  .object({
+    emojiId: EmojiID,
+    emojiVersion: z.number().int().nullable(),
+    inventoryItemId: InventoryItemID,
+  })
+  .passthrough();
+const NotificationV2ResponseIcon = z.string();
+const NotificationV2ResponseType = z.string();
+const NotificationV2Response = z
+  .object({
+    data: z.string(),
+    icon: NotificationV2ResponseIcon,
+    text: z.string(),
+    textKey: z.string().nullable(),
+    type: NotificationV2ResponseType,
+  })
+  .passthrough();
+const NotificationV2Type = z.enum([
+  'avatarreview.failure',
+  'avatarreview.success',
+  'badge.earned',
+  'boop',
+  'economy.alert',
+  'economy.received.gift',
+  'event.announcement',
+  'group.announcement',
+  'group.event.created',
+  'group.event.starting',
+  'group.informative',
+  'group.invite',
+  'group.joinRequest',
+  'group.post',
+  'group.transfer',
+  'invite.instance.contentGated',
+  'moderation.contentrestriction',
+  'moderation.notice',
+  'moderation.report.closed',
+  'moderation.warning.group',
+  'promo.redeem',
+  'text.adventure',
+  'vrcplus.gift',
+]);
+const NotificationV2 = z
+  .object({
+    canDelete: z.boolean(),
+    category: NotificationV2Category,
+    createdAt: z.string().datetime({ offset: true }),
+    data: z.union([
+      NotificationV2DataEmpty,
+      NotificationV2DataBadgeEarned,
+      NotificationV2DataBoop,
+      NotificationV2DataEventAnnouncement,
+      NotificationV2DataGroupAnnouncement,
+      NotificationV2DataGroupInformative,
+      NotificationV2DataGroupTransfer,
+    ]),
+    details: NotificationV2DetailsBoop.optional(),
+    expiresAt: z.string().datetime({ offset: true }),
+    expiryAfterSeen: z.number().int().nullable(),
+    id: z.string(),
+    ignoreDND: z.boolean(),
+    imageUrl: z.string().nullable(),
+    isSystem: z.boolean(),
+    link: z.string(),
+    linkText: z.string(),
+    linkTextKey: z.string().nullable(),
+    message: z.string(),
+    messageKey: z.string().nullish(),
+    receiverUserId: UserID,
+    relatedNotificationsId: z.string().nullable(),
+    requireSeen: z.boolean(),
+    responses: z.array(NotificationV2Response),
+    seen: z.boolean(),
+    senderUserId: UserID,
+    senderUsername: z.string().nullable(),
+    title: z.string(),
+    titleKey: z.string().nullable(),
+    type: NotificationV2Type.default('group.announcement'),
+    updatedAt: z.string().datetime({ offset: true }),
+    version: z.number().int().default(2),
+  })
+  .passthrough();
+const ReplyNotificationV2Request = z.object({}).partial().passthrough();
+const RespondNotificationV2Request = z
+  .object({
+    responseData: z.string().optional().default(''),
+    responseType: NotificationV2ResponseType,
+  })
+  .passthrough();
 const uploadPrint_Body = z
   .object({
     image: z.any(),
@@ -2127,6 +2500,7 @@ const Print = z
 const editPrint_Body = z
   .object({ image: z.any(), note: z.string().optional() })
   .passthrough();
+const PropSpawnType = z.number();
 const PropUnityPackage = z
   .object({
     assetUrl: z.string(),
@@ -2137,6 +2511,7 @@ const PropUnityPackage = z
     variant: z.string(),
   })
   .passthrough();
+const PropPlacementMask = z.number();
 const Prop = z
   .object({
     _created_at: z.string().datetime({ offset: true }),
@@ -2149,13 +2524,49 @@ const Prop = z
     maxCountPerUser: z.number().int().default(1),
     name: z.string(),
     releaseStatus: ReleaseStatus.default('public'),
-    spawnType: z.number().int().default(0),
+    spawnType: PropSpawnType.int().gte(0).default(1),
     tags: z.array(Tag),
     thumbnailImageUrl: z.string(),
     unityPackageUrl: z.string().nullable(),
     unityPackages: z.array(PropUnityPackage).min(1),
-    worldPlacementMask: z.number().int().default(1),
+    worldPlacementMask: PropPlacementMask.int().gte(0).default(1),
   })
+  .passthrough();
+const CreatePropRequest = z
+  .object({
+    assetUrl: z.string(),
+    assetVersion: z.number().int(),
+    description: z.string(),
+    id: PropID,
+    imageUrl: z.string(),
+    name: z.string(),
+    platform: Platform,
+    propSignature: z.string().optional(),
+    spawnType: PropSpawnType.int().gte(0).default(1),
+    tags: z.array(Tag),
+    unityVersion: z.string(),
+    worldPlacementMask: PropPlacementMask.int().gte(0).default(1),
+  })
+  .passthrough();
+const UpdatePropRequest = z
+  .object({
+    assetUrl: z.string(),
+    assetVersion: z.number().int(),
+    description: z.string(),
+    imageUrl: z.string(),
+    name: z.string(),
+    platform: Platform,
+    propSignature: z.string(),
+    spawnType: PropSpawnType.int().gte(0).default(1),
+    tags: z.array(Tag),
+    unityVersion: z.string(),
+    worldPlacementMask: PropPlacementMask.int().gte(0).default(1),
+  })
+  .partial()
+  .passthrough();
+const PropPublishStatus = z
+  .object({ canPublish: z.boolean().default(false) })
+  .partial()
   .passthrough();
 const RequestInviteRequest = z
   .object({ requestSlot: z.number().int().gte(0).lte(11).optional() })
@@ -2300,10 +2711,11 @@ const UpdateUserRequest = z
     bio: z.string().min(0),
     bioLinks: z.array(z.string()),
     birthday: z.string(),
-    contentFilters: z.array(Tag),
+    contentFilters: z.array(ContentFilter),
     currentPassword: z.string(),
     displayName: z.string(),
     email: z.string(),
+    hasSharedConnectionsOptOut: z.boolean(),
     isBoopingEnabled: z.boolean(),
     password: z.string(),
     pronouns: z.string().min(0).max(32),
@@ -2319,6 +2731,10 @@ const UpdateUserRequest = z
 const ChangeUserTagsRequest = z.object({ tags: z.array(Tag) }).passthrough();
 const UpdateUserBadgeRequest = z
   .object({ hidden: z.boolean(), showcased: z.boolean() })
+  .partial()
+  .passthrough();
+const BoopRequest = z
+  .object({ emojiId: EmojiID, emojiVersion: z.number().int(), inventoryItemId: InventoryItemID })
   .partial()
   .passthrough();
 const UserCreditsEligible = z
@@ -2347,6 +2763,7 @@ const LimitedUserGroups = z
   })
   .partial()
   .passthrough();
+const UserAllGroupPermissions = z.record(z.string(), z.array(GroupPermissions));
 const representedGroup = z
   .object({
     bannerId: z.string().nullable(),
@@ -2365,6 +2782,26 @@ const representedGroup = z
     shortCode: GroupShortCode,
   })
   .partial()
+  .passthrough();
+const Mutuals = z
+  .object({
+    friends: z.number().int().gte(0).default(0),
+    groups: z.number().int().gte(0).default(0),
+  })
+  .passthrough();
+const MutualFriend = z
+  .object({
+    avatarThumbnail: CurrentAvatarThumbnailImageUrl.optional(),
+    currentAvatarImageUrl: CurrentAvatarImageUrl,
+    currentAvatarTags: z.array(Tag).optional(),
+    currentAvatarThumbnailImageUrl: CurrentAvatarThumbnailImageUrl.optional(),
+    displayName: z.string(),
+    id: UserID,
+    imageUrl: z.string(),
+    profilePicOverride: z.string().optional(),
+    status: UserStatus.default('offline'),
+    statusDescription: z.string(),
+  })
   .passthrough();
 const UserSubscriptionEligible = z
   .object({
@@ -2435,32 +2872,32 @@ const FavoritedWorld = z
     authorId: UserID.optional(),
     authorName: z.string().min(1),
     capacity: z.number().int(),
-    created_at: z.string().datetime({ offset: true }),
+    created_at: z.string().datetime({ offset: true }).optional(),
     defaultContentSettings: InstanceContentSettings.optional(),
-    description: z.string().min(1),
+    description: z.string().min(1).optional(),
     favoriteGroup: z.string().min(1),
     favoriteId: FavoriteID,
-    favorites: z.number().int().gte(0).default(0),
-    featured: z.boolean().default(false),
-    heat: z.number().int().gte(0).default(0),
+    favorites: z.number().int().gte(0).optional().default(0),
+    featured: z.boolean().optional().default(false),
+    heat: z.number().int().gte(0).optional().default(0),
     id: WorldID,
     imageUrl: z.string().min(1),
-    labsPublicationDate: z.string().min(1),
+    labsPublicationDate: z.string().min(1).optional(),
     name: z.string().min(1),
     occupants: z.number().int().gte(0).default(0),
-    organization: z.string().min(1).default('vrchat'),
-    popularity: z.number().int().gte(0).default(0),
+    organization: z.string().min(1).optional().default('vrchat'),
+    popularity: z.number().int().gte(0).optional().default(0),
     previewYoutubeId: z.string().nullish(),
-    publicationDate: z.string().min(1),
+    publicationDate: z.string().min(1).optional(),
     recommendedCapacity: z.number().int().optional(),
     releaseStatus: ReleaseStatus.default('public'),
-    tags: z.array(Tag),
+    tags: z.array(Tag).optional(),
     thumbnailImageUrl: z.string().min(1),
     udonProducts: z.array(UdonProductId).optional(),
-    unityPackages: z.array(UnityPackage).min(1),
-    updated_at: z.string().datetime({ offset: true }),
-    urlList: z.array(z.string()),
-    version: z.number().int().gte(1),
+    unityPackages: z.array(UnityPackage).min(1).optional(),
+    updated_at: z.string().datetime({ offset: true }).optional(),
+    urlList: z.array(z.string()).optional(),
+    version: z.number().int().gte(1).optional(),
     visits: z.number().int().gte(0).optional().default(0),
   })
   .passthrough();
@@ -2517,6 +2954,10 @@ const SortOption = z.enum([
   'updated',
 ]);
 const OrderOption = z.enum(['ascending', 'descending']);
+const CalendarEventDiscoveryScope = z.enum(['all', 'live', 'upcoming']);
+const CalendarEventDiscoveryInclusion = z.enum(['exclude', 'include', 'skip']);
+const SortOptionProductPurchase = z.literal('purchaseDate');
+const OrderOptionShort = z.enum(['asc', 'desc']);
 const StoreView = z.enum(['all', 'draft', 'preview', 'public', 'publicPreview']);
 const GroupSearchSort = z.enum(['joinedAt:asc', 'joinedAt:desc']);
 const APIHealth = z
@@ -2551,22 +2992,6 @@ const Feedback = z
   })
   .passthrough();
 const WorldMetadata = z.object({ id: WorldID, metadata: z.object({}).partial().passthrough() });
-const NotificationDetailInvite = z
-  .object({ inviteMessage: z.string().optional(), worldId: LocationID, worldName: z.string() })
-  .passthrough();
-const NotificationDetailInviteResponse = z
-  .object({ inResponseTo: NotificationID, responseMessage: z.string() })
-  .passthrough();
-const NotificationDetailRequestInvite = z
-  .object({ platform: Platform, requestMessage: z.string() })
-  .partial()
-  .passthrough();
-const NotificationDetailRequestInviteResponse = z
-  .object({ inResponseTo: NotificationID, requestMessage: z.string().optional() })
-  .passthrough();
-const NotificationDetailVoteToKick = z
-  .object({ initiatorUserId: UserID, userToKickId: UserID })
-  .passthrough();
 
 export const schemas = {
   TransactionAgreement,
@@ -2585,10 +3010,16 @@ export const schemas = {
   Platform,
   AdminUnityPackage,
   AdminAssetBundle,
+  AgreementCode,
+  AgreementStatus,
+  AgreementRequest,
+  Agreement,
   FileAnalysisAvatarStats,
   FileAnalysis,
+  UpdateAssetReviewNotesRequest,
   VerifyAuthTokenResult,
   UserExists,
+  BadgeID,
   PermissionID,
   Permission,
   Disable2FAResult,
@@ -2600,7 +3031,6 @@ export const schemas = {
   AccountDeletionLog,
   AgeVerificationStatus,
   AgeVerified,
-  BadgeID,
   Badge,
   AvatarID,
   CurrentAvatarImageUrl,
@@ -2616,6 +3046,8 @@ export const schemas = {
   UserState,
   UserStatus,
   CurrentUser,
+  TwoFactorAuthType,
+  RequiresTwoFactorAuth,
   OkStatus2,
   AvatarModerationType,
   AvatarModeration,
@@ -2645,15 +3077,21 @@ export const schemas = {
   ServiceQueueStats,
   UpdateAvatarRequest,
   ServiceStatus,
+  CalendarEventAccess,
+  CalendarEventCategory,
   CalendarID,
   FileID,
+  LanguageCode,
+  CalendarEventPlatform,
   GroupRoleID,
   CalendarEvent,
   PaginatedCalendarEventList,
+  CalendarEventDiscovery,
   CreateCalendarEventRequest,
   UpdateCalendarEventRequest,
   FollowCalendarEventRequest,
   APIConfigAnnouncement,
+  APIConfigAudioConfig,
   PerformanceLimiterInfo,
   APIConfigConstants,
   APIConfigDownloadURLList,
@@ -2666,11 +3104,14 @@ export const schemas = {
   LicenseAction,
   LicenseType,
   License,
-  StoreID,
   ProductID,
+  PurchaseProductListingRequest,
+  ProductListingType,
+  ProductPurchaseID,
+  ProductPurchase,
+  StoreID,
   ProductType,
   Product,
-  ProductListingType,
   ProductListingVariantID,
   ProductListingVariant,
   ProductListing,
@@ -2688,17 +3129,23 @@ export const schemas = {
   AddFavoriteRequest,
   MIMEType,
   CreateFileRequest,
+  ImageAnimationStyle,
+  ImageLoopStyle,
+  ImageMask,
   FileStatus,
   FileData,
   FileVersion,
   File,
+  ImagePurpose,
   uploadImage_Body,
   CreateFileVersionRequest,
   FinishFileDataUploadRequest,
   FileUploadURL,
   FileVersionUploadStatus,
-  GroupDiscriminator,
   GroupGalleryID,
+  GroupGalleryFileOrderRequest,
+  GroupGalleryFileOrder,
+  GroupDiscriminator,
   GroupGallery,
   GroupMemberStatus,
   GroupShortCode,
@@ -2717,6 +3164,7 @@ export const schemas = {
   GroupAnnouncementID,
   GroupAnnouncement,
   CreateGroupAnnouncementRequest,
+  GroupAuditLogEntryType,
   GroupAuditLogID,
   GroupAuditLogEntry,
   PaginatedGroupAuditLogEntryList,
@@ -2733,7 +3181,9 @@ export const schemas = {
   UdonProductId,
   World,
   GroupInstance,
+  DeclineGroupInviteRequest,
   CreateGroupInviteRequest,
+  JoinGroupRequest,
   GroupLimitedMember,
   GroupUserVisibility,
   UpdateGroupMemberRequest,
@@ -2747,6 +3197,8 @@ export const schemas = {
   RespondGroupJoinRequest,
   CreateGroupRoleRequest,
   UpdateGroupRoleRequest,
+  GroupTransferable,
+  TransferGroupRequest,
   InfoPushDataClickable,
   InfoPushDataArticleContent,
   InfoPushDataArticle,
@@ -2781,6 +3233,15 @@ export const schemas = {
   InventoryTemplate,
   UpdateInventoryItemRequest,
   SuccessFlag,
+  InventoryConsumptionResults,
+  EquipInventoryItemRequest,
+  NotificationDetailEmpty,
+  NotificationDetailBoop,
+  NotificationDetailInvite,
+  NotificationDetailInviteResponse,
+  NotificationDetailRequestInvite,
+  NotificationDetailRequestInviteResponse,
+  NotificationDetailVoteToKick,
   SentNotification,
   InviteResponse,
   respondInviteWithPhoto_Body,
@@ -2793,12 +3254,39 @@ export const schemas = {
   InviteMessageType,
   InviteMessage,
   UpdateInviteMessageRequest,
+  ModerationReportID,
+  ModerationReport,
+  PaginatedModerationReportList,
+  ContentFilter,
+  SubmitModerationReportRequest,
+  NotificationV2Category,
+  NotificationV2DataEmpty,
+  NotificationV2DataBadgeEarned,
+  NotificationV2DataBoop,
+  NotificationV2DataEventAnnouncement,
+  NotificationV2DataGroupAnnouncement,
+  NotificationV2DataGroupInformative,
+  NotificationV2DataGroupTransfer,
+  EmojiID,
+  NotificationV2DetailsBoop,
+  NotificationV2ResponseIcon,
+  NotificationV2ResponseType,
+  NotificationV2Response,
+  NotificationV2Type,
+  NotificationV2,
+  ReplyNotificationV2Request,
+  RespondNotificationV2Request,
   uploadPrint_Body,
   PrintID,
   Print,
   editPrint_Body,
+  PropSpawnType,
   PropUnityPackage,
+  PropPlacementMask,
   Prop,
+  CreatePropRequest,
+  UpdatePropRequest,
+  PropPublishStatus,
   RequestInviteRequest,
   requestInviteWithPhoto_Body,
   TiliaStatus,
@@ -2816,9 +3304,13 @@ export const schemas = {
   UpdateUserRequest,
   ChangeUserTagsRequest,
   UpdateUserBadgeRequest,
+  BoopRequest,
   UserCreditsEligible,
   LimitedUserGroups,
+  UserAllGroupPermissions,
   representedGroup,
+  Mutuals,
+  MutualFriend,
   UserSubscriptionEligible,
   LimitedUnityPackage,
   LimitedWorld,
@@ -2829,6 +3321,10 @@ export const schemas = {
   RegisterUserAccountRequest,
   SortOption,
   OrderOption,
+  CalendarEventDiscoveryScope,
+  CalendarEventDiscoveryInclusion,
+  SortOptionProductPurchase,
+  OrderOptionShort,
   StoreView,
   GroupSearchSort,
   APIHealth,
@@ -2836,9 +3332,4 @@ export const schemas = {
   FeedbackID,
   Feedback,
   WorldMetadata,
-  NotificationDetailInvite,
-  NotificationDetailInviteResponse,
-  NotificationDetailRequestInvite,
-  NotificationDetailRequestInviteResponse,
-  NotificationDetailVoteToKick,
 };

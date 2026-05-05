@@ -149,6 +149,13 @@ async function fetchWorldProfileCached(
   );
 }
 
+function applyWorldSummaryOptions(summary: WorldSummary, input: { includeTags?: boolean }): WorldSummary {
+  if (input.includeTags === true) return summary;
+  const withoutTags = { ...summary };
+  delete withoutTags.tags;
+  return withoutTags;
+}
+
 function extractAccessType(location: string | undefined): string {
   if (!location) return 'unknown';
   if (location.includes('~group(') || location.includes('~groupAccessType')) {
@@ -254,7 +261,7 @@ export async function searchWorlds(
     .filter((entry): entry is WorldSummary => Boolean(entry));
 
   return {
-    worlds: summaries,
+    worlds: summaries.map((summary) => applyWorldSummaryOptions(summary, input)),
     page: value.page,
     stale,
   };
@@ -310,7 +317,7 @@ export async function listFavoriteWorlds(
     .filter((entry): entry is WorldSummary => Boolean(entry));
 
   return {
-    worlds: summaries,
+    worlds: summaries.map((summary) => applyWorldSummaryOptions(summary, input)),
     page: value.page,
     stale,
   };

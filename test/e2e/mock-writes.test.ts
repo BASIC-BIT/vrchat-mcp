@@ -43,7 +43,7 @@ describe('mcp e2e (mock writes)', () => {
         groupId,
         title: 'Mock Event',
         description: 'Mock description',
-        category: 'meetup',
+        category: 'hangout',
         startsAt: '2025-12-22T20:00:00Z',
         endsAt: '2025-12-22T21:00:00Z',
       },

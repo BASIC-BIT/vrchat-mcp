@@ -58,6 +58,7 @@ export const FriendsListInputSchema = z.object({
   includeOffline: z.boolean().optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
   maxPages: z.number().int().min(1).max(500).optional(),
+  maxItems: z.number().int().min(1).optional(),
   detailLevel: FriendListDetailLevelSchema.optional(),
 });
 
@@ -65,6 +66,7 @@ const FriendsListBaseSchema = z.object({
   includeOffline: z.boolean(),
   pageSize: z.number().int().min(1),
   maxPages: z.number().int().min(1),
+  maxItems: z.number().int().min(1).optional(),
   totalFriends: z.number().int().min(0),
   truncated: z.boolean(),
   stale: z.boolean(),
@@ -113,6 +115,7 @@ export const FriendsOverviewInputSchema = z.object({
   statusFilter: FriendStatusFilterSchema.optional(),
   minInstanceUserCount: z.number().int().min(0).optional(),
   instanceDetailLevel: z.enum(['summary', 'full']).optional(),
+  maxLocations: z.number().int().min(1).max(200).optional(),
 });
 
 const FriendOverviewCountsSchema = z.object({
@@ -136,6 +139,11 @@ export const FriendsOverviewOutputSchema = z.object({
   onlineCount: z.number().int().min(0),
   offlineCount: z.number().int().min(0),
   statusCounts: z.record(z.string(), z.number().int().min(0)),
+  maxLocations: z.number().int().min(1),
+  totalLocations: z.number().int().min(0),
+  returnedLocations: z.number().int().min(0),
+  omittedLocations: z.number().int().min(0),
+  locationsTruncated: z.boolean(),
   totals: FriendOverviewTotalsSchema,
   locations: z.array(FriendOverviewLocationSchema),
   truncated: z.boolean(),

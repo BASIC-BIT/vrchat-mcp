@@ -54,6 +54,7 @@ export const WorldSearchInputSchema = z.object({
   maxUnityVersion: z.string().optional(),
   minUnityVersion: z.string().optional(),
   platform: z.string().optional(),
+  includeTags: z.boolean().optional(),
 });
 
 export const WorldFavoritesInputSchema = z.object({
@@ -72,6 +73,7 @@ export const WorldFavoritesInputSchema = z.object({
   minUnityVersion: z.string().optional(),
   platform: z.string().optional(),
   userId: schemas.UserID.optional(),
+  includeTags: z.boolean().optional(),
 });
 
 export const WorldProfileInputSchema = WorldShapeSchema.extend({

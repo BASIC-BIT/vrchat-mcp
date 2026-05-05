@@ -1,9 +1,13 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { shapeReadData } from '../../core/readTools.js';
 import {
   CalendarEventCreateSchema,
   CalendarEventDeleteSchema,
+  CalendarEventFollowSchema,
   CalendarEventUpdateSchema,
   CalendarEventWriteOutputSchema,
+  EventsDiscoverInputSchema,
+  EventsDiscoverOutputSchema,
   EventsSearchInputSchema,
   EventsSearchOutputSchema,
   EventsUpcomingInputSchema,
@@ -14,6 +18,8 @@ import {
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
+  discoverEvents,
+  followCalendarEvent,
   listUpcomingEvents,
   searchEvents,
   updateCalendarEvent,
@@ -28,6 +34,44 @@ import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
 export function registerCuratedEventTools(server: McpServer): void {
+  server.registerTool(
+    toolName('vrchat.events.discover'),
+    {
+      description: 'Discover public calendar events with optional category/tag filters (read-only).',
+      inputSchema: EventsDiscoverInputSchema,
+      outputSchema: EventsDiscoverOutputSchema,
+      annotations: readOnlyToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const result = await discoverEvents(args ?? {});
+        const events = shapeReadData(result.events, {
+          fields: args?.fields,
+          compact: args?.compact,
+          maxArrayLength: args?.maxArrayLength,
+        });
+        const payload = {
+          scope: result.scope,
+          pageSize: result.pageSize,
+          maxPages: result.maxPages,
+          maxItems: result.maxItems,
+          totalEvents: result.totalEvents,
+          truncated: result.truncated,
+          nextCursor: result.nextCursor,
+          page: result.page,
+          events: events as unknown[],
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    },
+  );
+
   server.registerTool(
     toolName('vrchat.events.upcoming'),
     {
@@ -145,6 +189,37 @@ export function registerCuratedEventTools(server: McpServer): void {
         const event = await updateCalendarEvent(input.groupId, input.calendarId, request);
         const payload = {
           status: 'updated',
+          event: event ?? null,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    },
+  );
+
+  server.registerTool(
+    toolName('vrchat.event.follow'),
+    {
+      description: 'Follow or unfollow a group calendar event.',
+      inputSchema: CalendarEventFollowSchema,
+      outputSchema: CalendarEventWriteOutputSchema,
+      annotations: writeToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = CalendarEventFollowSchema.parse(args);
+        const allowed = checkGroupAllowed(input.groupId);
+        if (!allowed.ok) {
+          return toolError(allowed.reason);
+        }
+        const event = await followCalendarEvent(input);
+        const payload = {
+          status: input.isFollowing ? 'followed' : 'unfollowed',
           event: event ?? null,
         };
         return {
