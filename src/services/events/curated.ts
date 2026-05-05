@@ -12,6 +12,7 @@ import type { schemas } from '../../generated/vrchat-schemas.js';
 import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
 import {
   getMonthKeys,
+  monthKeyToDateTime,
   parseEventTime,
   parseIsoDate,
   type CalendarEventRecord,
@@ -66,7 +67,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
 
     const result = await callReadOperationParsed(
       'getCalendarEvents',
-      { date },
+      { date: monthKeyToDateTime(date) },
       {
         fields: input.fields,
         compact: input.compact,

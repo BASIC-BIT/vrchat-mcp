@@ -192,6 +192,18 @@ describe('callOperation behavior', () => {
     );
   });
 
+  it('throws when params are not declared by the operation', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const callOperation = await loadCallOperation();
+    await expect(
+      callOperation({
+        operationId: 'getGroupCalendarEvents',
+        params: { groupId: 'grp_1', monthDate: '2025-12-01' },
+      }),
+    ).rejects.toThrow('Unknown parameter(s) for getGroupCalendarEvents: monthDate');
+    expect(undiciFetch).not.toHaveBeenCalled();
+  });
+
   it('builds URLs with array query params in dry run', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const callOperation = await loadCallOperation();
