@@ -100,7 +100,7 @@ describe('events curated service', () => {
   it('discovers events with cursor pagination', async () => {
     vi.mocked(callReadOperation)
       .mockResolvedValueOnce({
-        data: { results: [{ id: 'evt_1' }], nextCursor: 'cursor_2' },
+        data: { results: [{ id: 'evt_1' }], nextCursor: ' cursor_2 ' },
       })
       .mockResolvedValueOnce({
         data: { results: [{ id: 'evt_2' }], nextCursor: '' },
@@ -122,11 +122,13 @@ describe('events curated service', () => {
     expect(callReadOperation).toHaveBeenNthCalledWith(
       2,
       'discoverCalendarEvents',
-      expect.objectContaining({ nextCursor: 'cursor_2' }),
+      expect.objectContaining({ nextCursor: ' cursor_2 ' }),
       undefined,
     );
     expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
     expect(result.truncated).toBe(false);
+    expect(result.nextCursor).toBeUndefined();
+    expect(result.page.nextCursor).toBeUndefined();
   });
 
   it('marks discovery truncated and clears cursor when maxItems clips a fetched page', async () => {

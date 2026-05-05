@@ -78,8 +78,9 @@ export function parseCalendarEventDiscovery(value: unknown) {
     value ?? {},
     'calendarEventDiscovery',
   );
+  const nextCursor = typeof parsed.nextCursor === 'string' ? parsed.nextCursor : '';
   return {
-    nextCursor: typeof parsed.nextCursor === 'string' ? parsed.nextCursor : undefined,
+    nextCursor: nextCursor.length > 0 ? nextCursor : undefined,
     results: Array.isArray(parsed.results)
       ? parseWithSchema(
           CalendarEventArraySchema,
