@@ -85,7 +85,7 @@ describe.sequential('auth login server', () => {
     const res = await fetch(url);
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain('VRChat Login');
+    expect(body).toContain('VRChat MCP Login');
     expect(body).toContain('Username');
     expect(body).toContain('Password');
   });
@@ -131,9 +131,12 @@ describe.sequential('auth login server', () => {
 
     const body = await res.text();
     expect(body).toContain('2FA required (TOTP)');
+    expect(body).toContain('Authenticator code');
+    expect(body).not.toContain('name="username"');
+    expect(body).not.toContain('name="password"');
   });
 
-  it('accepts TOTP on second attempt using pending creds', async () => {
+  it('accepts unified TOTP code input on second attempt using pending creds', async () => {
     const authManager = await getAuthManager();
     const { url } = await authManager.startLoginServer();
     const parsed = new URL(url);
@@ -168,7 +171,7 @@ describe.sequential('auth login server', () => {
     const res = await realFetch(parsed.toString(), {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: 'username=&password=&totp=123456',
+      body: 'factorKind=totp&code=123456',
     });
 
     const body = await res.text();

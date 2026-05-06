@@ -76,6 +76,12 @@ function readPageOptions(
   return { pageSize, maxPages, maxItems, offset };
 }
 
+function nonEmptyString(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 async function fetchWorldSearchCached(
   cacheKeyParams: Record<string, string | number | boolean | null | undefined>,
   params: WorldSearchParams,
@@ -231,28 +237,28 @@ export async function searchWorlds(
     maxItems: page.maxItems,
     offset: page.offset,
     featured: input.featured,
-    sort: input.sort,
-    order: input.order,
-    tag: input.tag,
-    notag: input.notag,
-    releaseStatus: input.releaseStatus,
-    maxUnityVersion: input.maxUnityVersion,
-    minUnityVersion: input.minUnityVersion,
-    platform: input.platform,
+    sort: nonEmptyString(input.sort),
+    order: nonEmptyString(input.order),
+    tag: nonEmptyString(input.tag),
+    notag: nonEmptyString(input.notag),
+    releaseStatus: nonEmptyString(input.releaseStatus),
+    maxUnityVersion: nonEmptyString(input.maxUnityVersion),
+    minUnityVersion: nonEmptyString(input.minUnityVersion),
+    platform: nonEmptyString(input.platform),
   };
   const params: WorldSearchParams = {
     search: input.query,
     n: page.pageSize,
     offset: page.offset,
     featured: input.featured,
-    sort: input.sort,
-    order: input.order,
-    tag: input.tag,
-    notag: input.notag,
-    releaseStatus: input.releaseStatus,
-    maxUnityVersion: input.maxUnityVersion,
-    minUnityVersion: input.minUnityVersion,
-    platform: input.platform,
+    sort: nonEmptyString(input.sort),
+    order: nonEmptyString(input.order),
+    tag: nonEmptyString(input.tag),
+    notag: nonEmptyString(input.notag),
+    releaseStatus: nonEmptyString(input.releaseStatus),
+    maxUnityVersion: nonEmptyString(input.maxUnityVersion),
+    minUnityVersion: nonEmptyString(input.minUnityVersion),
+    platform: nonEmptyString(input.platform),
   };
 
   const { value, stale } = await fetchWorldSearchCached(cacheKeyParams, params, page);
@@ -279,36 +285,36 @@ export async function listFavoriteWorlds(
     maxPages: DEFAULT_MAX_PAGES,
   });
   const cacheKeyParams: Record<string, string | number | boolean | null | undefined> = {
-    search: typeof input.query === 'string' ? input.query : undefined,
+    search: nonEmptyString(input.query),
     n: page.pageSize,
     maxPages: page.maxPages,
     maxItems: page.maxItems,
     offset: page.offset,
     featured: input.featured,
-    sort: input.sort,
-    order: input.order,
-    tag: input.tag,
-    notag: input.notag,
-    releaseStatus: input.releaseStatus,
-    maxUnityVersion: input.maxUnityVersion,
-    minUnityVersion: input.minUnityVersion,
-    platform: input.platform,
-    userId: input.userId,
+    sort: nonEmptyString(input.sort),
+    order: nonEmptyString(input.order),
+    tag: nonEmptyString(input.tag),
+    notag: nonEmptyString(input.notag),
+    releaseStatus: nonEmptyString(input.releaseStatus),
+    maxUnityVersion: nonEmptyString(input.maxUnityVersion),
+    minUnityVersion: nonEmptyString(input.minUnityVersion),
+    platform: nonEmptyString(input.platform),
+    userId: nonEmptyString(input.userId),
   };
   const params: WorldSearchParams = {
-    search: typeof input.query === 'string' ? input.query : undefined,
+    search: nonEmptyString(input.query),
     n: page.pageSize,
     offset: page.offset,
     featured: input.featured,
-    sort: input.sort,
-    order: input.order,
-    tag: input.tag,
-    notag: input.notag,
-    releaseStatus: input.releaseStatus,
-    maxUnityVersion: input.maxUnityVersion,
-    minUnityVersion: input.minUnityVersion,
-    platform: input.platform,
-    userId: input.userId,
+    sort: nonEmptyString(input.sort),
+    order: nonEmptyString(input.order),
+    tag: nonEmptyString(input.tag),
+    notag: nonEmptyString(input.notag),
+    releaseStatus: nonEmptyString(input.releaseStatus),
+    maxUnityVersion: nonEmptyString(input.maxUnityVersion),
+    minUnityVersion: nonEmptyString(input.minUnityVersion),
+    platform: nonEmptyString(input.platform),
+    userId: nonEmptyString(input.userId),
   };
 
   const { value, stale } = await fetchWorldFavoritesCached(cacheKeyParams, params, page);

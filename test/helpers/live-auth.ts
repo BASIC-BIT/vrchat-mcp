@@ -9,6 +9,22 @@ function isLoggedIn(result: unknown): boolean {
   return structured?.loggedIn === true;
 }
 
+function isToolError(result: unknown): boolean {
+  return Boolean(
+    result &&
+      typeof result === 'object' &&
+      (result as { isError?: unknown }).isError === true,
+  );
+}
+
+async function hasUsableSession(client: Client): Promise<boolean> {
+  const status = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
+  if (!isLoggedIn(status)) return false;
+
+  const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
+  return !isToolError(me);
+}
+
 async function waitForEnter(timeoutMs?: number): Promise<boolean> {
   if (!process.stdin.isTTY) return false;
   return await new Promise((resolve) => {
@@ -32,8 +48,7 @@ export async function ensureLoggedIn(
   client: Client,
   liveConfig?: LiveConfig | null,
 ): Promise<void> {
-  const status = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
-  if (isLoggedIn(status)) return;
+  if (await hasUsableSession(client)) return;
 
   const begin = await client.callTool({ name: 'vrchat_auth_begin', arguments: {} });
   const structured = begin.structuredContent as { url?: string } | undefined;
@@ -56,8 +71,7 @@ export async function ensureLoggedIn(
     throw new Error('Login prompt timed out.');
   }
 
-  const statusAfter = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
-  if (!isLoggedIn(statusAfter)) {
+  if (!(await hasUsableSession(client))) {
     throw new Error('Login did not complete.');
   }
 }

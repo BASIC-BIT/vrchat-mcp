@@ -5,6 +5,12 @@ import { mapNotification, type NotificationSummary } from '../../models/notifica
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
 
+function nonEmptyString(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 export async function listRecentNotifications(input: {
   type?: string;
   unreadOnly?: boolean;
@@ -32,9 +38,9 @@ export async function listRecentNotifications(input: {
     typeof input.maxPages === 'number' ? Math.floor(input.maxPages) : DEFAULT_MAX_PAGES;
   const maxItems =
     typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : pageSize * maxPages;
-  const type = typeof input.type === 'string' ? input.type : undefined;
+  const type = nonEmptyString(input.type);
   const unreadOnly = input.unreadOnly === true;
-  const after = typeof input.after === 'string' ? input.after : undefined;
+  const after = nonEmptyString(input.after);
 
   const cacheKey = buildCacheKey('notifications:recent', {
     type,
