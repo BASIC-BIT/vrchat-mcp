@@ -18,11 +18,15 @@ function isToolError(result: unknown): boolean {
 }
 
 async function hasUsableSession(client: Client): Promise<boolean> {
-  const status = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
-  if (!isLoggedIn(status)) return false;
+  try {
+    const status = await client.callTool({ name: 'vrchat_auth_status', arguments: {} });
+    if (!isLoggedIn(status)) return false;
 
-  const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
-  return !isToolError(me);
+    const me = await client.callTool({ name: 'vrchat_me', arguments: {} });
+    return !isToolError(me);
+  } catch {
+    return false;
+  }
 }
 
 async function waitForEnter(timeoutMs?: number): Promise<boolean> {

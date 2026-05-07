@@ -12,10 +12,16 @@ export interface AuthStatus extends Record<string, unknown> {
 
 class AuthError extends Error {
   kind?: 'totp' | 'emailOtp' | 'unknown';
-  constructor(message: string, kind?: 'totp' | 'emailOtp' | 'unknown') {
+  isChallenge: boolean;
+  constructor(
+    message: string,
+    kind?: 'totp' | 'emailOtp' | 'unknown',
+    options: { isChallenge?: boolean } = {},
+  ) {
     super(message);
     this.name = 'AuthError';
     this.kind = kind;
+    this.isChallenge = options.isChallenge === true;
   }
 }
 
@@ -133,7 +139,7 @@ class AuthManager {
   async startLoginServer(): Promise<{ url: string; token: string }> {
     if (this.server) {
       return {
-        url: `http://127.0.0.1:${this.port}/?token=${this.serverToken}`,
+        url: `http://127.0.0.1:${this.port}/?token=${encodeURIComponent(this.serverToken!)}`,
         token: this.serverToken!,
       };
     }
@@ -154,7 +160,7 @@ class AuthManager {
     const address = this.server.address();
     const port = typeof address === 'object' && address ? address.port : 0;
     this.port = port;
-    return { url: `http://127.0.0.1:${port}/?token=${token}`, token };
+    return { url: `http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`, token };
   }
 
   private async parseBody(req: IncomingMessage): Promise<URLSearchParams> {
@@ -187,6 +193,7 @@ class AuthManager {
     const usernameHint = options.usernameHint ? escapeHtml(options.usernameHint) : '';
     const error = options.error ? escapeHtml(options.error) : undefined;
     const notice = options.notice ? escapeHtml(options.notice) : undefined;
+    const encodedToken = encodeURIComponent(token);
     const actionsClass = showOtp ? 'actions two' : 'actions';
     this.renderPage(
       res,
@@ -198,7 +205,7 @@ class AuthManager {
           ? `<p>2FA is required${usernameHint ? ` for <span class="account">${usernameHint}</span>` : ''}. ${codeHelp}</p>`
           : '<p>Sign in to VRChat to let the MCP server make authenticated requests on your behalf.</p>'
       }
-      <form method="POST" action="/submit?token=${token}">
+      <form method="POST" action="/submit?token=${encodedToken}">
         ${
           showOtp
             ? `<input type="hidden" name="factorKind" value="${stage}" /><label>${codeLabel}<input name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus /></label>`
@@ -206,7 +213,7 @@ class AuthManager {
         }
         <div class="${actionsClass}">
           <button type="submit">${showOtp ? 'Verify' : 'Login'}</button>
-          ${showOtp ? `<a class="link-button" href="/reset?token=${token}">Use another account</a>` : ''}
+          ${showOtp ? `<a class="link-button" href="/reset?token=${encodedToken}">Use another account</a>` : ''}
         </div>
       </form>`,
     );
@@ -231,7 +238,7 @@ class AuthManager {
       return false;
     }
 
-    const isChallenge = err.message.startsWith('2FA required');
+    const isChallenge = err.isChallenge;
     const notice = err.kind === 'emailOtp' ? 'Email verification required' : 'Authenticator code required';
     this.renderForm(res, token, {
       error: isChallenge ? undefined : err.message,
@@ -393,7 +400,8 @@ class AuthManager {
         if (!totp) {
           throw new AuthError(
             '2FA required (TOTP). Enter the code from your authenticator app.',
-            'totp'
+            'totp',
+            { isChallenge: true },
           );
         }
         const res2 = await fetch('https://api.vrchat.cloud/api/1/auth/twofactorauth/totp/verify', {
@@ -417,7 +425,8 @@ class AuthManager {
         if (!emailOtp) {
           throw new AuthError(
             '2FA required (Email OTP). Check your email and enter the code.',
-            'emailOtp'
+            'emailOtp',
+            { isChallenge: true },
           );
         }
         const res2 = await fetch(
