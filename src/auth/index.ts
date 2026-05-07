@@ -221,6 +221,27 @@ class AuthManager {
     );
   }
 
+  private renderAuthError(
+    res: ServerResponse,
+    token: string,
+    err: unknown,
+    username: string,
+  ): boolean {
+    if (!(err instanceof AuthError) || !err.kind || err.kind === 'unknown') {
+      return false;
+    }
+
+    const isChallenge = err.message.startsWith('2FA required');
+    const notice = err.kind === 'emailOtp' ? 'Email verification required' : 'Authenticator code required';
+    this.renderForm(res, token, {
+      error: isChallenge ? undefined : err.message,
+      notice: isChallenge ? notice : undefined,
+      stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
+      usernameHint: username,
+    });
+    return true;
+  }
+
   private renderPage(res: ServerResponse, body: string) {
     res.setHeader('content-type', 'text/html; charset=utf-8');
     res.end(`<!doctype html>
@@ -310,18 +331,7 @@ class AuthManager {
       this.renderSuccess(res);
     } catch (err) {
       this.loggedIn = false;
-      if (err instanceof AuthError && err.kind && err.kind !== 'unknown') {
-        const isChallenge = err.message.startsWith('2FA required');
-        this.renderForm(res, token, {
-          error: isChallenge ? undefined : err.message,
-          notice: isChallenge
-            ? err.kind === 'emailOtp'
-              ? 'Email verification required'
-              : 'Authenticator code required'
-            : undefined,
-          stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
-          usernameHint: creds.username,
-        });
+      if (this.renderAuthError(res, token, err, creds.username)) {
         return;
       }
       this.clearCookies();
