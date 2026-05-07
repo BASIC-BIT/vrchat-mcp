@@ -11,6 +11,7 @@ import {
   type WorldSummary,
 } from '../../models/worlds.js';
 import type { schemas } from '../../generated/vrchat-schemas.js';
+import { nonEmptyString } from '../../utils/strings.js';
 
 const CACHE_TTL_MS = cacheConfig.groupsTtlMs;
 const CACHE_STALE_TTL_MS = cacheConfig.groupsStaleTtlMs;
@@ -74,12 +75,6 @@ function readPageOptions(
   const offset =
     typeof input.offset === 'number' ? Math.floor(input.offset) : undefined;
   return { pageSize, maxPages, maxItems, offset };
-}
-
-function nonEmptyString(value: string | undefined): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
 }
 
 async function fetchWorldSearchCached(

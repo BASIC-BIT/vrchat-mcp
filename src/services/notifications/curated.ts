@@ -1,15 +1,10 @@
 import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import { mapNotification, type NotificationSummary } from '../../models/notifications.js';
+import { nonEmptyString } from '../../utils/strings.js';
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
-
-function nonEmptyString(value: string | undefined): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
-}
 
 export async function listRecentNotifications(input: {
   type?: string;

@@ -172,6 +172,7 @@ class AuthManager {
     token: string,
     options: {
       error?: string;
+      notice?: string;
       stage?: 'initial' | 'totp' | 'emailOtp';
       usernameHint?: string;
     } = {}
@@ -185,6 +186,42 @@ class AuthManager {
         : 'Open your authenticator app and enter the current six-digit code.';
     const usernameHint = options.usernameHint ? escapeHtml(options.usernameHint) : '';
     const error = options.error ? escapeHtml(options.error) : undefined;
+    const notice = options.notice ? escapeHtml(options.notice) : undefined;
+    const actionsClass = showOtp ? 'actions two' : 'actions';
+    this.renderPage(
+      res,
+      `<div class="brand"><h1>VRChat MCP Login</h1></div>
+      ${error ? `<p class="error">${error}</p>` : ''}
+      ${notice ? `<p class="notice">${notice}</p>` : ''}
+      ${
+        showOtp
+          ? `<p>2FA is required${usernameHint ? ` for <span class="account">${usernameHint}</span>` : ''}. ${codeHelp}</p>`
+          : '<p>Sign in to VRChat to let the MCP server make authenticated requests on your behalf.</p>'
+      }
+      <form method="POST" action="/submit?token=${token}">
+        ${
+          showOtp
+            ? `<input type="hidden" name="factorKind" value="${stage}" /><label>${codeLabel}<input name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus /></label>`
+            : '<label>Username or email<input name="username" autocomplete="username" required autofocus /></label><label>Password<input name="password" type="password" autocomplete="current-password" required /></label>'
+        }
+        <div class="${actionsClass}">
+          <button type="submit">${showOtp ? 'Verify' : 'Login'}</button>
+          ${showOtp ? `<a class="link-button" href="/reset?token=${token}">Use another account</a>` : ''}
+        </div>
+      </form>`,
+    );
+  }
+
+  private renderSuccess(res: ServerResponse) {
+    this.renderPage(
+      res,
+      `<div class="brand"><h1>Login successful</h1></div>
+      <p class="notice">You're logged in.</p>
+      <p>You can close this window and return to your MCP client.</p>`,
+    );
+  }
+
+  private renderPage(res: ServerResponse, body: string) {
     res.setHeader('content-type', 'text/html; charset=utf-8');
     res.end(`<!doctype html>
 <html lang="en">
@@ -197,41 +234,26 @@ class AuthManager {
       * { box-sizing: border-box; }
       body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at top left, #4f46e5 0, transparent 30%), linear-gradient(135deg, #0f172a, #111827 55%, #020617); color: #e5e7eb; }
       main { width: min(440px, calc(100vw - 32px)); padding: 32px; border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 24px; background: rgba(15, 23, 42, 0.86); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); backdrop-filter: blur(16px); }
-      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-      .mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #020617; font-weight: 900; }
+      .brand { margin-bottom: 24px; }
       h1 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
       p { color: #aebbd0; line-height: 1.5; }
       .error { padding: 12px 14px; border: 1px solid rgba(248, 113, 113, 0.45); border-radius: 14px; background: rgba(127, 29, 29, 0.35); color: #fecaca; }
+      .notice { padding: 12px 14px; border: 1px solid rgba(103, 232, 249, 0.36); border-radius: 14px; background: rgba(8, 47, 73, 0.35); color: #cffafe; }
       label { display: grid; gap: 8px; margin: 16px 0; color: #dbeafe; font-weight: 650; }
       input { width: 100%; border: 1px solid rgba(148, 163, 184, 0.36); border-radius: 14px; padding: 12px 14px; background: rgba(2, 6, 23, 0.74); color: #f8fafc; font-size: 1rem; }
       input:focus { outline: 2px solid #22d3ee; outline-offset: 2px; }
-      .actions { display: flex; gap: 12px; align-items: center; margin-top: 22px; }
-      button, .link-button { border: 0; border-radius: 999px; padding: 11px 18px; background: #67e8f9; color: #082f49; font-weight: 800; cursor: pointer; text-decoration: none; }
+      .actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+      .actions.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      button, .link-button { min-height: 52px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 16px; padding: 0 18px; background: #67e8f9; color: #082f49; font-weight: 800; line-height: 1.15; text-align: center; cursor: pointer; text-decoration: none; }
       .link-button { background: rgba(148, 163, 184, 0.18); color: #dbeafe; }
       .hint { margin: 0; font-size: 0.92rem; }
       .account { color: #f8fafc; font-weight: 800; }
+      @media (max-width: 520px) { main { padding: 24px; } .actions.two { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
     <main>
-      <div class="brand"><div class="mark">V</div><div><h1>VRChat MCP Login</h1><p class="hint">Authenticate locally. Credentials are sent only to VRChat.</p></div></div>
-      ${error ? `<p class="error">${error}</p>` : ''}
-      ${
-        showOtp
-          ? `<p>2FA is required${usernameHint ? ` for <span class="account">${usernameHint}</span>` : ''}. ${codeHelp}</p>`
-          : '<p>Sign in to VRChat to let the MCP server make authenticated requests on your behalf.</p>'
-      }
-      <form method="POST" action="/submit?token=${token}">
-        ${
-          showOtp
-            ? `<input type="hidden" name="factorKind" value="${stage}" /><label>${codeLabel}<input name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus /></label>`
-            : '<label>Username or email<input name="username" autocomplete="username" required autofocus /></label><label>Password<input name="password" type="password" autocomplete="current-password" required /></label>'
-        }
-        <div class="actions">
-          <button type="submit">${showOtp ? 'Verify and login' : 'Login'}</button>
-          ${showOtp ? `<a class="link-button" href="/reset?token=${token}">Use a different account</a>` : ''}
-        </div>
-      </form>
+      ${body}
     </main>
   </body>
 </html>`);
@@ -285,13 +307,18 @@ class AuthManager {
       await this.persist();
       this.emitStatus();
       res.statusCode = 200;
-      res.setHeader('content-type', 'text/html; charset=utf-8');
-      res.end('<!doctype html><html><body><h1>Login successful</h1><p>You can close this window.</p></body></html>');
+      this.renderSuccess(res);
     } catch (err) {
       this.loggedIn = false;
       if (err instanceof AuthError && err.kind && err.kind !== 'unknown') {
+        const isChallenge = err.message.startsWith('2FA required');
         this.renderForm(res, token, {
-          error: err.message,
+          error: isChallenge ? undefined : err.message,
+          notice: isChallenge
+            ? err.kind === 'emailOtp'
+              ? 'Email verification required'
+              : 'Authenticator code required'
+            : undefined,
           stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
           usernameHint: creds.username,
         });
@@ -315,8 +342,11 @@ class AuthManager {
     }
 
     if (req.method === 'GET' && urlObj.pathname === '/reset') {
+      this.loggedIn = false;
       this.pendingCreds = null;
       this.clearCookies();
+      await this.store.clear();
+      this.emitStatus();
       this.renderForm(res, token);
       return;
     }

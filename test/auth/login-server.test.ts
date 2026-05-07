@@ -4,8 +4,11 @@ import type { RequestInfo, RequestInit } from 'undici';
 const authModulePath = '../../src/auth/index.js';
 
 interface AuthManagerLike {
+  init: () => Promise<void>;
   startLoginServer: () => Promise<{ url: string; token: string }>;
   logout: () => Promise<void>;
+  getStatus: () => { loggedIn: boolean };
+  getCookieValue: (name: string, url?: string) => Promise<string | undefined>;
 }
 
 interface MockFetchEntry {
@@ -130,10 +133,43 @@ describe.sequential('auth login server', () => {
     });
 
     const body = await res.text();
-    expect(body).toContain('2FA required (TOTP)');
+    expect(body).toContain('Authenticator code required');
     expect(body).toContain('Authenticator code');
+    expect(body).not.toContain('class="error">2FA');
     expect(body).not.toContain('name="username"');
     expect(body).not.toContain('name="password"');
+  });
+
+  it('reset clears persisted partial auth cookies', async () => {
+    const authManager = await getAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+    parsed.pathname = '/submit';
+
+    const queue = [
+      {
+        status: 200,
+        json: { requiresTwoFactorAuth: ['totp'] },
+        cookies: ['auth=token; Domain=vrchat.cloud; Path=/'],
+      },
+    ];
+
+    globalThis.fetch = createMockFetch(queue, realFetch);
+
+    await realFetch(parsed.toString(), {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'username=test&password=secret&totp=',
+    });
+
+    expect(await authManager.getCookieValue('auth')).toBe('token');
+
+    parsed.pathname = '/reset';
+    await realFetch(parsed.toString());
+
+    await authManager.init();
+    expect(await authManager.getCookieValue('auth')).toBeUndefined();
+    expect(authManager.getStatus().loggedIn).toBe(false);
   });
 
   it('accepts unified TOTP code input on second attempt using pending creds', async () => {
@@ -232,7 +268,9 @@ describe.sequential('auth login server', () => {
     });
 
     const body = await res.text();
-    expect(body).toContain('Email OTP');
+    expect(body).toContain('Email verification required');
+    expect(body).toContain('Email verification code');
+    expect(body).not.toContain('class="error">2FA');
   });
 
   it('reports email OTP verification errors', async () => {
