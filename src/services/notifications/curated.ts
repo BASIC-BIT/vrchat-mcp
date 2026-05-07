@@ -1,6 +1,7 @@
 import { callReadOperationParsed } from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import { mapNotification, type NotificationSummary } from '../../models/notifications.js';
+import { nonEmptyString } from '../../utils/strings.js';
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
@@ -32,9 +33,9 @@ export async function listRecentNotifications(input: {
     typeof input.maxPages === 'number' ? Math.floor(input.maxPages) : DEFAULT_MAX_PAGES;
   const maxItems =
     typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : pageSize * maxPages;
-  const type = typeof input.type === 'string' ? input.type : undefined;
+  const type = nonEmptyString(input.type);
   const unreadOnly = input.unreadOnly === true;
-  const after = typeof input.after === 'string' ? input.after : undefined;
+  const after = nonEmptyString(input.after);
 
   const cacheKey = buildCacheKey('notifications:recent', {
     type,

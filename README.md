@@ -127,6 +127,7 @@ LLM eval config (local only):
 - `docs/tools-guide.md` - short human guide for how to use the tools.
 - `docs/architecture.md` - codebase overview and flow.
 - `docs/curated-tools.md` - curated tool charter (scope + risk tiers).
+- `docs/evals.md` - repeatable smoke, LLM, and manual agent eval workflow.
 - `docs/design-notes.md` - archived design notes and future-facing ideas.
 
 ## Tools (overview)

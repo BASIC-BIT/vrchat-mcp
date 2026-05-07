@@ -6,7 +6,12 @@ vi.mock('../../../src/core/readTools.js', () => ({
 
 import { callReadOperation } from '../../../src/core/readTools.js';
 import { cacheManager } from '../../../src/services/cache.js';
-import { getWorldInstancesOverview, resolveWorldId } from '../../../src/services/worlds/index.js';
+import {
+  getWorldInstancesOverview,
+  listFavoriteWorlds,
+  resolveWorldId,
+  searchWorlds,
+} from '../../../src/services/worlds/index.js';
 
 describe('worlds curated service', () => {
   beforeEach(() => {
@@ -48,5 +53,85 @@ describe('worlds curated service', () => {
       countsByAccess: { public: 1, friends: 1 },
       countsByRegion: { us: 1, jp: 1 },
     });
+  });
+
+  it('omits empty optional search filters', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: [],
+      page: { pages: 1, items: 0, pageSize: 10, offsetStart: 0, truncated: false },
+    });
+
+    await searchWorlds({
+      query: 'club',
+      pageSize: 10,
+      sort: '',
+      order: ' ',
+      tag: '',
+      notag: '',
+      releaseStatus: '',
+      maxUnityVersion: '',
+      minUnityVersion: '',
+      platform: '',
+    });
+
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'searchWorlds',
+      {
+        search: 'club',
+        n: 10,
+        offset: undefined,
+        featured: undefined,
+        sort: undefined,
+        order: undefined,
+        tag: undefined,
+        notag: undefined,
+        releaseStatus: undefined,
+        maxUnityVersion: undefined,
+        minUnityVersion: undefined,
+        platform: undefined,
+      },
+      expect.any(Object),
+    );
+  });
+
+  it('omits empty optional favorites filters', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: [],
+      page: { pages: 1, items: 0, pageSize: 10, offsetStart: 0, truncated: false },
+    });
+
+    await listFavoriteWorlds({
+      query: '',
+      pageSize: 10,
+      sort: '',
+      order: '',
+      tag: '',
+      notag: '',
+      releaseStatus: '',
+      maxUnityVersion: '',
+      minUnityVersion: '',
+      platform: '',
+      userId: '',
+    });
+
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getFavoritedWorlds',
+      {
+        search: undefined,
+        n: 10,
+        offset: undefined,
+        featured: undefined,
+        sort: undefined,
+        order: undefined,
+        tag: undefined,
+        notag: undefined,
+        releaseStatus: undefined,
+        maxUnityVersion: undefined,
+        minUnityVersion: undefined,
+        platform: undefined,
+        userId: undefined,
+      },
+      expect.any(Object),
+    );
   });
 });

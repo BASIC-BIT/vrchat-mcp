@@ -12,11 +12,54 @@ export interface AuthStatus extends Record<string, unknown> {
 
 class AuthError extends Error {
   kind?: 'totp' | 'emailOtp' | 'unknown';
-  constructor(message: string, kind?: 'totp' | 'emailOtp' | 'unknown') {
+  isChallenge: boolean;
+  constructor(
+    message: string,
+    kind?: 'totp' | 'emailOtp' | 'unknown',
+    options: { isChallenge?: boolean } = {},
+  ) {
     super(message);
     this.name = 'AuthError';
     this.kind = kind;
+    this.isChallenge = options.isChallenge === true;
   }
+}
+
+interface LoginSubmission {
+  usernameInput: string;
+  passwordInput: string;
+  totp?: string;
+  emailOtp?: string;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function cleanInput(value: string | null): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  return trimmed;
+}
+
+function parseLoginSubmission(params: URLSearchParams): LoginSubmission {
+  const usernameInput = params.get('username') ?? '';
+  const passwordInput = params.get('password') ?? '';
+  const factorKind = params.get('factorKind') ?? '';
+  const code = cleanInput(params.get('code'));
+  const directTotp = cleanInput(params.get('totp'));
+  const directEmailOtp = cleanInput(params.get('emailOtp'));
+  return {
+    usernameInput,
+    passwordInput,
+    totp: directTotp ?? (factorKind === 'totp' ? code : undefined),
+    emailOtp: directEmailOtp ?? (factorKind === 'emailOtp' ? code : undefined),
+  };
 }
 
 class AuthManager {
@@ -96,7 +139,7 @@ class AuthManager {
   async startLoginServer(): Promise<{ url: string; token: string }> {
     if (this.server) {
       return {
-        url: `http://127.0.0.1:${this.port}/?token=${this.serverToken}`,
+        url: `http://127.0.0.1:${this.port}/?token=${encodeURIComponent(this.serverToken!)}`,
         token: this.serverToken!,
       };
     }
@@ -117,7 +160,7 @@ class AuthManager {
     const address = this.server.address();
     const port = typeof address === 'object' && address ? address.port : 0;
     this.port = port;
-    return { url: `http://127.0.0.1:${port}/?token=${token}`, token };
+    return { url: `http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`, token };
   }
 
   private async parseBody(req: IncomingMessage): Promise<URLSearchParams> {
@@ -135,30 +178,113 @@ class AuthManager {
     token: string,
     options: {
       error?: string;
+      notice?: string;
       stage?: 'initial' | 'totp' | 'emailOtp';
       usernameHint?: string;
     } = {}
   ) {
     const stage = options.stage ?? 'initial';
     const showOtp = stage === 'totp' || stage === 'emailOtp';
-    const otpLabel =
-      stage === 'emailOtp' ? 'TOTP (auth app, if prompted)' : 'TOTP (auth app, required)';
-    const emailLabel = stage === 'emailOtp' ? 'Email OTP (required)' : 'Email OTP (if prompted)';
-    const usernameHint = options.usernameHint ? ` (using ${options.usernameHint})` : '';
-    const error = options.error;
+    const codeLabel = stage === 'emailOtp' ? 'Email verification code' : 'Authenticator code';
+    const codeHelp =
+      stage === 'emailOtp'
+        ? 'Check your VRChat account email for the one-time code.'
+        : 'Open your authenticator app and enter the current six-digit code.';
+    const usernameHint = options.usernameHint ? escapeHtml(options.usernameHint) : '';
+    const error = options.error ? escapeHtml(options.error) : undefined;
+    const notice = options.notice ? escapeHtml(options.notice) : undefined;
+    const encodedToken = encodeURIComponent(token);
+    const actionsClass = showOtp ? 'actions two' : 'actions';
+    this.renderPage(
+      res,
+      `<div class="brand"><h1>VRChat MCP Login</h1></div>
+      ${error ? `<p class="error">${error}</p>` : ''}
+      ${notice ? `<p class="notice">${notice}</p>` : ''}
+      ${
+        showOtp
+          ? `<p>2FA is required${usernameHint ? ` for <span class="account">${usernameHint}</span>` : ''}. ${codeHelp}</p>`
+          : '<p>Sign in to VRChat to let the MCP server make authenticated requests on your behalf.</p>'
+      }
+      <form method="POST" action="/submit?token=${encodedToken}">
+        ${
+          showOtp
+            ? `<input type="hidden" name="factorKind" value="${stage}" /><label>${codeLabel}<input name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus /></label>`
+            : '<label>Username or email<input name="username" autocomplete="username" required autofocus /></label><label>Password<input name="password" type="password" autocomplete="current-password" required /></label>'
+        }
+        <div class="${actionsClass}">
+          <button type="submit">${showOtp ? 'Verify' : 'Login'}</button>
+          ${showOtp ? `<a class="link-button" href="/reset?token=${encodedToken}">Use another account</a>` : ''}
+        </div>
+      </form>`,
+    );
+  }
+
+  private renderSuccess(res: ServerResponse) {
+    this.renderPage(
+      res,
+      `<div class="brand"><h1>Login successful</h1></div>
+      <p class="notice">You're logged in.</p>
+      <p>You can close this window and return to your MCP client.</p>`,
+    );
+  }
+
+  private renderAuthError(
+    res: ServerResponse,
+    token: string,
+    err: unknown,
+    username: string,
+  ): boolean {
+    if (!(err instanceof AuthError) || !err.kind || err.kind === 'unknown') {
+      return false;
+    }
+
+    const isChallenge = err.isChallenge;
+    const notice = err.kind === 'emailOtp' ? 'Email verification required' : 'Authenticator code required';
+    this.renderForm(res, token, {
+      error: isChallenge ? undefined : err.message,
+      notice: isChallenge ? notice : undefined,
+      stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
+      usernameHint: username,
+    });
+    return true;
+  }
+
+  private renderPage(res: ServerResponse, body: string) {
     res.setHeader('content-type', 'text/html; charset=utf-8');
-    res.end(`<!doctype html><html><body>
-      <h3>VRChat Login</h3>
-      ${error ? `<p style="color:red;">${error}</p>` : ''}
-      ${showOtp ? `<p>2FA required${usernameHint}. Enter the code below.</p>` : ''}
-      <form method="POST" action="/submit?token=${token}">
-        <label>Username <input name="username" ${showOtp ? '' : 'required'} /></label><br />
-        <label>Password <input name="password" type="password" ${showOtp ? '' : 'required'} /></label><br />
-        <label>${otpLabel} <input name="totp" ${stage === 'totp' ? 'required' : ''} /></label><br />
-        <label>${emailLabel} <input name="emailOtp" ${stage === 'emailOtp' ? 'required' : ''} /></label><br />
-        <button type="submit">Login</button>
-      </form>
-    </body></html>`);
+    res.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VRChat MCP Login</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at top left, #4f46e5 0, transparent 30%), linear-gradient(135deg, #0f172a, #111827 55%, #020617); color: #e5e7eb; }
+      main { width: min(440px, calc(100vw - 32px)); padding: 32px; border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 24px; background: rgba(15, 23, 42, 0.86); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); backdrop-filter: blur(16px); }
+      .brand { margin-bottom: 24px; }
+      h1 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+      p { color: #aebbd0; line-height: 1.5; }
+      .error { padding: 12px 14px; border: 1px solid rgba(248, 113, 113, 0.45); border-radius: 14px; background: rgba(127, 29, 29, 0.35); color: #fecaca; }
+      .notice { padding: 12px 14px; border: 1px solid rgba(103, 232, 249, 0.36); border-radius: 14px; background: rgba(8, 47, 73, 0.35); color: #cffafe; }
+      label { display: grid; gap: 8px; margin: 16px 0; color: #dbeafe; font-weight: 650; }
+      input { width: 100%; border: 1px solid rgba(148, 163, 184, 0.36); border-radius: 14px; padding: 12px 14px; background: rgba(2, 6, 23, 0.74); color: #f8fafc; font-size: 1rem; }
+      input:focus { outline: 2px solid #22d3ee; outline-offset: 2px; }
+      .actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+      .actions.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      button, .link-button { min-height: 52px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 16px; padding: 0 18px; background: #67e8f9; color: #082f49; font-weight: 800; line-height: 1.15; text-align: center; cursor: pointer; text-decoration: none; }
+      .link-button { background: rgba(148, 163, 184, 0.18); color: #dbeafe; }
+      .hint { margin: 0; font-size: 0.92rem; }
+      .account { color: #f8fafc; font-weight: 800; }
+      @media (max-width: 520px) { main { padding: 24px; } .actions.two { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      ${body}
+    </main>
+  </body>
+</html>`);
   }
 
   private getValidatedRequestContext(
@@ -184,38 +310,35 @@ class AuthManager {
 
   private async handleSubmit(req: IncomingMessage, res: ServerResponse, token: string) {
     const params = await this.parseBody(req);
-    const usernameInput = params.get('username') ?? '';
-    const passwordInput = params.get('password') ?? '';
-    const totp = params.get('totp') ?? undefined;
-    const emailOtp = params.get('emailOtp') ?? undefined;
+    const submission = parseLoginSubmission(params);
 
-    if (usernameInput || passwordInput) {
-      this.pendingCreds = { username: usernameInput, password: passwordInput };
+    if (submission.usernameInput || submission.passwordInput) {
+      this.pendingCreds = {
+        username: submission.usernameInput,
+        password: submission.passwordInput,
+      };
     }
 
-    const creds = this.pendingCreds ?? { username: usernameInput, password: passwordInput };
+    const creds = this.pendingCreds ?? {
+      username: submission.usernameInput,
+      password: submission.passwordInput,
+    };
     if (!creds.username || !creds.password) {
       this.renderForm(res, token, { error: 'Username and password are required.' });
       return;
     }
 
     try {
-      await this.performLogin(creds.username, creds.password, totp, emailOtp);
+      await this.performLogin(creds.username, creds.password, submission.totp, submission.emailOtp);
       this.loggedIn = true;
       this.pendingCreds = null;
       await this.persist();
       this.emitStatus();
       res.statusCode = 200;
-      res.setHeader('content-type', 'text/html; charset=utf-8');
-      res.end('<p>Login successful. You can close this window.</p>');
+      this.renderSuccess(res);
     } catch (err) {
       this.loggedIn = false;
-      if (err instanceof AuthError && err.kind && err.kind !== 'unknown') {
-        this.renderForm(res, token, {
-          error: err.message,
-          stage: err.kind === 'totp' ? 'totp' : 'emailOtp',
-          usernameHint: creds.username,
-        });
+      if (this.renderAuthError(res, token, err, creds.username)) {
         return;
       }
       this.clearCookies();
@@ -231,6 +354,16 @@ class AuthManager {
     const { urlObj, token } = context;
 
     if (req.method === 'GET' && urlObj.pathname === '/') {
+      this.renderForm(res, token);
+      return;
+    }
+
+    if (req.method === 'GET' && urlObj.pathname === '/reset') {
+      this.loggedIn = false;
+      this.pendingCreds = null;
+      this.clearCookies();
+      await this.store.clear();
+      this.emitStatus();
       this.renderForm(res, token);
       return;
     }
@@ -267,7 +400,8 @@ class AuthManager {
         if (!totp) {
           throw new AuthError(
             '2FA required (TOTP). Enter the code from your authenticator app.',
-            'totp'
+            'totp',
+            { isChallenge: true },
           );
         }
         const res2 = await fetch('https://api.vrchat.cloud/api/1/auth/twofactorauth/totp/verify', {
@@ -291,7 +425,8 @@ class AuthManager {
         if (!emailOtp) {
           throw new AuthError(
             '2FA required (Email OTP). Check your email and enter the code.',
-            'emailOtp'
+            'emailOtp',
+            { isChallenge: true },
           );
         }
         const res2 = await fetch(

@@ -52,4 +52,19 @@ describe('notifications curated service', () => {
     expect(result.maxPages).toBe(5);
     expect(result.truncated).toBe(false);
   });
+
+  it('omits empty optional filters', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: [],
+      page: { pages: 1, items: 0, pageSize: 10, offsetStart: 0, truncated: false },
+    });
+
+    await listRecentNotifications({ type: '', after: ' ', pageSize: 10, maxPages: 1 });
+
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getNotifications',
+      { type: undefined, after: undefined },
+      expect.any(Object),
+    );
+  });
 });
