@@ -179,6 +179,7 @@ class AuthManager {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       total += buf.length;
       if (total > MAX_LOGIN_BODY_BYTES) {
+        req.resume();
         throw new BodyTooLargeError();
       }
       chunks.push(buf);
@@ -388,6 +389,7 @@ class AuthManager {
       } catch (err) {
         if (err instanceof BodyTooLargeError) {
           res.statusCode = 413;
+          res.setHeader('Connection', 'close');
           res.end('Request body too large');
           return;
         }

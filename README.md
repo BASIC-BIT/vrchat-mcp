@@ -228,7 +228,7 @@ See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation w
 - `docs/architecture.md`: codebase overview and data flow.
 - `docs/curated-tools.md`: curated tool charter and risk tiers.
 - `docs/evals.md`: smoke, LLM, and manual agent eval workflow.
-- `docs/public-launch-plan.md`: release awareness, registry, and launch-channel plan.
+- [`docs/public-launch-plan.md`](https://github.com/BASIC-BIT/vrchat-mcp/blob/main/docs/public-launch-plan.md): release awareness, registry, and launch-channel plan.
 - `docs/vrcx.md`: local VRCX integration notes.
 - `docs/design-notes.md`: archived design notes and future-facing ideas.
 

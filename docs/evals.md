@@ -111,10 +111,19 @@ Create an eval config outside the repository, set `OPENAI_API_KEY` in your shell
 
 You can copy `test/fixtures/evals.live.example.json`; it references `OPENAI_API_KEY` by environment variable name only.
 
-Run live evals with:
+Run live evals from PowerShell with:
+
+```powershell
+$env:VRCHAT_MCP_LIVE_CONFIG_FILE = Join-Path $env:APPDATA 'vrchat-mcp\e2e.live.json'
+$env:VRCHAT_MCP_EVAL_CONFIG_FILE = Join-Path $env:APPDATA 'vrchat-mcp\evals.live.json'
+$env:VRCHAT_MCP_ENABLE_LIVE_EVALS = '1'
+npm test -- test/evals/live-llm.test.ts
+```
+
+Run live evals from bash with:
 
 ```bash
-VRCHAT_MCP_LIVE_CONFIG_FILE="%APPDATA%\\vrchat-mcp\\e2e.live.json" VRCHAT_MCP_EVAL_CONFIG_FILE="%APPDATA%\\vrchat-mcp\\evals.live.json" VRCHAT_MCP_ENABLE_LIVE_EVALS=1 npm test -- test/evals/live-llm.test.ts
+VRCHAT_MCP_LIVE_CONFIG_FILE="$HOME/.config/vrchat-mcp/e2e.live.json" VRCHAT_MCP_EVAL_CONFIG_FILE="$HOME/.config/vrchat-mcp/evals.live.json" VRCHAT_MCP_ENABLE_LIVE_EVALS=1 npm test -- test/evals/live-llm.test.ts
 ```
 
 If this fails before running test cases with a login error, run `npm run smoke:live` first. Smoke is the cheaper auth/session diagnostic.
