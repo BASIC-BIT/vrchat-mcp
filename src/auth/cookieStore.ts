@@ -61,7 +61,13 @@ class FileStore implements CookieStore {
   async save(jar: CookieJar): Promise<void> {
     const serialized = await serializeJar(jar);
     await fs.mkdir(path.dirname(this.filePath), { recursive: true });
-    await fs.writeFile(this.filePath, JSON.stringify(serialized), 'utf8');
+    await fs.writeFile(this.filePath, JSON.stringify(serialized), {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
+    if (process.platform !== 'win32') {
+      await fs.chmod(this.filePath, 0o600);
+    }
   }
 
   async clear(): Promise<void> {

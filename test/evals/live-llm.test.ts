@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import path from 'node:path';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 import { loadEvalConfig } from '../helpers/eval-config.js';
 import { gradeWithOpenAI } from '../helpers/llm-grader.js';
-import { loadLiveConfig } from '../helpers/live-config.js';
+import { getDefaultLiveCookieFile, loadLiveConfig } from '../helpers/live-config.js';
 import { ensureLoggedIn } from '../helpers/live-auth.js';
 
 const EVAL_TIMEOUT_MS = 180_000;
@@ -36,7 +35,7 @@ describeLive('llm evals (live)', () => {
   let currentUser: { id?: string; displayName?: string; username?: string } = {};
 
   beforeAll(async () => {
-    const cookieFile = liveConfig?.cookieFile ?? path.resolve('.vrchat-mcp-cookies.json');
+    const cookieFile = liveConfig?.cookieFile ?? getDefaultLiveCookieFile();
 
     harness = await createMcpHarness({
       env: {

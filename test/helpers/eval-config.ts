@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
@@ -18,7 +19,6 @@ const EvalExpectationsSchema = z
   .optional();
 
 const EvalConfigSchema = z.object({
-  openaiApiKey: z.string().min(1).optional(),
   openaiApiKeyEnv: z.string().min(1).optional(),
   model: z.string().min(1),
   apiBaseUrl: z.string().min(1).optional(),
@@ -31,22 +31,31 @@ const EvalConfigSchema = z.object({
 export type EvalConfig = z.infer<typeof EvalConfigSchema>;
 
 const EVAL_CONFIG_PATH = new URL('../fixtures/evals.live.json', import.meta.url);
+const EVAL_CONFIG_FILE_ENV = 'VRCHAT_MCP_EVAL_CONFIG_FILE';
+
+function resolveConfigPath(): string {
+  const override = process.env[EVAL_CONFIG_FILE_ENV]?.trim();
+  if (!override) return fileURLToPath(EVAL_CONFIG_PATH);
+  return path.isAbsolute(override) ? override : path.resolve(process.cwd(), override);
+}
+
+function hasOpenAIApiKey(config: EvalConfig): boolean {
+  const envName = config.openaiApiKeyEnv ?? 'OPENAI_API_KEY';
+  return Boolean(process.env[envName]?.trim());
+}
 
 export function loadEvalConfig(): EvalConfig | null {
-  const filePath = fileURLToPath(EVAL_CONFIG_PATH);
+  const filePath = resolveConfigPath();
   if (!existsSync(filePath)) return null;
   const raw = JSON.parse(readFileSync(filePath, 'utf8')) as unknown;
-  return EvalConfigSchema.parse(raw);
+  const config = EvalConfigSchema.parse(raw);
+  return hasOpenAIApiKey(config) ? config : null;
 }
 
 export function resolveOpenAIApiKey(config: EvalConfig): string {
-  const direct = config.openaiApiKey?.trim();
-  if (direct) return direct;
   const envName = config.openaiApiKeyEnv ?? 'OPENAI_API_KEY';
   const envValue = process.env[envName];
   const trimmedEnv = envValue?.trim();
   if (trimmedEnv) return trimmedEnv;
-  throw new Error(
-    `OpenAI API key missing. Set openaiApiKey in eval config or provide ${envName}.`,
-  );
+  throw new Error(`OpenAI API key missing. Provide ${envName} in the environment.`);
 }

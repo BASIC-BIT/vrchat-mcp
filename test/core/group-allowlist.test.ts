@@ -73,4 +73,65 @@ describe('group allowlist guard', () => {
     });
     expect(result.dryRun).toBe(true);
   });
+
+  it('blocks raw group instance creation when ownerId is not allowlisted', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    process.env.VRCHAT_MCP_GROUP_ALLOWLIST = 'grp_allowed';
+
+    vi.doMock('../../src/core/spec.js', () => ({
+      getSpecIndex: () => ({
+        operations: new Map([
+          [
+            'createInstance',
+            {
+              operationId: 'createInstance',
+              method: 'POST',
+              path: '/instances',
+              parameters: [],
+              hasRequestBody: true,
+            },
+          ],
+        ]),
+      }),
+    }));
+
+    const { callOperation } = await import('../../src/core/client.js');
+    await expect(
+      callOperation({
+        operationId: 'createInstance',
+        body: { type: 'group', ownerId: 'grp_blocked', worldId: 'wrld_test', region: 'us' },
+        options: { dryRun: true },
+      }),
+    ).rejects.toThrow(/not in groups\.allowlist/);
+  });
+
+  it('allows raw group instance creation when ownerId is allowlisted', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    process.env.VRCHAT_MCP_GROUP_ALLOWLIST = 'grp_allowed';
+
+    vi.doMock('../../src/core/spec.js', () => ({
+      getSpecIndex: () => ({
+        operations: new Map([
+          [
+            'createInstance',
+            {
+              operationId: 'createInstance',
+              method: 'POST',
+              path: '/instances',
+              parameters: [],
+              hasRequestBody: true,
+            },
+          ],
+        ]),
+      }),
+    }));
+
+    const { callOperation } = await import('../../src/core/client.js');
+    const result = await callOperation({
+      operationId: 'createInstance',
+      body: { type: 'group', ownerId: 'grp_allowed', worldId: 'wrld_test', region: 'us' },
+      options: { dryRun: true },
+    });
+    expect(result.dryRun).toBe(true);
+  });
 });

@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import path from 'node:path';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
-import { loadLiveConfig } from '../helpers/live-config.js';
+import { getDefaultLiveCookieFile, loadLiveConfig } from '../helpers/live-config.js';
 import { ensureLoggedIn } from '../helpers/live-auth.js';
 
 const E2E_TIMEOUT_MS = 120_000;
@@ -15,7 +14,7 @@ describeLive('mcp e2e (live)', () => {
   let harness: McpHarness | null = null;
 
   beforeAll(async () => {
-    const cookieFile = liveConfig?.cookieFile ?? path.resolve('.vrchat-mcp-cookies.json');
+    const cookieFile = liveConfig?.cookieFile ?? getDefaultLiveCookieFile();
 
     harness = await createMcpHarness({
       env: {
@@ -92,7 +91,7 @@ describeLiveWrites('mcp e2e (live writes)', () => {
   let instanceLocation: string | null = null;
 
   beforeAll(async () => {
-    const cookieFile = liveConfig?.cookieFile ?? path.resolve('.vrchat-mcp-cookies.json');
+    const cookieFile = liveConfig?.cookieFile ?? getDefaultLiveCookieFile();
     harness = await createMcpHarness({
       env: {
         VRCHAT_MCP_COOKIE_STORE: 'file',
