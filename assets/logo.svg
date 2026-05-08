@@ -1,0 +1,39 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">VRChat MCP logo</title>
+  <desc id="desc">A rounded blue chat mark connected to three small nodes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8" />
+      <stop offset="0.52" stop-color="#2563eb" />
+      <stop offset="1" stop-color="#312e81" />
+    </linearGradient>
+    <linearGradient id="line" x1="76" y1="86" x2="184" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e0f2fe" />
+      <stop offset="1" stop-color="#bfdbfe" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#07111f" />
+  <path
+    d="M68 56h120c22.1 0 40 17.9 40 40v52c0 22.1-17.9 40-40 40h-47.5l-43 31.4c-8.7 6.3-20.9.1-20.9-10.7V188H68c-22.1 0-40-17.9-40-40V96c0-22.1 17.9-40 40-40Z"
+    fill="url(#bg)"
+  />
+  <path
+    d="M84 116h42.5M126.5 116l37-30M126.5 116l45.5 44"
+    fill="none"
+    stroke="url(#line)"
+    stroke-width="12"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="84" cy="116" r="18" fill="#f8fafc" />
+  <circle cx="164" cy="86" r="18" fill="#f8fafc" />
+  <circle cx="172" cy="160" r="18" fill="#f8fafc" />
+  <circle cx="84" cy="116" r="7" fill="#2563eb" />
+  <circle cx="164" cy="86" r="7" fill="#2563eb" />
+  <circle cx="172" cy="160" r="7" fill="#2563eb" />
+</svg>

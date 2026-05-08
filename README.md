@@ -1,20 +1,87 @@
-﻿# VRChat MCP (TypeScript)
+<p align="center">
+  <img src="assets/logo.svg" alt="VRChat MCP logo" width="112" height="112" />
+</p>
 
-Local-first Model Context Protocol server for VRChat. Read-only by default, with curated tools, auto-generated read tools, and optional caching.
+# VRChat MCP
 
-## Quick start (dev)
+Give your AI assistant safe, local-first access to your VRChat account.
+
+VRChat MCP is a [Model Context Protocol](https://modelcontextprotocol.io/) server for tools like Claude Desktop, OpenCode, and other MCP clients. It helps an assistant answer practical questions about your VRChat presence, friends, groups, worlds, events, notifications, and optional local VRCX history.
+
+It is read-only by default, keeps authentication local, and exposes curated high-signal tools instead of forcing agents to reason through the raw VRChat API.
+
+This project is unofficial and is not affiliated with VRChat Inc.
+
+## What You Can Ask
+
+- Who is online, and where are they?
+- Show my current VRChat status and location.
+- Find a friend by display name and get their current profile details.
+- Search worlds and return compact results with IDs for follow-up actions.
+- Find upcoming public or group calendar events.
+- Summarize active group instances.
+- Check recent notifications.
+- Read local VRCX memos and recent world visit history, if VRCX is installed.
+- Invite yourself to a known instance, or invite a friend, after writes are explicitly enabled.
+
+## Safety Model
+
+- Read-only by default.
+- Write tools require explicit opt-in with `writes.allow = true` or `VRCHAT_MCP_ALLOW_WRITES=true`.
+- Group write tools can be limited to specific group IDs with `groups.allowlist`.
+- Authentication cookies can stay in memory, in a local file, or in the OS keychain.
+- Logs go to stderr so stdout remains reserved for MCP protocol messages.
+- Live tests, live smoke checks, and LLM evals are opt-in and use local fixture files.
+
+## Quick Start
+
+Requirements:
+
+- Node.js 20 or newer.
+- An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
+
+Install from source:
+
 ```bash
+git clone https://github.com/BASIC-BIT/vrchat-mcp.git
+cd vrchat-mcp
 npm install
-npm run dev  # runs src/index.ts via tsx (stdout is MCP protocol; logs go to stderr)
+npm run build
 ```
 
-## Claude Desktop (minimal config)
-Add this to your Claude Desktop config file and replace the path + user agent:
+Start the local login flow:
+
+```bash
+npm run mcp:login
+```
+
+The login helper opens a local browser flow and stores cookies according to your config. The default development helper uses file-backed cookie storage so subsequent MCP sessions can reuse the login.
+
+## MCP Client Config
+
+Use the built server for day-to-day use. Replace the path with your local checkout and use a descriptive VRChat API user agent.
 
 ```json
 {
   "mcpServers": {
     "vrchat": {
+      "command": "node",
+      "args": ["<ABS_PATH_TO_REPO>/dist/bin/cli.js"],
+      "env": {
+        "VRCHAT_MCP_USER_AGENT": "your-name (email@example.com)",
+        "VRCHAT_MCP_COOKIE_STORE": "file"
+      }
+    }
+  }
+}
+```
+
+For active development, you can point your MCP client at the TypeScript entrypoint instead:
+
+```json
+{
+  "mcpServers": {
+    "vrchat-dev": {
       "command": "npx",
       "args": ["tsx", "<ABS_PATH_TO_REPO>/src/index.ts"],
       "env": {
@@ -26,44 +93,12 @@ Add this to your Claude Desktop config file and replace the path + user agent:
 }
 ```
 
-## OpenAPI / Swagger UI (via mcpo)
-If you want a Swagger UI + OpenAPI proxy for this MCP without writing extra code, use the `mcpo` MCP-to-OpenAPI proxy. It generates OpenAPI schemas from MCP tools and serves interactive docs.
-
-Command mode (single MCP server):
-```bash
-uvx mcpo --port 8000 --api-key "top-secret" -- npx tsx <ABS_PATH_TO_REPO>/src/index.ts
-```
-Then open `http://localhost:8000/docs` in your browser.
-
-Config mode (Claude Desktop config file, supports hot-reload):
-```bash
-mcpo --config <PATH_TO_CLAUDE_DESKTOP_CONFIG.json> --hot-reload --api-key "top-secret"
-```
-Each MCP server is exposed under its own route (e.g., `http://localhost:8000/vrchat`), and Swagger UI is available at `http://localhost:8000/vrchat/docs`. citeturn0search0
-
-## Scripts
-- `build` - type-check and emit to `dist/`
-- `start` - run the built server from `dist/`
-- `typecheck` - type-check only
-- `dev` - run with tsx
-- `lint` / `lint:fix` - ESLint
-- `format` / `format:check` - Prettier
-- `test` / `test:watch` - Vitest
-- `test:coverage` - coverage report
-- `test:e2e` - run E2E tests (mock + live if configured)
-- `test:e2e:live` - run only the live E2E tests
-- `test:evals` - run opt-in LLM evaluation tests
-- `smoke:live` - opt-in read-only live MCP smoke matrix against the built server (`dist/bin/cli.js` by default)
-- `check` - lint + typecheck + tests
-- `generate:tools-docs` - regenerate `docs/tools.md`
-- `mcpo` - run MCP-to-OpenAPI proxy with Swagger UI (see above; requires `uvx`)
-- `generate:schemas` - regenerate VRChat OpenAPI Zod schemas in `src/generated/vrchat-schemas.ts` (do not edit manually)
-- `generate:test-schemas` - regenerate zod schemas for mock API fixtures
-
 ## Configuration
-Defaults live in `src/config/defaults.json`. To override, create a JSON config file and point to it with `VRCHAT_MCP_CONFIG_FILE`.
+
+Defaults live in `src/config/defaults.json`. To override them, create a JSON config file and point to it with `VRCHAT_MCP_CONFIG_FILE`.
 
 Example `vrchat-mcp.config.json`:
+
 ```json
 {
   "api": { "userAgent": "your-name (email@example.com)" },
@@ -74,93 +109,126 @@ Example `vrchat-mcp.config.json`:
 }
 ```
 
-Environment variables always override the config file when set.
+Environment variables override the config file when set.
 
-## Environment variables (overrides)
-- `VRCHAT_MCP_CONFIG_FILE` (optional): path to a JSON config file (relative or absolute).
-- `VRCHAT_MCP_USER_AGENT` (recommended): descriptive UA string sent to the VRChat API; include contact/info. If unset we fall back to `vrchat-mcp/<version>` and log a warning.
-- `VRCHAT_MCP_API_BASE` (optional): override API base (default `https://api.vrchat.cloud/api/1`).
-- `VRCHAT_MCP_SPEC_URL` (optional): OpenAPI spec URL or local path (supports `file:` or relative paths; default `https://vrchat.community/openapi.yaml`).
-- `VRCHAT_MCP_LOG_LEVEL` (optional): `debug | info | warn | error` (default `info`).
-- `VRCHAT_MCP_COOKIE_STORE` (optional): `memory` (default), `file`, or `keychain`.
-- `VRCHAT_MCP_COOKIE_FILE` (optional): file path used when `VRCHAT_MCP_COOKIE_STORE=file` (default `~/.vrchat-mcp-cookies.json`).
-- `VRCHAT_MCP_ALLOW_WRITES` (optional): enable non-GET operations (`true|1|yes|on`). Default is read-only.
-- `VRCHAT_MCP_GROUP_ALLOWLIST` (optional): comma-separated list of group IDs permitted for group write actions (default: allow all).
-- `VRCHAT_MCP_ENABLE_RAW_CALL` (optional): enable the raw `vrchat_call` tool (disabled by default).
-- `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS` (optional): disable auto-generated read tools (`vrchat_read_<operationId>`).
-- `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS` (optional): disable auto-generated write tools (`vrchat_write_<operationId>`).
-- For cache/pipeline tuning, edit the JSON config (see `src/config/defaults.json`). Env overrides exist but are intentionally not exhaustively listed here.
+Common environment variables:
 
-Live E2E config (local only):
-- Create `test/fixtures/e2e.live.json` (gitignored) to enable live tests.       
-- See `test/fixtures/e2e.live.example.json` for the expected shape.
-- Run live tests with `npm run test:e2e:live` (or `npm run test:e2e`).
-- Run read-only live smoke checks with `npm run build && npm run smoke:live` after `npm run mcp:login`.
-  The smoke runner uses `VRCHAT_MCP_COOKIE_STORE=file` by default and does not call write tools.
-  Override the server with `VRCHAT_MCP_SERVER_COMMAND`, `VRCHAT_MCP_SERVER_ARGS`, and `VRCHAT_MCP_SERVER_CWD`.
-  Override sampled live targets with `VRCHAT_MCP_SMOKE_GROUP_ID`, `VRCHAT_MCP_SMOKE_WORLD_ID`, `VRCHAT_MCP_SMOKE_WORLD_QUERY`, `VRCHAT_MCP_SMOKE_FRIEND_USER_ID`, or `VRCHAT_MCP_SMOKE_FRIEND_NAME`.
-- To exercise write tools, set `writeTests.enabled=true` and fill in `worldId` (required) and optionally `inviteUserId`. This automatically enables writes for the live harness.
+- `VRCHAT_MCP_CONFIG_FILE`: path to a JSON config file.
+- `VRCHAT_MCP_USER_AGENT`: descriptive user agent sent to the VRChat API. Include contact information when possible.
+- `VRCHAT_MCP_API_BASE`: override the API base URL. Defaults to `https://api.vrchat.cloud/api/1`.
+- `VRCHAT_MCP_SPEC_URL`: OpenAPI spec URL or local path. Supports `file:` and relative paths.
+- `VRCHAT_MCP_LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
+- `VRCHAT_MCP_COOKIE_STORE`: `memory`, `file`, or `keychain`.
+- `VRCHAT_MCP_COOKIE_FILE`: cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.
+- `VRCHAT_MCP_ALLOW_WRITES`: enable non-GET operations.
+- `VRCHAT_MCP_GROUP_ALLOWLIST`: comma-separated list of group IDs permitted for group write actions.
+- `VRCHAT_MCP_ENABLE_RAW_CALL`: enable the raw `vrchat_call` tool. Disabled by default.
+- `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS`: disable auto-generated read tools.
+- `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS`: disable auto-generated write tools.
 
-LLM eval config (local only):
-- Create `test/fixtures/evals.live.json` (gitignored) to enable eval tests.
-- See `test/fixtures/evals.live.example.json` for the expected shape.
-- Run evals with `npm run test:evals`.
-- Live evals reuse `test/fixtures/e2e.live.json` for login + optional friend expectations. Set `VRCHAT_MCP_ENABLE_LIVE_EVALS=1` to enable them (disabled by default so coverage runs don’t hit live APIs).
-- Add optional `expectations` in `evals.live.json` to run extra live checks (world/group/avatar/favorite).
-  - `expectations.avatarName` is treated as a substring match; use `avatarNameExact` for strict equality.
+Cache and realtime pipeline tuning are configured in JSON. See `src/config/defaults.json` for the full set of defaults.
 
-## Project layout
-- `src/index.ts` - bootstrap + server startup.
-- `src/core/` - VRChat API plumbing (spec parsing, request dispatch, read helpers).
-- `src/tools/` - MCP tool registrations (curated, generated, auth, cache, system).
-- `src/schemas/` - shared zod schemas for tool input/output.
-- `src/generated/` - generated VRChat OpenAPI schemas (Zod).
-- `src/services/` - domain services (cache, friends, pipeline).
-- `src/resources/` - MCP resources (delta feeds, snapshots).
-- `src/auth/` - login flow + cookie storage.
-- `src/infra/` - logging and infrastructure utilities.
-- `src/utils/` - shared lightweight helpers.
-- `docs/` - architecture + tool inventory.
+## Tool Surface
 
-## Docs
-- `docs/tools.md` - generated tool catalog (includes schemas).
-- `docs/tools-guide.md` - short human guide for how to use the tools.
-- `docs/architecture.md` - codebase overview and flow.
-- `docs/curated-tools.md` - curated tool charter (scope + risk tiers).
-- `docs/evals.md` - repeatable smoke, LLM, and manual agent eval workflow.
-- `docs/design-notes.md` - archived design notes and future-facing ideas.
+VRChat MCP exposes three layers:
 
-## Tools (overview)
-- Tool names use underscores (e.g., `vrchat_me`) for Claude Desktop compatibility.
-- Canonical master list lives in `docs/tools.md` (generated).
-- High-level tools: `vrchat_friend_details`, `vrchat_friends_search`, `vrchat_friends_list`, `vrchat_friends_overview`, `vrchat_user_profile`, `vrchat_user_groups`, `vrchat_profile_update`, `vrchat_groups_search`, `vrchat_group_profile`, `vrchat_group_members`, `vrchat_group_announcement`, `vrchat_group_posts_recent`, `vrchat_group_events_list`, `vrchat_group_event_get`, `vrchat_group_events_upcoming`, `vrchat_group_instances_overview`, `vrchat_worlds_search`, `vrchat_worlds_favorites`, `vrchat_world_profile`, `vrchat_world_instances_overview`, `vrchat_notifications_recent`, `vrchat_instance_create`, `vrchat_invite_self`, `vrchat_invite_user`, `vrchat_status_get`, `vrchat_status_set`, `vrchat_events_upcoming`, `vrchat_events_search`, `vrchat_event_create`, `vrchat_event_update`, `vrchat_event_delete`.
-- Auto-generated tools: `vrchat_read_<operationId>` for every GET operation in the spec (read-only; prefer curated tools when available).
-- Auto-generated write tools: `vrchat_write_<operationId>` for non-GET operations in the spec (writes still require `writes.allow = true`; prefer curated tools when available).
-- Raw API mirror (disabled by default): `vrchat_call` (operationId-based access; enable via `VRCHAT_MCP_ENABLE_RAW_CALL`).
-- Auth tools: `vrchat_auth_begin`, `vrchat_auth_status`, `vrchat_auth_logout`.
-- Cache tool: `vrchat_cache_invalidate` (MCP-local).
-- Resources: `vrchat://friends/changes{?after,limit}` (delta feed; subscribe for updates), `vrchat://friends/snapshot{?includeOffline,pageSize,maxPages}` (snapshot; subscribe for updates).
+- Curated tools for common agent workflows, such as `vrchat_me`, `vrchat_friends_search`, `vrchat_friend_details`, `vrchat_worlds_search`, `vrchat_group_profile`, `vrchat_events_upcoming`, and `vrchat_notifications_recent`.
+- Auto-generated read tools named `vrchat_read_<operationId>` for GET operations from the VRChat OpenAPI spec.
+- Auto-generated write tools named `vrchat_write_<operationId>` for non-GET operations. These remain gated by the write safety configuration.
 
-Read-tool options:
-- `fields`: top-level fields to include (applies to objects or arrays of objects).
-- `compact`: when true, truncates arrays to `maxArrayLength` (default 200).
-- `maxArrayLength`: maximum array length when `compact` is true.
-- `includeMeta`: include `url` in the structured response.
-- `page`: pagination helper (offset + `n`-based endpoints only).
-  - `enabled`: set true to auto-fetch multiple pages.
-  - `size`: page size (maps to `n`).
-  - `maxPages`: maximum pages to fetch (default 10).
-  - `maxItems`: maximum items to return (default `size * maxPages`).
-  - `offset`: starting offset (default from params or 0).
+Local-only tools and resources include:
 
-Note: Most list endpoints use query param `n` (not `number`). For convenience, curated tools accept `number` as an alias and translate it to `n`.
+- `vrchat_auth_begin`, `vrchat_auth_status`, and `vrchat_auth_logout` for local authentication.
+- `vrchat_cache_invalidate` for MCP-local cache control.
+- `vrchat://friends/changes{?after,limit}` for friend change deltas.
+- `vrchat://friends/snapshot{?includeOffline,pageSize,maxPages}` for friend snapshots.
 
-## Local OpenAPI reference
-- A local copy of the OpenAPI spec can be stored at `specs/vrchat-openapi.yaml` (gitignored).
-  Set `spec.url` in your config file (or `VRCHAT_MCP_SPEC_URL`) to use it.
-- Full tool catalog is generated in `docs/tools.md` (includes curated + auto-generated tool schemas).
-- Human guide lives in `docs/tools-guide.md`.
+The generated catalog lives in `docs/tools.md`. The shorter usage guide lives in `docs/tools-guide.md`.
 
-## Notes
-- Stdout is reserved for MCP protocol; all logging goes to stderr.
-- Cookie persistence currently uses tough-cookie jar with optional keychain/file backends.
+## Optional Swagger UI
+
+If you want a Swagger UI and OpenAPI-style proxy for the MCP tools, use `mcpo`:
+
+```bash
+uvx mcpo --port 8000 --api-key "top-secret" -- node <ABS_PATH_TO_REPO>/dist/bin/cli.js
+```
+
+Then open `http://localhost:8000/docs`.
+
+You can also run config mode against an MCP client config file:
+
+```bash
+mcpo --config <PATH_TO_MCP_CONFIG.json> --hot-reload --api-key "top-secret"
+```
+
+Each MCP server is exposed under its own route, such as `http://localhost:8000/vrchat`, with Swagger UI at `http://localhost:8000/vrchat/docs`.
+
+## Development
+
+Useful scripts:
+
+- `npm run dev`: run `src/index.ts` through `tsx`.
+- `npm run build`: type-check and emit to `dist/`.
+- `npm run start`: run the built server from `dist/`.
+- `npm run lint`: run ESLint.
+- `npm run typecheck`: type-check without emit.
+- `npm test`: run Vitest.
+- `npm run check`: lint, type-check, and test.
+- `npm run mcp:login`: launch the local login helper.
+- `npm run mcp:status`: check local auth status through the harness.
+- `npm run mcp:logout`: clear the local auth session through the harness.
+- `npm run smoke:live`: run the opt-in read-only live smoke matrix against the built server.
+- `npm run generate:tools-docs`: regenerate `docs/tools.md`.
+- `npm run generate:schemas`: regenerate `src/generated/vrchat-schemas.ts` from the VRChat OpenAPI spec.
+- `npm run generate:test-schemas`: regenerate mock test schemas.
+
+Project layout:
+
+- `src/index.ts`: server bootstrap.
+- `src/core/`: VRChat API plumbing, spec parsing, request dispatch, and read helpers.
+- `src/tools/`: MCP tool registration.
+- `src/schemas/`: shared Zod schemas for tool inputs and outputs.
+- `src/generated/`: generated OpenAPI Zod schemas.
+- `src/services/`: domain services for auth, cache, friends, worlds, groups, VRCX, and more.
+- `src/resources/`: MCP resources for snapshots and delta feeds.
+- `src/auth/`: local login flow and cookie storage.
+- `src/infra/`: logging and infrastructure utilities.
+- `src/utils/`: lightweight shared helpers.
+- `docs/`: architecture, tool inventory, evals, and design notes.
+
+## Testing And Evals
+
+Local checks:
+
+```bash
+npm run check
+```
+
+Read-only live smoke checks are opt-in:
+
+```bash
+npm run build
+npm run mcp:login
+npm run smoke:live
+```
+
+Live E2E and LLM evals use gitignored local fixture files:
+
+- `test/fixtures/e2e.live.json`
+- `test/fixtures/evals.live.json`
+
+See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation workflow.
+
+## Documentation
+
+- `docs/tools.md`: generated tool catalog with schemas.
+- `docs/tools-guide.md`: short human guide for the tool surface.
+- `docs/architecture.md`: codebase overview and data flow.
+- `docs/curated-tools.md`: curated tool charter and risk tiers.
+- `docs/evals.md`: smoke, LLM, and manual agent eval workflow.
+- `docs/vrcx.md`: local VRCX integration notes.
+- `docs/design-notes.md`: archived design notes and future-facing ideas.
+
+## License
+
+MIT. See `LICENSE`.
