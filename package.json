@@ -10,7 +10,13 @@
   "files": [
     "dist",
     "assets/logo.svg",
-    "docs",
+    "docs/architecture.md",
+    "docs/curated-tools.md",
+    "docs/design-notes.md",
+    "docs/evals.md",
+    "docs/tools-guide.md",
+    "docs/tools.md",
+    "docs/vrcx.md",
     "README.md",
     "LICENSE"
   ],
