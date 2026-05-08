@@ -50,6 +50,11 @@ describe('cookie store', () => {
     const cookieHeader = await loaded!.getCookieString(cookieUrl);
     expect(cookieHeader).toContain('auth=token');
 
+    if (process.platform !== 'win32') {
+      const stat = await fs.stat(cookieFile);
+      expect(stat.mode & 0o777).toBe(0o600);
+    }
+
     await store.clear();
     const afterClear = await store.load();
     expect(afterClear).toBeNull();

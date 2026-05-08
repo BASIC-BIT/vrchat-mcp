@@ -217,6 +217,8 @@ Live E2E and LLM evals use gitignored local fixture files:
 - `test/fixtures/e2e.live.json`
 - `test/fixtures/evals.live.json`
 
+Prefer keeping live fixture files outside the repository and pointing to them with `VRCHAT_MCP_LIVE_CONFIG_FILE` and `VRCHAT_MCP_EVAL_CONFIG_FILE`. Store LLM API keys in environment variables or a secret manager, not in JSON files.
+
 See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation workflow.
 
 ## Documentation
@@ -226,6 +228,7 @@ See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation w
 - `docs/architecture.md`: codebase overview and data flow.
 - `docs/curated-tools.md`: curated tool charter and risk tiers.
 - `docs/evals.md`: smoke, LLM, and manual agent eval workflow.
+- [`docs/public-launch-plan.md`](https://github.com/BASIC-BIT/vrchat-mcp/blob/main/docs/public-launch-plan.md): release awareness, registry, and launch-channel plan.
 - `docs/vrcx.md`: local VRCX integration notes.
 - `docs/design-notes.md`: archived design notes and future-facing ideas.
 

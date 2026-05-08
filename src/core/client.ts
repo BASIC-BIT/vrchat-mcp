@@ -70,6 +70,12 @@ function extractGroupId(params: Record<string, unknown>, body: unknown): string 
   return undefined;
 }
 
+function extractCreateInstanceGroupId(body: unknown): string | undefined {
+  if (!isRecord(body)) return undefined;
+  if (body.type !== 'group') return undefined;
+  return coerceId(body.groupId) ?? coerceId(body.ownerId);
+}
+
 function isGroupOperation(op: OperationDef): boolean {
   if (op.path.includes('{groupId}')) return true;
   return op.parameters.some((param) => param.name === 'groupId');
@@ -187,8 +193,11 @@ function enforceOperationPolicy(
   }
 
   if (op.method === 'GET') return;
-  if (!isGroupOperation(op)) return;
-  const groupId = extractGroupId(params, body);
+  const groupId = isGroupOperation(op)
+    ? extractGroupId(params, body)
+    : op.operationId === 'createInstance'
+      ? extractCreateInstanceGroupId(body)
+      : undefined;
   if (!groupId) return;
   const allowed = checkGroupAllowed(groupId);
   if (!allowed.ok) {

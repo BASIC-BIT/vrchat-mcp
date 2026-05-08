@@ -9,8 +9,14 @@
   },
   "files": [
     "dist",
-    "assets",
-    "docs",
+    "assets/logo.svg",
+    "docs/architecture.md",
+    "docs/curated-tools.md",
+    "docs/design-notes.md",
+    "docs/evals.md",
+    "docs/tools-guide.md",
+    "docs/tools.md",
+    "docs/vrcx.md",
     "README.md",
     "LICENSE"
   ],
@@ -45,7 +51,7 @@
     "metrics": "npm run metrics:scc && npm run metrics:lizard"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.18.1"
   },
   "keywords": [
     "vrchat",
@@ -76,7 +82,7 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-sonarjs": "^3.0.6",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "globals": "^16.5.0",
     "mock-json-schema": "^1.1.2",
     "openapi-backend": "^5.15.0",
@@ -87,12 +93,12 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^12.6.2",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
-    "undici": "^7.16.0",
-    "yaml": "^2.8.2",
+    "undici": "^7.25.0",
+    "yaml": "^2.8.4",
     "zod": "^4.2.1"
   }
 }

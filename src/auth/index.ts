@@ -6,6 +6,8 @@ import { URL } from 'node:url';
 import { logger } from '../infra/logger.js';
 import { getCookieStore } from './cookieStore.js';
 
+const MAX_LOGIN_BODY_BYTES = 16 * 1024;
+
 export interface AuthStatus extends Record<string, unknown> {
   loggedIn: boolean;
 }
@@ -22,6 +24,13 @@ class AuthError extends Error {
     this.name = 'AuthError';
     this.kind = kind;
     this.isChallenge = options.isChallenge === true;
+  }
+}
+
+class BodyTooLargeError extends Error {
+  constructor() {
+    super('Login request body is too large.');
+    this.name = 'BodyTooLargeError';
   }
 }
 
@@ -165,8 +174,14 @@ class AuthManager {
 
   private async parseBody(req: IncomingMessage): Promise<URLSearchParams> {
     const chunks: Buffer[] = [];
+    let total = 0;
     for await (const chunk of req) {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buf.length;
+      if (total > MAX_LOGIN_BODY_BYTES) {
+        req.resume();
+        throw new BodyTooLargeError();
+      }
       chunks.push(buf);
     }
     const body = Buffer.concat(chunks).toString('utf8');
@@ -369,7 +384,17 @@ class AuthManager {
     }
 
     if (req.method === 'POST' && urlObj.pathname === '/submit') {
-      await this.handleSubmit(req, res, token);
+      try {
+        await this.handleSubmit(req, res, token);
+      } catch (err) {
+        if (err instanceof BodyTooLargeError) {
+          res.statusCode = 413;
+          res.setHeader('Connection', 'close');
+          res.end('Request body too large');
+          return;
+        }
+        throw err;
+      }
       return;
     }
 

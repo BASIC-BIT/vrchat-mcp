@@ -110,6 +110,23 @@ describe.sequential('auth login server', () => {
     expect(body).toContain('Username and password are required');
   });
 
+  it('rejects oversized login submissions', async () => {
+    const authManager = await getAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+    parsed.pathname = '/submit';
+
+    const res = await fetch(parsed.toString(), {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: `username=test&password=${'x'.repeat(17_000)}`,
+    });
+
+    expect(res.status).toBe(413);
+    const body = await res.text();
+    expect(body).toContain('Request body too large');
+  });
+
   it('prompts for TOTP when required', async () => {
     const authManager = await getAuthManager();
     const { url } = await authManager.startLoginServer();
