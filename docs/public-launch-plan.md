@@ -1,0 +1,152 @@
+# Public Launch Plan
+
+This is the working checklist for taking VRChat MCP from private repo to public project. Security fixes should merge before any public release, npm publish, or registry submission.
+
+## Goals
+
+- Make the project discoverable to people searching for VRChat, MCP, Claude, OpenCode, VRCX, and local-first social VR tooling.
+- Keep trust and safety as the leading message: read-only by default, local authentication, explicit writes, and no affiliation with VRChat Inc.
+- Prefer durable developer surfaces over broad paid ads for the first launch.
+- Use a short feedback loop: ship public, watch installs/issues/stars/registry traffic, then decide whether broader promotion is worth it.
+
+## Launch Gates
+
+| Gate                 | Required Before Public Launch | Notes                                                                                                      |
+| -------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Security fixes       | Yes                           | Merge the parallel security work first.                                                                    |
+| README               | Done                          | Public-facing README landed in PR #9.                                                                      |
+| Repo metadata        | Done                          | Description, homepage, and topics are set.                                                                 |
+| Social preview       | Asset ready                   | Use `assets/social-preview.png` in GitHub repo settings.                                                   |
+| Release notes        | Needed                        | Add `CHANGELOG.md` before tagging `v0.1.0`.                                                                |
+| Package validation   | Needed                        | Re-run `npm run check`, `npm run build`, and `npm pack --dry-run` on final `main`.                         |
+| Live smoke           | Recommended                   | Run `npm run smoke:live` after local login. Keep results private if they include account-specific details. |
+| npm publish decision | Needed                        | Official MCP Registry publishing expects a public package artifact for npm-based servers.                  |
+
+## Primary Discovery Surfaces
+
+| Surface                   | Why It Matters                                                                                        | Action                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| GitHub repository         | Primary source of trust, docs, issues, stars, and topic discovery.                                    | Make public after security fixes, add social preview manually, create `v0.1.0` release.                    |
+| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Publish `vrchat-mcp@0.1.0` if we want registry distribution on day one.                                    |
+| Official MCP Registry     | Upstream source of truth for MCP server discovery. Other registries may consume it.                   | Add `mcpName`, publish npm package, create `server.json`, authenticate with `mcp-publisher`, then publish. |
+| GitHub MCP Registry       | High-intent discovery inside GitHub's MCP ecosystem.                                                  | Verify listing after official MCP Registry submission and public repo indexing.                            |
+| Smithery                  | MCP marketplace with install/distribution workflow and usage visibility.                              | Submit after public repo and npm package are stable. Use safety-first description.                         |
+| MCP.so                    | Third-party MCP marketplace with a visible Submit flow and GitHub issue submissions.                  | Submit via `https://mcp.so/submit` or `chatmcp/mcpso` issue after public release.                          |
+| Glama MCP Servers         | Large indexed MCP directory with quality and maintenance signals.                                     | Use Add Server flow after public release; verify how it classifies local-only/auth tools.                  |
+| Awesome MCP Servers lists | High-reach GitHub discovery for builders browsing MCP servers.                                        | Submit PRs to `punkpeye/awesome-mcp-servers` and `appcypher/awesome-mcp-servers` after public release.     |
+
+## Official MCP Registry Steps
+
+The official registry is currently the highest-value registry because it is intended as a primary source of truth for public MCP servers.
+
+Planned steps:
+
+1. Confirm final npm package name and publish strategy.
+2. Add `mcpName` to `package.json` before npm publishing.
+3. Verify namespace rules for `BASIC-BIT`; if org-based GitHub auth is awkward, consider DNS verification or a personal namespace.
+4. Publish the package to npm.
+5. Install `mcp-publisher`.
+6. Run `mcp-publisher init` and review generated `server.json`.
+7. Ensure `server.json` declares stdio transport, required environment variables, repository URL, and the exact package version.
+8. Run `mcp-publisher login github` or another supported ownership method.
+9. Run `mcp-publisher publish`.
+10. Verify via registry API search.
+
+Candidate server description:
+
+```text
+Local-first MCP server for safe AI access to VRChat friends, worlds, groups, events, notifications, and optional VRCX history. Read-only by default with explicit opt-in writes.
+```
+
+## Community Launch Channels
+
+Use these after the repo is public and the security fixes are merged.
+
+| Channel                            | Fit                   | Notes                                                                                                |
+| ---------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
+| MCP Discord / registry discussions | High                  | Best early feedback channel for registry correctness and MCP ergonomics.                             |
+| GitHub release announcement        | High                  | Durable link for registries and social posts.                                                        |
+| X / Bluesky / Mastodon             | Medium                | Good for quick awareness in MCP builder circles if the post includes a concrete demo prompt.         |
+| Hacker News Show HN                | Medium                | Worth considering if the README and install path are clean. Lead with local-first safety, not hype.  |
+| Reddit MCP / AI tooling spaces     | Medium                | Useful if framed as open-source tooling, not promotion.                                              |
+| VRChat creator communities         | Medium                | Be careful and transparent: unofficial, local-first, read-only by default. Do not imply endorsement. |
+| Product Hunt                       | Low for first release | More work than value unless we have screenshots, demo video, and a polished install path.            |
+
+## Paid Awareness
+
+Do not start with Google Ads for the first public release.
+
+Reasoning:
+
+- Search intent is likely narrow and hard to target before people know to search for this category.
+- The best early users are MCP builders, VRChat power users, and VRCX users, not broad paid-search audiences.
+- Paid traffic before security fixes, release notes, and registry listings creates avoidable trust risk.
+
+If we test paid later, use a capped experiment:
+
+- Budget: $10 to $25/day for 7 days.
+- Channels: exact-match Google Search and maybe sponsor placement on an MCP directory if available.
+- Keywords: `VRChat MCP`, `VRChat Claude`, `VRChat AI assistant`, `VRCX MCP`, `VRChat API MCP`.
+- Landing page: GitHub README or a small docs page with install instructions and safety model.
+- Success metric: qualified installs, stars, issues, Discord messages, or npm downloads, not impressions.
+
+## Launch Copy Kit
+
+Short description:
+
+```text
+VRChat MCP gives AI assistants safe, local-first access to VRChat friends, worlds, groups, events, notifications, and optional VRCX history.
+```
+
+One paragraph:
+
+```text
+VRChat MCP is an unofficial Model Context Protocol server for VRChat. It is read-only by default, keeps authentication local, and gives MCP clients like Claude Desktop and OpenCode curated tools for practical questions about friends, worlds, groups, events, notifications, and VRCX history.
+```
+
+Launch post draft:
+
+```text
+I am releasing VRChat MCP, an unofficial local-first MCP server for VRChat.
+
+It lets MCP clients answer practical questions like who is online, where friends are, what events are coming up, and what VRCX history/memos say, while staying read-only by default.
+
+Repo: <PUBLIC_REPO_URL>
+```
+
+Registry tags:
+
+```text
+vrchat, mcp, model-context-protocol, claude, opencode, typescript, vrchat-api, vrcx, social-vr
+```
+
+## Manual GitHub Settings
+
+GitHub does not expose social preview upload through `gh repo edit`. Upload this image manually after the repo is public or just before launch:
+
+```text
+assets/social-preview.png
+```
+
+Path in GitHub:
+
+```text
+Settings -> General -> Social preview -> Edit -> Upload an image
+```
+
+Recommended image dimensions are already satisfied: `1280x640`.
+
+## First 48 Hours After Public Release
+
+- Watch GitHub issues and discussions closely.
+- Pin or link one canonical install/config answer if repeated questions appear.
+- Keep a short known-issues section in the release notes.
+- Avoid enabling write-heavy demos until users understand the write opt-in model.
+- Track which channels actually send qualified users.
+
+## Open Questions
+
+- Do we publish under the unscoped npm package `vrchat-mcp`, or use a scoped package under the org/user?
+- Should we add a `server.json` to the repo before or during npm publication?
+- Do we want a tiny docs site later, or is GitHub README enough for `0.1.0`?
+- Should launch wait for a demo GIF/video of the login flow and one read-only agent query?

@@ -9,7 +9,7 @@
   },
   "files": [
     "dist",
-    "assets",
+    "assets/logo.svg",
     "docs",
     "README.md",
     "LICENSE"
