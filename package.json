@@ -1,12 +1,19 @@
 {
   "name": "vrchat-mcp",
-  "version": "0.0.0",
-  "description": "VRChat MCP server (TypeScript, stdio) with curated read tools and OpenAPI mirroring.",
+  "version": "0.1.0",
+  "description": "Local-first MCP server for safe AI access to VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "bin": {
     "vrchat-mcp": "dist/bin/cli.js"
   },
+  "files": [
+    "dist",
+    "assets",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -32,7 +39,7 @@
     "generate:test-schemas": "openapi-zod-client test/fixtures/spec.yaml -o test/generated/mock-schemas.ts -t scripts/templates/openapi-schemas.hbs --export-schemas -p .prettierrc.json && tsx scripts/postprocess-schemas.ts test/generated/mock-schemas.ts",
     "generate:tools-docs": "tsx scripts/generate-tools-docs.ts",
     "mcpo": "uvx mcpo --port 8000 --api-key \"top-secret\" -- npx tsx src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/bin/cli.js",
     "metrics:scc": "tsx scripts/metrics/scc.ts",
     "metrics:lizard": "tsx scripts/metrics/lizard.ts",
     "metrics": "npm run metrics:scc && npm run metrics:lizard"
@@ -44,8 +51,20 @@
     "vrchat",
     "mcp",
     "modelcontextprotocol",
-    "claude"
+    "model-context-protocol",
+    "claude",
+    "opencode",
+    "vrchat-api",
+    "vrcx"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BASIC-BIT/vrchat-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BASIC-BIT/vrchat-mcp/issues"
+  },
+  "homepage": "https://github.com/BASIC-BIT/vrchat-mcp#readme",
   "license": "MIT",
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
