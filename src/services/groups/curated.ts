@@ -124,7 +124,7 @@ export async function resolveGroupId(
   }
   const results = await searchGroups({ query: shortCode, pageSize: 25, maxPages: 2, maxItems: 50 });
   const match = results.groups.find(
-    (group) => group.shortCode && group.shortCode.toLowerCase() === shortCode.toLowerCase(),
+    (group) => group.shortCode?.toLowerCase() === shortCode.toLowerCase(),
   );
   if (!match) {
     return {
