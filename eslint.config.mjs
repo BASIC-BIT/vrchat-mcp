@@ -19,6 +19,8 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off',
     },
   },
   {
@@ -42,6 +44,7 @@ export default [
       ...tsPlugin.configs['stylistic-type-checked'].rules,
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
     },
   },
   {
