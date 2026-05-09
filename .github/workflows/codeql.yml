@@ -16,7 +16,6 @@ permissions:
 jobs:
   analyze:
     name: Analyze JavaScript/TypeScript
-    if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -44,3 +43,5 @@ jobs:
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v4
+        with:
+          upload: ${{ github.event.repository.private == false }}
