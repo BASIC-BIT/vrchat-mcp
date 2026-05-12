@@ -46,7 +46,7 @@ Warnings are acceptable for optional VRCX or private group data. Failures need i
 
 ## 3. Manual Agent Evals
 
-Use this for the highest-signal checks: connect Claude/OpenCode to the MCP server and ask practical questions. Watch whether the agent chooses the right tools, follows IDs from prior results, handles empty results, and asks for confirmation before writes.
+Use this for the checks that catch tool-routing problems: connect Claude/OpenCode to the MCP server and ask for real VRChat lookups. Watch whether the client chooses the right tools, follows IDs from prior results, handles empty results, and asks for confirmation before writes.
 
 Good read-only prompts:
 
@@ -70,7 +70,7 @@ Search for worlds matching "club" and summarize three good candidates without du
 Show recent notifications and tell me which ones look actionable.
 ```
 
-Good write-flow prompts, only with `writes.allow=true` and safe targets:
+Good write-flow prompts, only with `writes.allow=true` and disposable targets:
 
 ```text
 Create a private instance in <world name> for me, then invite only me to it.
@@ -86,12 +86,12 @@ Set my VRChat status description to a test value, confirm it changed, then set i
 
 Manual pass criteria:
 
-- The agent uses curated tools before raw/generated tools when a curated tool exists.
-- The agent handles names first, then carries IDs forward for follow-up calls.
-- The agent treats empty or missing results as a real outcome, not a failure.
-- The agent does not expose excessive friend/profile data unless needed for the task.
-- The agent asks before medium-risk or externally visible writes.
-- The agent explains any VRChat API errors in user terms and suggests the next useful tool.
+- The client uses curated tools before raw/generated tools when a curated tool exists.
+- The client handles names first, then carries IDs forward for follow-up calls.
+- The client treats empty or missing results as a real outcome, not a failure.
+- The client does not expose excessive friend/profile data unless needed for the task.
+- The client asks before medium-risk or externally visible writes.
+- The client explains any VRChat API errors in user terms and suggests the next useful tool.
 
 ## Live LLM Evals
 

@@ -1,7 +1,7 @@
 {
   "name": "vrchat-mcp",
   "version": "0.1.0",
-  "description": "Local-first MCP server for safe AI access to VRChat friends, worlds, groups, events, notifications, and VRCX history.",
+  "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
   "main": "dist/src/index.js",
   "bin": {

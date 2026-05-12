@@ -66,6 +66,7 @@ const CalendarEventSchema = schemas.CalendarEvent as ZodSchema<MockTypes.MockCal
 
 const DEFAULT_SPEC_URL = new URL('../../specs/vrchat-openapi.yaml', import.meta.url);
 const FALLBACK_SPEC_URL = new URL('../fixtures/spec.yaml', import.meta.url);
+const UNSAFE_QUERY_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 type ResponseCarrier = ServerResponse & {
   __mockPayload?: unknown;
@@ -107,8 +108,8 @@ function collectOperationIds(spec: unknown): Set<string> {
 }
 
 function collectSecuritySchemes(spec: unknown): Set<string> {
-  const schemes = (spec as { components?: { securitySchemes?: Record<string, unknown> } }).components
-    ?.securitySchemes;
+  const schemes = (spec as { components?: { securitySchemes?: Record<string, unknown> } })
+    .components?.securitySchemes;
   return new Set(Object.keys(schemes ?? {}));
 }
 
@@ -302,14 +303,15 @@ function normalizeHeaders(headers: IncomingMessage['headers']): Record<string, s
   return result;
 }
 
-function parseQuery(url: URL): Record<string, string | string[]> | undefined {
-  const result: Record<string, string | string[]> = {};
+export function parseQuery(url: URL): Record<string, string | string[]> | undefined {
+  const result = new Map<string, string | string[]>();
   for (const key of url.searchParams.keys()) {
+    if (UNSAFE_QUERY_KEYS.has(key)) continue;
     const values = url.searchParams.getAll(key);
     if (values.length === 0) continue;
-    result[key] = values.length === 1 ? values[0] : values;
+    result.set(key, values.length === 1 ? values[0] : values);
   }
-  return Object.keys(result).length ? result : undefined;
+  return result.size ? Object.fromEntries(result) : undefined;
 }
 
 function firstValue(value: unknown): unknown {
@@ -377,12 +379,10 @@ function applyPaginatedList<T>(
   };
 }
 
-function applyCursorPage<T>(
-  items: T[],
-  query: unknown
-): { results: T[]; nextCursor: string } {
+function applyCursorPage<T>(items: T[], query: unknown): { results: T[]; nextCursor: string } {
   const cursor = firstValue(getQueryValue(query, 'nextCursor'));
-  const offset = typeof cursor === 'string' ? parseNumber(cursor.replace(/^mock-cursor-/, '')) ?? 0 : 0;
+  const offset =
+    typeof cursor === 'string' ? (parseNumber(cursor.replace(/^mock-cursor-/, '')) ?? 0) : 0;
   const limit =
     parseNumber(getQueryValue(query, 'n')) ??
     parseNumber(getQueryValue(query, 'number')) ??
@@ -833,15 +833,27 @@ export async function createMockServer(
     },
     getCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarEvents, context.request.query));
+      sendJson(
+        toResponse(res),
+        200,
+        applyPaginatedList(data.calendarEvents, context.request.query)
+      );
     },
     getFeaturedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarFeatured, context.request.query));
+      sendJson(
+        toResponse(res),
+        200,
+        applyPaginatedList(data.calendarFeatured, context.request.query)
+      );
     },
     getFollowedCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
-      sendJson(toResponse(res), 200, applyPaginatedList(data.calendarFollowed, context.request.query));
+      sendJson(
+        toResponse(res),
+        200,
+        applyPaginatedList(data.calendarFollowed, context.request.query)
+      );
     },
     discoverCalendarEvents: (c, _req, res) => {
       const context = toContext(c);
@@ -865,7 +877,9 @@ export async function createMockServer(
       const context = toContext(c);
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const events = data.calendarGroupEvents[groupId] ?? [];
-      const sorted = [...events].sort((a, b) => String(a.startsAt).localeCompare(String(b.startsAt)));
+      const sorted = [...events].sort((a, b) =>
+        String(a.startsAt).localeCompare(String(b.startsAt))
+      );
       const event = sorted[0];
       if (!event) {
         sendError(toResponse(res), 404, 'Calendar event not found');

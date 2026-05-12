@@ -4,27 +4,27 @@
 
 # VRChat MCP
 
-Give your AI assistant safe, local-first access to your VRChat account.
+MCP tools for VRChat friends, worlds, groups, events, notifications, and VRCX history.
 
-VRChat MCP is a [Model Context Protocol](https://modelcontextprotocol.io/) server for tools like Claude Desktop, OpenCode, and other MCP clients. It helps an assistant answer practical questions about your VRChat presence, friends, groups, worlds, events, notifications, and optional local VRCX history.
+VRChat MCP is an unofficial [Model Context Protocol](https://modelcontextprotocol.io/) server for VRChat. It works with Claude Desktop, OpenCode, and other MCP clients.
 
-It is read-only by default, keeps authentication local, and exposes curated high-signal tools instead of forcing agents to reason through the raw VRChat API.
+The server is read-only by default. Writes require an explicit config change. Authentication cookies stay on your machine.
 
 This project is unofficial and is not affiliated with VRChat Inc.
 
-## What You Can Ask
+## What It Can Do
 
-- Who is online, and where are they?
-- Show my current VRChat status and location.
-- Find a friend by display name and get their current profile details.
-- Search worlds and return compact results with IDs for follow-up actions.
-- Find upcoming public or group calendar events.
+- List online friends and their locations.
+- Show your current VRChat status and location.
+- Look up a friend by display name.
+- Search worlds and return IDs for follow-up calls.
+- List public and group calendar events.
 - Summarize active group instances.
-- Check recent notifications.
+- Read recent notifications.
 - Read local VRCX memos and recent world visit history, if VRCX is installed.
-- Invite yourself to a known instance, or invite a friend, after writes are explicitly enabled.
+- Invite yourself to a known instance, or invite a friend, after writes are enabled.
 
-## Safety Model
+## Write Controls
 
 - Read-only by default.
 - Write tools require explicit opt-in with `writes.allow = true` or `VRCHAT_MCP_ALLOW_WRITES=true`.
@@ -132,9 +132,9 @@ Cache and realtime pipeline tuning are configured in JSON. See `src/config/defau
 
 VRChat MCP exposes three layers:
 
-- Curated tools for common agent workflows, such as `vrchat_me`, `vrchat_friends_search`, `vrchat_friend_details`, `vrchat_worlds_search`, `vrchat_group_profile`, `vrchat_events_upcoming`, and `vrchat_notifications_recent`.
+- Curated tools for common tasks, such as `vrchat_me`, `vrchat_friends_search`, `vrchat_friend_details`, `vrchat_worlds_search`, `vrchat_group_profile`, `vrchat_events_upcoming`, and `vrchat_notifications_recent`.
 - Auto-generated read tools named `vrchat_read_<operationId>` for GET operations from the VRChat OpenAPI spec.
-- Auto-generated write tools named `vrchat_write_<operationId>` for non-GET operations. These remain gated by the write safety configuration.
+- Auto-generated write tools named `vrchat_write_<operationId>` for non-GET operations. These remain gated by the write configuration.
 
 Local-only tools and resources include:
 
@@ -219,7 +219,7 @@ Live E2E and LLM evals use gitignored local fixture files:
 
 Prefer keeping live fixture files outside the repository and pointing to them with `VRCHAT_MCP_LIVE_CONFIG_FILE` and `VRCHAT_MCP_EVAL_CONFIG_FILE`. Store LLM API keys in environment variables or a secret manager, not in JSON files.
 
-See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation workflow.
+See `docs/evals.md` for the repeatable smoke, LLM, and manual MCP client evaluation workflow.
 
 ## Documentation
 
@@ -227,7 +227,7 @@ See `docs/evals.md` for the repeatable smoke, LLM, and manual agent evaluation w
 - `docs/tools-guide.md`: short human guide for the tool surface.
 - `docs/architecture.md`: codebase overview and data flow.
 - `docs/curated-tools.md`: curated tool charter and risk tiers.
-- `docs/evals.md`: smoke, LLM, and manual agent eval workflow.
+- `docs/evals.md`: smoke, LLM, and manual MCP client eval workflow.
 - [`docs/public-launch-plan.md`](https://github.com/BASIC-BIT/vrchat-mcp/blob/main/docs/public-launch-plan.md): release awareness, registry, and launch-channel plan.
 - `docs/vrcx.md`: local VRCX integration notes.
 - `docs/design-notes.md`: archived design notes and future-facing ideas.

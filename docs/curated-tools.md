@@ -1,7 +1,7 @@
 # Curated Tool Charter
 
-This document defines the high-signal, agent-friendly tool surface. The goal is to keep the
-default toolset small, explicit, and task-oriented so an agent can reason about what to do next
+This document defines the curated tool surface. The goal is to keep the
+default toolset small, explicit, and task-oriented so MCP clients can choose the next call
 without wading through hundreds of low-level endpoints.
 
 ## Principles
@@ -11,7 +11,7 @@ without wading through hundreds of low-level endpoints.
 - Composable: outputs include IDs and metadata for follow-ups.
 - Safe by default: write tools are opt-in via `writes.allow`, with group allowlists for group-scoped writes.
 
-## Write safety
+## Write controls
 
 - Read-only tools are always enabled.
 - Write tools require `writes.allow = true`.
