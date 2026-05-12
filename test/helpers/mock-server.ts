@@ -303,7 +303,7 @@ function normalizeHeaders(headers: IncomingMessage['headers']): Record<string, s
   return result;
 }
 
-function parseQuery(url: URL): Record<string, string | string[]> | undefined {
+export function parseQuery(url: URL): Record<string, string | string[]> | undefined {
   const result = new Map<string, string | string[]>();
   for (const key of url.searchParams.keys()) {
     if (UNSAFE_QUERY_KEYS.has(key)) continue;

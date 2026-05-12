@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createMockServer, type MockServer } from './mock-server.js';
+import { createMockServer, parseQuery, type MockServer } from './mock-server.js';
 
 describe('mock server query parsing', () => {
   let server: MockServer | null = null;
@@ -9,11 +9,21 @@ describe('mock server query parsing', () => {
     server = null;
   });
 
-  it('ignores prototype-polluting query keys', async () => {
+  it('omits unsafe query keys from parsed query objects', () => {
+    const parsed = parseQuery(
+      new URL(
+        'https://mock.vrchat.test/users?search=Nakk&__proto__=x&__proto__=y&constructor=z&prototype=w'
+      )
+    );
+
+    expect(parsed).toEqual({ search: 'Nakk' });
+    expect(Object.getPrototypeOf(parsed)).toBe(Object.prototype);
+  });
+
+  it.each(['__proto__', 'constructor', 'prototype'])('ignores %s query key', async (key) => {
     server = await createMockServer();
 
-    const res = await fetch(`${server.baseUrl}/users?search=Nakk&__proto__=polluted`);
+    const res = await fetch(`${server.baseUrl}/users?search=Nakk&${key}=polluted`);
     expect(res.ok).toBe(true);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 });
