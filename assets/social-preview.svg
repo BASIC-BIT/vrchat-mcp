@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">VRChat MCP social preview</title>
+  <desc id="desc">VRChat MCP title over a dark blue network graph background.</desc>
+  <defs>
+    <radialGradient id="glowCyan" cx="20%" cy="78%" r="70%">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.55" />
+      <stop offset="0.42" stop-color="#2563eb" stop-opacity="0.24" />
+      <stop offset="1" stop-color="#020617" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowViolet" cx="92%" cy="18%" r="62%">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.44" />
+      <stop offset="0.46" stop-color="#2563eb" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#020617" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="titleGradient" x1="145" y1="164" x2="710" y2="342" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fafc" />
+      <stop offset="0.56" stop-color="#bae6fd" />
+      <stop offset="1" stop-color="#93c5fd" />
+    </linearGradient>
+    <linearGradient id="edgeGradient" x1="78" y1="510" x2="545" y2="324" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.95" />
+      <stop offset="0.55" stop-color="#60a5fa" stop-opacity="0.68" />
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0.5" />
+    </linearGradient>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="textShadow" x="-20%" y="-40%" width="150%" height="190%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#020617" flood-opacity="0.55" />
+    </filter>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#1e3a8a" stroke-opacity="0.18" stroke-width="1" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="#020617" />
+  <rect width="1200" height="630" fill="url(#grid)" />
+  <rect width="1200" height="630" fill="url(#glowCyan)" />
+  <rect width="1200" height="630" fill="url(#glowViolet)" />
+
+  <path d="M-40 530C150 420 238 604 424 466C570 358 674 424 804 300C910 198 1024 202 1262 84" fill="none" stroke="#38bdf8" stroke-opacity="0.14" stroke-width="78" />
+  <path d="M-28 552C128 448 255 568 416 452C560 348 676 390 810 272C930 166 1020 172 1235 52" fill="none" stroke="#0ea5e9" stroke-opacity="0.2" stroke-width="3" />
+  <path d="M42 558L156 464L262 522L388 432L496 482L584 396" stroke="url(#edgeGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#softGlow)" />
+  <path d="M156 464L206 586M262 522L302 438M388 432L366 568M496 482L532 578" stroke="#7dd3fc" stroke-width="2" stroke-opacity="0.42" stroke-linecap="round" />
+
+  <g filter="url(#softGlow)">
+    <circle cx="42" cy="558" r="10" fill="#e0f2fe" />
+    <circle cx="74" cy="490" r="7" fill="#38bdf8" />
+    <circle cx="156" cy="464" r="14" fill="#f8fafc" />
+    <circle cx="206" cy="586" r="8" fill="#60a5fa" />
+    <circle cx="262" cy="522" r="11" fill="#bfdbfe" />
+    <circle cx="302" cy="438" r="7" fill="#38bdf8" />
+    <circle cx="366" cy="568" r="8" fill="#60a5fa" />
+    <circle cx="388" cy="432" r="15" fill="#f8fafc" />
+    <circle cx="496" cy="482" r="12" fill="#e0f2fe" />
+    <circle cx="532" cy="578" r="7" fill="#38bdf8" />
+    <circle cx="584" cy="396" r="13" fill="#f8fafc" />
+  </g>
+
+  <g opacity="0.32">
+    <circle cx="1010" cy="142" r="180" fill="none" stroke="#38bdf8" stroke-width="1.5" />
+    <circle cx="1010" cy="142" r="112" fill="none" stroke="#a78bfa" stroke-width="1" />
+    <path d="M848 206C950 70 1076 52 1186 116" stroke="#93c5fd" stroke-width="2" fill="none" />
+  </g>
+
+  <g filter="url(#textShadow)">
+    <text x="112" y="238" fill="url(#titleGradient)" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="104" font-weight="800" letter-spacing="-5">VRChat MCP</text>
+    <text x="118" y="326" fill="#8fb8de" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="0.4">friends / worlds / groups / events / VRCX</text>
+  </g>
+</svg>
