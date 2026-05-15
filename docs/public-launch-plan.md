@@ -17,17 +17,17 @@ This is the working checklist for taking VRChat MCP from private repo to public 
 | README               | Done                          | Public-facing README landed in PR #9.                                                                      |
 | Repo metadata        | Done                          | Description, homepage, and topics are set.                                                                 |
 | Social preview       | Asset ready                   | Use `assets/social-preview.png` in GitHub repo settings.                                                   |
-| Release notes        | Needed                        | Add `CHANGELOG.md` before tagging `v0.1.0`.                                                                |
+| Release notes        | Done                          | `CHANGELOG.md` includes the initial `v0.1.0` notes.                                                        |
 | Package validation   | Needed                        | Re-run `npm run check`, `npm run build`, and `npm pack --dry-run` on final `main`.                         |
 | Live smoke           | Recommended                   | Run `npm run smoke:live` after local login. Keep results private if they include account-specific details. |
-| npm publish decision | Needed                        | Official MCP Registry publishing expects a public package artifact for npm-based servers.                  |
+| npm publish decision | Done                          | Publish the scoped package as `@basic-bit/vrchat-mcp`.                                                    |
 
 ## Primary Discovery Surfaces
 
 | Surface                   | Why It Matters                                                                                        | Action                                                                                                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | GitHub repository         | Primary source of trust, docs, issues, stars, and topic discovery.                                    | Make public after security fixes, add social preview manually, create `v0.1.0` release.                    |
-| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Publish `vrchat-mcp@0.1.0` if we want registry distribution on day one.                                    |
+| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Publish `@basic-bit/vrchat-mcp@0.1.0` if we want registry distribution on day one.                         |
 | Official MCP Registry     | Upstream source of truth for MCP server discovery. Other registries may consume it.                   | Add `mcpName`, publish npm package, create `server.json`, authenticate with `mcp-publisher`, then publish. |
 | GitHub MCP Registry       | High-intent discovery inside GitHub's MCP ecosystem.                                                  | Verify listing after official MCP Registry submission and public repo indexing.                            |
 | Smithery                  | MCP marketplace with install/distribution workflow and usage visibility.                              | Submit after public repo and npm package are stable. Lead with concrete VRChat tasks.                      |
@@ -41,7 +41,7 @@ The official registry is currently the highest-value registry because it is inte
 
 Planned steps:
 
-1. Confirm final npm package name and publish strategy.
+1. Use the scoped npm package name `@basic-bit/vrchat-mcp`.
 2. Add `mcpName` to `package.json` before npm publishing.
 3. Verify namespace rules for `BASIC-BIT`; if org-based GitHub auth is awkward, consider DNS verification or a personal namespace.
 4. Publish the package to npm.
@@ -134,7 +134,7 @@ Path in GitHub:
 Settings -> General -> Social preview -> Edit -> Upload an image
 ```
 
-Recommended image dimensions are already satisfied: `1280x640`.
+Recommended image dimensions are already satisfied: `1200x630`.
 
 ## First 48 Hours After Public Release
 
@@ -146,7 +146,6 @@ Recommended image dimensions are already satisfied: `1280x640`.
 
 ## Open Questions
 
-- Do we publish under the unscoped npm package `vrchat-mcp`, or use a scoped package under the org/user?
 - Should we add a `server.json` to the repo before or during npm publication?
 - Do we want a tiny docs site later, or is GitHub README enough for `0.1.0`?
 - Should launch wait for a demo GIF/video of the login flow and one read-only MCP client query?

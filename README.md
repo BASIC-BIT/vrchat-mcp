@@ -40,6 +40,12 @@ Requirements:
 - Node.js 20 or newer.
 - An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
 
+Run from npm:
+
+```bash
+npx @basic-bit/vrchat-mcp
+```
+
 Install from source:
 
 ```bash
@@ -59,7 +65,26 @@ The login helper opens a local browser flow and stores cookies according to your
 
 ## MCP Client Config
 
-Use the built server for day-to-day use. Replace the path with your local checkout and use a descriptive VRChat API user agent.
+Use the npm package for day-to-day use and set a descriptive VRChat API user agent.
+
+For the npm package:
+
+```json
+{
+  "mcpServers": {
+    "vrchat": {
+      "command": "npx",
+      "args": ["-y", "@basic-bit/vrchat-mcp"],
+      "env": {
+        "VRCHAT_MCP_USER_AGENT": "your-name (email@example.com)",
+        "VRCHAT_MCP_COOKIE_STORE": "file"
+      }
+    }
+  }
+}
+```
+
+For a source checkout, replace the path with your local checkout:
 
 ```json
 {
