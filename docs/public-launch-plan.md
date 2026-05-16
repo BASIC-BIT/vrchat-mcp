@@ -20,14 +20,14 @@ This is the working checklist for taking VRChat MCP from private repo to public 
 | Release notes        | Done                          | `CHANGELOG.md` includes the initial `v0.1.0` notes.                                                        |
 | Package validation   | Needed                        | Re-run `npm run check`, `npm run build`, and `npm pack --dry-run` on final `main`.                         |
 | Live smoke           | Recommended                   | Run `npm run smoke:live` after local login. Keep results private if they include account-specific details. |
-| npm publish decision | Done                          | Publish the scoped package as `@basic-bit/vrchat-mcp`.                                                    |
+| npm publish decision | Done                          | Publish the scoped package as `@basicbit/vrchat-mcp`.                                                     |
 
 ## Primary Discovery Surfaces
 
 | Surface                   | Why It Matters                                                                                        | Action                                                                                                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | GitHub repository         | Primary source of trust, docs, issues, stars, and topic discovery.                                    | Make public after security fixes, add social preview manually, create `v0.1.0` release.                    |
-| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Publish `@basic-bit/vrchat-mcp@0.1.0` if we want registry distribution on day one.                         |
+| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Publish `@basicbit/vrchat-mcp@0.1.0` if we want registry distribution on day one.                          |
 | Official MCP Registry     | Upstream source of truth for MCP server discovery. Other registries may consume it.                   | Add `mcpName`, publish npm package, create `server.json`, authenticate with `mcp-publisher`, then publish. |
 | GitHub MCP Registry       | High-intent discovery inside GitHub's MCP ecosystem.                                                  | Verify listing after official MCP Registry submission and public repo indexing.                            |
 | Smithery                  | MCP marketplace with install/distribution workflow and usage visibility.                              | Submit after public repo and npm package are stable. Lead with concrete VRChat tasks.                      |
@@ -41,7 +41,7 @@ The official registry is currently the highest-value registry because it is inte
 
 Planned steps:
 
-1. Use the scoped npm package name `@basic-bit/vrchat-mcp`.
+1. Use the scoped npm package name `@basicbit/vrchat-mcp`.
 2. Add `mcpName` to `package.json` before npm publishing.
 3. Verify namespace rules for `BASIC-BIT`; if org-based GitHub auth is awkward, consider DNS verification or a personal namespace.
 4. Publish the package to npm.

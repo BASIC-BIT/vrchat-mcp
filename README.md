@@ -43,7 +43,7 @@ Requirements:
 Run from npm:
 
 ```bash
-npx -y @basic-bit/vrchat-mcp
+npx -y @basicbit/vrchat-mcp
 ```
 
 Install from source:
@@ -78,7 +78,7 @@ For the npm package:
   "mcpServers": {
     "vrchat": {
       "command": "npx",
-      "args": ["-y", "@basic-bit/vrchat-mcp"],
+      "args": ["-y", "@basicbit/vrchat-mcp"],
       "env": {
         "VRCHAT_MCP_USER_AGENT": "your-name (email@example.com)",
         "VRCHAT_MCP_COOKIE_STORE": "file"

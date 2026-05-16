@@ -1,5 +1,5 @@
 {
-  "name": "@basic-bit/vrchat-mcp",
+  "name": "@basicbit/vrchat-mcp",
   "version": "0.1.0",
   "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
