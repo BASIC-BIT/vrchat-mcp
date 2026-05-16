@@ -134,7 +134,7 @@ Path in GitHub:
 Settings -> General -> Social preview -> Edit -> Upload an image
 ```
 
-Recommended image dimensions are already satisfied: `1200x630`.
+Current image dimensions are `1200x630`, which matches Open Graph social-card dimensions and is accepted by GitHub social preview uploads.
 
 ## First 48 Hours After Public Release
 

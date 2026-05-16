@@ -37,13 +37,13 @@ This project is unofficial and is not affiliated with VRChat Inc.
 
 Requirements:
 
-- Node.js 20 or newer.
+- Node.js 22.19.0 or newer.
 - An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
 
 Run from npm:
 
 ```bash
-npx @basic-bit/vrchat-mcp
+npx -y @basic-bit/vrchat-mcp
 ```
 
 Install from source:
@@ -55,7 +55,11 @@ npm install
 npm run build
 ```
 
-Start the local login flow:
+Authentication depends on how you run the server.
+
+For the npm package, add the server to your MCP client first, then call the `vrchat_auth_begin` tool from that client. It returns a local browser login URL and keeps cookies according to your config.
+
+For a source checkout, you can use the local harness:
 
 ```bash
 npm run mcp:login
