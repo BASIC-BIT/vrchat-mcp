@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-05-16
+
+- Add MCP Registry metadata and npm ownership marker for registry publication.
+- Move the documented and CI runtime baseline to Node.js 24.
+
 ## 0.1.0 - 2026-05-15
 
 Initial public release.

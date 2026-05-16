@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.basic-bit/vrchat-mcp",
+  "title": "VRChat MCP",
+  "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
+  "repository": {
+    "url": "https://github.com/BASIC-BIT/vrchat-mcp",
+    "source": "github",
+    "id": "1122295987"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@basicbit/vrchat-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "VRCHAT_MCP_USER_AGENT",
+          "description": "Descriptive User-Agent for VRChat API requests.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "websiteUrl": "https://github.com/BASIC-BIT/vrchat-mcp#readme"
+}

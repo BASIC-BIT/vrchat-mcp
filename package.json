@@ -1,6 +1,7 @@
 {
   "name": "@basicbit/vrchat-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "mcpName": "io.github.basic-bit/vrchat-mcp",
   "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
   "main": "dist/src/index.js",
@@ -22,6 +23,7 @@
     "docs/vrcx.md",
     "README.md",
     "CHANGELOG.md",
+    "server.json",
     "LICENSE"
   ],
   "scripts": {
@@ -55,7 +57,7 @@
     "metrics": "npm run metrics:scc && npm run metrics:lizard"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "vrchat",

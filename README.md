@@ -37,7 +37,7 @@ This project is unofficial and is not affiliated with VRChat Inc.
 
 Requirements:
 
-- Node.js 22.19.0 or newer.
+- Node.js 24 or newer.
 - An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
 
 Run from npm:
