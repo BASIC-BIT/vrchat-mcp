@@ -19,9 +19,197 @@
       },
       "environmentVariables": [
         {
+          "name": "VRCHAT_MCP_CONFIG_FILE",
+          "description": "Path to a JSON config file for settings not supplied through environment variables.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_API_BASE",
+          "description": "VRChat API base URL override.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
           "name": "VRCHAT_MCP_USER_AGENT",
           "description": "Descriptive User-Agent for VRChat API requests.",
           "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_SPEC_URL",
+          "description": "OpenAPI spec URL or file path override.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_LOG_LEVEL",
+          "description": "Log level for stderr diagnostics.",
+          "format": "string",
+          "choices": ["debug", "info", "warn", "error"],
+          "default": "info",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_COOKIE_STORE",
+          "description": "Cookie storage backend for VRChat authentication.",
+          "format": "string",
+          "choices": ["memory", "file", "keychain"],
+          "default": "memory",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_COOKIE_FILE",
+          "description": "Cookie file path used when VRCHAT_MCP_COOKIE_STORE is file.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_ALLOW_WRITES",
+          "description": "Enable non-GET VRChat API write operations.",
+          "format": "boolean",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_GROUP_ALLOWLIST",
+          "description": "Comma-separated group IDs permitted for group write actions.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_ENABLED",
+          "description": "Enable in-memory caching for high-volume reads.",
+          "format": "boolean",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_TTL_FRIENDS",
+          "description": "Fresh cache TTL in seconds for friends data.",
+          "format": "number",
+          "default": "120",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_STALE_TTL_FRIENDS",
+          "description": "Stale cache TTL in seconds for friends data.",
+          "format": "number",
+          "default": "600",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_TTL_USER_GROUPS",
+          "description": "Fresh cache TTL in seconds for user group data.",
+          "format": "number",
+          "default": "300",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_STALE_TTL_USER_GROUPS",
+          "description": "Stale cache TTL in seconds for user group data.",
+          "format": "number",
+          "default": "1800",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_TTL_GROUPS",
+          "description": "Fresh cache TTL in seconds for group data.",
+          "format": "number",
+          "default": "300",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_STALE_TTL_GROUPS",
+          "description": "Stale cache TTL in seconds for group data.",
+          "format": "number",
+          "default": "1800",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS",
+          "description": "Fresh cache TTL in seconds for notification data.",
+          "format": "number",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_CACHE_STALE_TTL_NOTIFICATIONS",
+          "description": "Stale cache TTL in seconds for notification data.",
+          "format": "number",
+          "default": "300",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_PIPELINE_ENABLED",
+          "description": "Enable the VRChat realtime pipeline websocket after login.",
+          "format": "boolean",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_PIPELINE_URL",
+          "description": "VRChat realtime pipeline websocket URL override.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_PIPELINE_RECONNECT_MS",
+          "description": "Realtime pipeline reconnect delay in milliseconds.",
+          "format": "number",
+          "default": "5000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_PIPELINE_CHANGE_BUFFER",
+          "description": "Maximum in-memory friend change events retained.",
+          "format": "number",
+          "default": "200",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_ENABLE_RAW_CALL",
+          "description": "Enable the low-level raw VRChat API call tool.",
+          "format": "boolean",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS",
+          "description": "Disable generated read tools from the VRChat OpenAPI spec.",
+          "format": "boolean",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS",
+          "description": "Disable generated write tools from the VRChat OpenAPI spec.",
+          "format": "boolean",
+          "default": "false",
           "isRequired": false,
           "isSecret": false
         }
