@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 - 2026-05-16
+
+- Match MCP Registry server namespace casing to the GitHub organization namespace authorized by registry login.
+
 ## 0.1.1 - 2026-05-16
 
 - Add MCP Registry metadata and npm ownership marker for registry publication.
