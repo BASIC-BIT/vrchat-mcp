@@ -131,6 +131,7 @@ describe('config loader', () => {
   });
 
   it('allows writes by default', () => {
+    setEnv('VRCHAT_MCP_ALLOW_WRITES', undefined);
     expect(getConfig().writes.allow).toBe(true);
   });
 
