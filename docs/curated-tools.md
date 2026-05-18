@@ -9,12 +9,12 @@ without wading through hundreds of low-level endpoints.
 - Small and explicit: each tool has a single, obvious purpose.
 - Human-input friendly: accept names or natural inputs where reasonable.
 - Composable: outputs include IDs and metadata for follow-ups.
-- Safe by default: write tools are opt-in via `writes.allow`, with group allowlists for group-scoped writes.
+- Practical by default: write tools are available out of the box, with `writes.allow` for read-only mode and group allowlists for group-scoped writes.
 
 ## Write controls
 
 - Read-only tools are always enabled.
-- Write tools require `writes.allow = true`.
+- Write tools are enabled unless `writes.allow = false`.
 - Group-scoped writes additionally honor `groups.allowlist`.
 
 ## Current curated tools (implemented)
@@ -124,7 +124,7 @@ Automation hooks:
 ## Toolset toggles (planned)
 
 Auto-generated read tools are enabled by default (`vrchat_read_<operationId>`).
-Auto-generated write tools are enabled by default (`vrchat_write_<operationId>`, gated by `writes.allow`).
+Auto-generated write tools are enabled by default (`vrchat_write_<operationId>`) unless disabled by `writes.allow`.
 The raw tool (`vrchat_call`) is disabled by default and can be enabled via config/environment flags.
 
 ## Group allowlist guard

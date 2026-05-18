@@ -6,7 +6,7 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 
 - Prefer **curated tools** first. They include search and summary flows for common VRChat tasks.
 - Use **auto-generated tools** (`vrchat_read_<operationId>`, `vrchat_write_<operationId>`) only when a curated tool does not exist.
-- **Writes are opt-in**. Set `writes.allow = true` (or `VRCHAT_MCP_ALLOW_WRITES=true`) to enable any non-GET operation.
+- **Writes are enabled by default**. Set `writes.allow = false` (or `VRCHAT_MCP_ALLOW_WRITES=false`) for read-only mode.
 - Group write actions are restricted by `groups.allowlist` when set.
 
 ## MCP resources

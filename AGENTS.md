@@ -15,7 +15,7 @@ Guidance for coding agents:
   - `npm run mcp:status`, `npm run mcp:logout`, `npm run mcp:list-tools`, `npm run mcp:call`.
   - The harness defaults cookie storage to `file`. Override via config JSON or env vars if needed.
   - Use `VRCHAT_MCP_SERVER_COMMAND` / `VRCHAT_MCP_SERVER_ARGS` to switch between `tsx src/index.ts` and built `dist/bin/cli.js`.
-- Default to read-only calls. Non-GET requests are blocked unless `writes.allow=true` in config (or env override).
+- Write tools are enabled by default. Use `writes.allow=false` in config, or `VRCHAT_MCP_ALLOW_WRITES=false`, when a test or run must be read-only.
 - Regenerate tool catalog docs after spec updates: `npm run generate:tools-docs`.
 - Regenerate VRChat OpenAPI schemas after spec updates: `npm run generate:schemas` (updates `src/generated/vrchat-schemas.ts`; do not edit manually).
 - Regenerate mock test schemas after spec tweaks: `npm run generate:test-schemas` (updates `test/generated/mock-schemas.ts`; do not edit manually).

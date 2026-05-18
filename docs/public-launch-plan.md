@@ -5,7 +5,7 @@ This is the working checklist for taking VRChat MCP from private repo to public 
 ## Goals
 
 - Make the project discoverable to people searching for VRChat, MCP, Claude, OpenCode, and VRCX tooling.
-- Lead with the defaults: read-only operations, local authentication, explicit writes, and no affiliation with VRChat Inc.
+- Lead with the defaults: local authentication, zero-config setup, available write tools, and no affiliation with VRChat Inc.
 - Prefer durable developer surfaces over broad paid ads for the first launch.
 - Use a short feedback loop: ship public, watch installs/issues/stars/registry traffic, then decide whether broader promotion is worth it.
 
@@ -55,7 +55,7 @@ Completed steps:
 Candidate server description:
 
 ```text
-MCP server for VRChat friends, worlds, groups, events, notifications, and optional VRCX history. Read-only by default with explicit opt-in writes.
+MCP server for VRChat friends, worlds, groups, events, notifications, and optional VRCX history. Works out of the box with local authentication and configurable write controls.
 ```
 
 ## Community Launch Channels
@@ -69,7 +69,7 @@ Use these after the repo is public and the security fixes are merged.
 | X / Bluesky / Mastodon             | Medium                | Good for quick awareness in MCP builder circles if the post includes a concrete demo prompt.           |
 | Hacker News Show HN                | Medium                | Worth considering if the README and install path are clean. Lead with concrete VRChat tasks, not hype. |
 | Reddit MCP tooling spaces          | Medium                | Useful if framed as open-source tooling, not promotion.                                                |
-| VRChat creator communities         | Medium                | Be careful and transparent: unofficial and read-only by default. Do not imply endorsement.             |
+| VRChat creator communities         | Medium                | Be careful and transparent: unofficial and user-controlled. Do not imply endorsement.                  |
 | Product Hunt                       | Low for first release | More work than value unless we have screenshots, demo video, and a polished install path.              |
 
 ## Paid Awareness
@@ -101,7 +101,7 @@ VRChat MCP gives MCP clients tools for VRChat friends, worlds, groups, events, n
 One paragraph:
 
 ```text
-VRChat MCP is an unofficial Model Context Protocol server for VRChat. It is read-only by default, keeps authentication on your machine, and gives MCP clients like Claude Desktop and OpenCode tools for friends, worlds, groups, events, notifications, and VRCX history.
+VRChat MCP is an unofficial Model Context Protocol server for VRChat. It keeps authentication on your machine and gives MCP clients like Claude Desktop and OpenCode tools for friends, worlds, groups, events, notifications, and VRCX history.
 ```
 
 Launch post draft:
@@ -109,7 +109,7 @@ Launch post draft:
 ```text
 I am releasing VRChat MCP, an unofficial MCP server for VRChat.
 
-It lets MCP clients answer questions like who is online, where friends are, what events are coming up, and what VRCX history/memos say. The server is read-only by default.
+It lets MCP clients answer questions like who is online, where friends are, what events are coming up, and what VRCX history/memos say.
 
 Repo: <PUBLIC_REPO_URL>
 ```
@@ -141,11 +141,11 @@ Current image dimensions are `1200x630`, which matches Open Graph social-card di
 - Watch GitHub issues and discussions closely.
 - Pin or link one canonical install/config answer if repeated questions appear.
 - Keep a short known-issues section in the release notes.
-- Avoid enabling write-heavy demos until users understand the write opt-in model.
+- Avoid write-heavy demos until users understand the write controls.
 - Track which channels actually send qualified users.
 
 ## Open Questions
 
 - Should we add a `server.json` to the repo before or during npm publication?
 - Do we want a tiny docs site later, or is GitHub README enough for `0.1.0`?
-- Should launch wait for a demo GIF/video of the login flow and one read-only MCP client query?
+- Should launch wait for a demo GIF/video of the login flow and one MCP client query?

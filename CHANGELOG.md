@@ -5,6 +5,7 @@
 - Simplify registry-visible configuration to the common user-facing environment variables.
 - Keep low-level cache, pipeline, and group allowlist tuning in JSON config instead of environment variables.
 - `VRCHAT_MCP_GROUP_ALLOWLIST` remains honored for compatibility; prefer `groups.allowlist` in `VRCHAT_MCP_CONFIG_FILE` for new setups.
+- Enable write tools by default; set `writes.allow=false` or `VRCHAT_MCP_ALLOW_WRITES=false` for read-only mode.
 
 ## 0.1.2 - 2026-05-16
 

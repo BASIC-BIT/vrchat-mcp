@@ -19,14 +19,26 @@ describe('write blocking', () => {
     vi.resetModules();
   });
 
+  it('allows non-GET operations by default', async () => {
+    const { callOperation } = await import('../../src/core/client.js');
+    const result = await callOperation({
+      operationId: 'createThing',
+      body: { name: 'test' },
+      options: { dryRun: true },
+    });
+
+    expect(result.dryRun).toBe(true);
+  });
+
   it('blocks non-GET operations when writes disabled', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'false';
     const { callOperation } = await import('../../src/core/client.js');
     await expect(
       callOperation({
         operationId: 'createThing',
         body: { name: 'test' },
         options: { dryRun: true },
-      }),
+      })
     ).rejects.toThrow(/Write operations are disabled/);
   });
 });

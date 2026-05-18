@@ -62,7 +62,7 @@ This enables tools to provide:
 
 ## Tooling philosophy
 
-- Read-only by default.
+- VRCX tools are read-only.
 - Small, curated outputs.
 - No raw SQL passthrough.
 - Never return `cookies` or sensitive `configs` keys.
