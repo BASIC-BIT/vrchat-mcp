@@ -45,6 +45,11 @@ describe('config loader', () => {
     expect(config.api.userAgent).not.toContain('{version}');
   });
 
+  it('uses keychain cookie storage by default', () => {
+    setEnv('VRCHAT_MCP_COOKIE_STORE', undefined);
+    expect(getConfig().auth.cookieStore).toBe('keychain');
+  });
+
   it('reads config file overrides and replaces arrays', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
     const filePath = path.join(tempDir, 'config.json');
