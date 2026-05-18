@@ -40,7 +40,7 @@ Requirements:
 - Node.js 24.15.0 or newer. This is the current LTS baseline used for CI and release validation.
 - An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
 
-Run from npm. You do not need to clone this repository for normal use:
+Run from npm:
 
 ```bash
 npx -y @basicbit/vrchat-mcp
@@ -71,7 +71,7 @@ The login helper opens a local browser flow and stores cookies according to your
 
 ## MCP Client Config
 
-Use the npm package for day-to-day use and set a descriptive VRChat API user agent.
+Use the npm package for day-to-day use. No environment variables or JSON config file are required to start.
 
 For the npm package:
 
@@ -80,15 +80,13 @@ For the npm package:
   "mcpServers": {
     "vrchat": {
       "command": "npx",
-      "args": ["-y", "@basicbit/vrchat-mcp"],
-      "env": {
-        "VRCHAT_MCP_USER_AGENT": "your-name (email@example.com)",
-        "VRCHAT_MCP_COOKIE_STORE": "file"
-      }
+      "args": ["-y", "@basicbit/vrchat-mcp"]
     }
   }
 }
 ```
+
+That default setup uses in-memory cookies. It is enough to authenticate and use the server, but you will need to log in again after the MCP server process restarts. Add `VRCHAT_MCP_COOKIE_STORE=file` or `keychain` if you want login persistence.
 
 For local source development, replace the path with your checkout:
 
@@ -125,6 +123,8 @@ For active development, you can point your MCP client at the TypeScript entrypoi
 ```
 
 ## Configuration
+
+Configuration is optional. Without environment variables or a JSON config file, VRChat MCP uses built-in defaults for the VRChat API URL, OpenAPI spec URL, logging, cache, realtime pipeline, read tools, and read-only write policy.
 
 Defaults live in `src/config/defaults.json`. To override them, create a JSON config file and point to it with `VRCHAT_MCP_CONFIG_FILE`.
 
