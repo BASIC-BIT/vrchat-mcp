@@ -10,7 +10,7 @@
     "level": "info"
   },
   "auth": {
-    "cookieStore": "memory",
+    "cookieStore": "keychain",
     "cookieFile": "~/.vrchat-mcp-cookies.json"
   },
   "writes": {

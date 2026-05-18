@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 - 2026-05-18
+
+- Default authentication cookie storage to the OS keychain, with file storage fallback when the keychain backend is unavailable.
+- Rewrite the README around consumer install paths, client-specific MCP config, login, and core tools.
+
 ## 0.1.3 - 2026-05-17
 
 - Simplify registry-visible configuration to the common user-facing environment variables.

@@ -8,7 +8,7 @@
     "source": "github",
     "id": "1122295987"
   },
-  "version": "0.1.3",
+  "version": "0.1.4",
   "packages": [
     {
       "registryType": "npm",
@@ -43,10 +43,10 @@
         },
         {
           "name": "VRCHAT_MCP_COOKIE_STORE",
-          "description": "Cookie storage backend for VRChat authentication.",
+          "description": "Cookie storage backend for VRChat authentication. The keychain mode falls back to file storage if the OS keychain is unavailable.",
           "format": "string",
           "choices": ["memory", "file", "keychain"],
-          "default": "memory",
+          "default": "keychain",
           "isRequired": false,
           "isSecret": false
         },

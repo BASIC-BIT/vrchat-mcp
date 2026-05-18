@@ -84,11 +84,16 @@ class FileStore implements CookieStore {
 class KeychainStore implements CookieStore {
   private service = 'vrchat-mcp';
   private account = 'default';
+  private fallback: CookieStore;
   private keytar: {
     getPassword: (service: string, account: string) => Promise<string | null>;
     setPassword: (service: string, account: string, password: string) => Promise<void>;
     deletePassword: (service: string, account: string) => Promise<boolean>;
   } | null = null;
+
+  constructor(fallback: CookieStore) {
+    this.fallback = fallback;
+  }
 
   async ensureKeytar() {
     if (this.keytar) return this.keytar;
@@ -97,36 +102,62 @@ class KeychainStore implements CookieStore {
       this.keytar = mod.default ?? (mod as any);
       return this.keytar;
     } catch (err) {
-      logger.warn('keytar not available; falling back to memory', { message: (err as Error).message });
+      logger.warn('keytar not available; falling back to file cookie storage', {
+        message: (err as Error).message,
+      });
       return null;
     }
   }
 
   async load(): Promise<CookieJar | null> {
     const keytar = await this.ensureKeytar();
-    if (!keytar) return null;
-    const val = await keytar.getPassword(this.service, this.account);
-    if (!val) return null;
+    if (!keytar) return await this.fallback.load();
+    let val: string | null;
+    try {
+      val = await keytar.getPassword(this.service, this.account);
+    } catch (err) {
+      logger.warn('Failed to load cookies from keychain; falling back to file cookie storage', {
+        message: (err as Error).message,
+      });
+      return await this.fallback.load();
+    }
+    if (!val) return await this.fallback.load();
     try {
       const obj = JSON.parse(val);
       return await deserializeJar(obj);
     } catch (err) {
       logger.warn('Failed to parse keychain cookie data', { message: (err as Error).message });
-      return null;
+      return await this.fallback.load();
     }
   }
 
   async save(jar: CookieJar): Promise<void> {
     const keytar = await this.ensureKeytar();
-    if (!keytar) return;
+    if (!keytar) {
+      await this.fallback.save(jar);
+      return;
+    }
     const serialized = await serializeJar(jar);
-    await keytar.setPassword(this.service, this.account, JSON.stringify(serialized));
+    try {
+      await keytar.setPassword(this.service, this.account, JSON.stringify(serialized));
+    } catch (err) {
+      logger.warn('Failed to save cookies to keychain; falling back to file cookie storage', {
+        message: (err as Error).message,
+      });
+      await this.fallback.save(jar);
+    }
   }
 
   async clear(): Promise<void> {
     const keytar = await this.ensureKeytar();
-    if (!keytar) return;
-    await keytar.deletePassword(this.service, this.account);
+    if (keytar) {
+      try {
+        await keytar.deletePassword(this.service, this.account);
+      } catch (err) {
+        logger.warn('Failed to delete cookies from keychain', { message: (err as Error).message });
+      }
+    }
+    await this.fallback.clear();
   }
 }
 
@@ -137,7 +168,7 @@ export function getCookieStore(): CookieStore {
     return new FileStore(path.resolve(config.auth.cookieFile));
   }
   if (mode === 'keychain') {
-    return new KeychainStore();
+    return new KeychainStore(new FileStore(path.resolve(config.auth.cookieFile)));
   }
   return new MemoryStore();
 }
