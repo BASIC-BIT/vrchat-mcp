@@ -134,7 +134,7 @@ Example `vrchat-mcp.config.json`:
 {
   "api": { "userAgent": "your-name (email@example.com)" },
   "auth": { "cookieStore": "file" },
-  "writes": { "allow": true },
+  "writes": { "allow": false },
   "groups": { "allowlist": ["grp_abc123"] },
   "cache": { "enabled": true }
 }
