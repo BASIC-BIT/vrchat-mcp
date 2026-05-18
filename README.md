@@ -86,7 +86,7 @@ For the npm package:
 }
 ```
 
-That default setup uses in-memory cookies. It is enough to authenticate and use the server, but you will need to log in again after the MCP server process restarts. Add `VRCHAT_MCP_COOKIE_STORE=file` or `keychain` if you want login persistence.
+That default setup uses in-memory cookies. It is enough to authenticate and use the server, but you will need to log in again after the MCP server process restarts. Add an `env` block with `VRCHAT_MCP_COOKIE_STORE` set to `file` or `keychain` if you want login persistence.
 
 For local source development, replace the path with your checkout:
 
