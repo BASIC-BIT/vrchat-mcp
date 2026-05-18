@@ -43,7 +43,7 @@
         },
         {
           "name": "VRCHAT_MCP_COOKIE_STORE",
-          "description": "Cookie storage backend for VRChat authentication.",
+          "description": "Cookie storage backend for VRChat authentication. The keychain mode falls back to file storage if the OS keychain is unavailable.",
           "format": "string",
           "choices": ["memory", "file", "keychain"],
           "default": "keychain",

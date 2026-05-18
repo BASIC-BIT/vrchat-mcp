@@ -8,7 +8,7 @@ Unofficial [Model Context Protocol](https://modelcontextprotocol.io/) tools for 
 
 [![npm](https://img.shields.io/npm/v/%40basicbit%2Fvrchat-mcp)](https://www.npmjs.com/package/@basicbit/vrchat-mcp) [![license](https://img.shields.io/npm/l/%40basicbit%2Fvrchat-mcp)](./LICENSE)
 
-VRChat MCP runs locally through stdio. Your VRChat auth cookies stay on your machine and default to your OS keychain.
+VRChat MCP runs locally through stdio. Your VRChat auth cookies stay on your machine and default to your OS keychain, with file storage as the fallback when a keychain backend is unavailable.
 
 This project is unofficial and is not affiliated with VRChat Inc.
 
@@ -18,6 +18,8 @@ Requirements:
 
 - Node.js 24.15.0 or newer.
 - An MCP client that can run local stdio servers.
+
+On headless Linux or containers without a keychain daemon such as `libsecret`, set `VRCHAT_MCP_COOKIE_STORE=file` for explicit persistent cookie storage.
 
 The npm package is the normal install path:
 
@@ -32,6 +34,8 @@ The server is also published to the official MCP Registry as `io.github.BASIC-BI
 Most clients use one of these shapes. No environment variables are required for the default setup.
 
 ### OpenCode
+
+OpenCode uses an array-valued `command` field.
 
 Add this to `~/.config/opencode/opencode.json`:
 
@@ -49,6 +53,8 @@ Add this to `~/.config/opencode/opencode.json`:
 
 ### Claude Desktop, Cursor, Kiro, Roo, Windsurf
 
+These clients usually split the executable into `command` plus `args`.
+
 Use this in clients that expect an `mcpServers` object:
 
 ```json
@@ -63,6 +69,8 @@ Use this in clients that expect an `mcpServers` object:
 ```
 
 ### VS Code
+
+VS Code uses a `servers` object instead of `mcpServers`.
 
 Use this in `.vscode/mcp.json`:
 
@@ -95,7 +103,7 @@ If your Windows client cannot spawn `npx` directly, use `cmd` as the command and
 
 After adding the server to your MCP client, ask it to call `vrchat_auth_begin`. The tool returns a local browser login URL.
 
-After logging in, call `vrchat_auth_status` to confirm the session. By default, cookies are stored in the OS keychain so the login survives MCP server restarts.
+After logging in, call `vrchat_auth_status` to confirm the session. By default, cookies are stored in the OS keychain so the login survives MCP server restarts. If the OS keychain is unavailable, VRChat MCP falls back to file storage.
 
 Useful auth tools:
 
@@ -159,7 +167,7 @@ See `docs/tools-guide.md` for a short guide and `docs/tools.md` for the generate
 
 Write tools are enabled by default so client installs work without extra setup. Your MCP client may still ask before executing tool calls, depending on its own permission model.
 
-To force read-only mode:
+To force read-only mode, add this `env` fragment inside the server entry for your MCP client:
 
 ```json
 {
