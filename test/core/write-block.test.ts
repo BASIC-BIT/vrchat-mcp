@@ -20,13 +20,14 @@ describe('write blocking', () => {
   });
 
   it('blocks non-GET operations when writes disabled', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'false';
     const { callOperation } = await import('../../src/core/client.js');
     await expect(
       callOperation({
         operationId: 'createThing',
         body: { name: 'test' },
         options: { dryRun: true },
-      }),
+      })
     ).rejects.toThrow(/Write operations are disabled/);
   });
 });

@@ -70,7 +70,7 @@ Search for worlds matching "club" and summarize three good candidates without du
 Show recent notifications and tell me which ones look actionable.
 ```
 
-Good write-flow prompts, only with `writes.allow=true` and disposable targets:
+Good write-flow prompts, preferably with disposable targets:
 
 ```text
 Create a private instance in <world name> for me, then invite only me to it.

@@ -130,6 +130,10 @@ describe('config loader', () => {
     expect(config.writes.allow).toBe(true);
   });
 
+  it('allows writes by default', () => {
+    expect(getConfig().writes.allow).toBe(true);
+  });
+
   it('throws on invalid env values', () => {
     setEnv('VRCHAT_MCP_CACHE_ENABLED', 'nope');
     expect(() => getConfig()).toThrow(/Invalid environment variables/);

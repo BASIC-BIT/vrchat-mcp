@@ -254,7 +254,7 @@ async function main() {
 
   md += '## Auto-generated write tools (non-GET operations)\n';
   md +=
-    'Input schemas are derived per operation from OpenAPI parameters and request bodies (writes still require `writes.allow = true`).\n';
+    'Input schemas are derived per operation from OpenAPI parameters and request bodies (set `writes.allow = false` for read-only mode).\n';
   md += 'Write options are shared across write tools:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(WriteOptionsSchema), null, 2)}\n\`\`\`\n\n`;
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(WriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;

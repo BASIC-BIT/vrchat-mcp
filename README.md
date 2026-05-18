@@ -8,7 +8,7 @@ MCP tools for VRChat friends, worlds, groups, events, notifications, and VRCX hi
 
 VRChat MCP is an unofficial [Model Context Protocol](https://modelcontextprotocol.io/) server for VRChat. It works with Claude Desktop, OpenCode, and other MCP clients.
 
-The server is read-only by default. Writes require an explicit config change. Authentication cookies stay on your machine.
+The server can read and write through the VRChat API. Authentication cookies stay on your machine, and MCP clients can still ask before calling write tools.
 
 This project is unofficial and is not affiliated with VRChat Inc.
 
@@ -22,12 +22,12 @@ This project is unofficial and is not affiliated with VRChat Inc.
 - Summarize active group instances.
 - Read recent notifications.
 - Read local VRCX memos and recent world visit history, if VRCX is installed.
-- Invite yourself to a known instance, or invite a friend, after writes are enabled.
+- Invite yourself to a known instance, or invite a friend.
 
 ## Write Controls
 
-- Read-only by default.
-- Write tools require explicit opt-in with `writes.allow = true` or `VRCHAT_MCP_ALLOW_WRITES=true`.
+- Write tools are enabled by default so the MCP works without extra setup.
+- Set `writes.allow = false` or `VRCHAT_MCP_ALLOW_WRITES=false` for read-only mode.
 - Group write tools can be limited to specific group IDs with `groups.allowlist`.
 - Authentication cookies can stay in memory, in a local file, or in the OS keychain.
 - Logs go to stderr so stdout remains reserved for MCP protocol messages.
@@ -124,7 +124,7 @@ For active development, you can point your MCP client at the TypeScript entrypoi
 
 ## Configuration
 
-Configuration is optional. Without environment variables or a JSON config file, VRChat MCP uses built-in defaults for the VRChat API URL, OpenAPI spec URL, logging, cache, realtime pipeline, read tools, and read-only write policy.
+Configuration is optional. Without environment variables or a JSON config file, VRChat MCP uses built-in defaults for the VRChat API URL, OpenAPI spec URL, logging, cache, realtime pipeline, read tools, and write tools.
 
 Defaults live in `src/config/defaults.json`. To override them, create a JSON config file and point to it with `VRCHAT_MCP_CONFIG_FILE`.
 
@@ -134,7 +134,7 @@ Example `vrchat-mcp.config.json`:
 {
   "api": { "userAgent": "your-name (email@example.com)" },
   "auth": { "cookieStore": "file" },
-  "writes": { "allow": false },
+  "writes": { "allow": true },
   "groups": { "allowlist": ["grp_abc123"] },
   "cache": { "enabled": true }
 }
@@ -149,7 +149,7 @@ Common environment variables:
 - `VRCHAT_MCP_LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
 - `VRCHAT_MCP_COOKIE_STORE`: `memory`, `file`, or `keychain`.
 - `VRCHAT_MCP_COOKIE_FILE`: cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.
-- `VRCHAT_MCP_ALLOW_WRITES`: enable non-GET operations.
+- `VRCHAT_MCP_ALLOW_WRITES`: set to `false` for read-only mode.
 
 Group allowlists, cache timing, realtime pipeline tuning, and generated tool controls are configured in JSON. `VRCHAT_MCP_GROUP_ALLOWLIST` remains honored for compatibility, but new setups should use `groups.allowlist` in the JSON config file.
 
@@ -163,7 +163,7 @@ VRChat MCP exposes three layers:
 
 - Curated tools for common tasks, such as `vrchat_me`, `vrchat_friends_search`, `vrchat_friend_details`, `vrchat_worlds_search`, `vrchat_group_profile`, `vrchat_events_upcoming`, and `vrchat_notifications_recent`.
 - Auto-generated read tools named `vrchat_read_<operationId>` for GET operations from the VRChat OpenAPI spec.
-- Auto-generated write tools named `vrchat_write_<operationId>` for non-GET operations. These remain gated by the write configuration.
+- Auto-generated write tools named `vrchat_write_<operationId>` for non-GET operations. These can be disabled with the write configuration.
 
 Local-only tools and resources include:
 

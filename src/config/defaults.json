@@ -14,7 +14,7 @@
     "cookieFile": "~/.vrchat-mcp-cookies.json"
   },
   "writes": {
-    "allow": false
+    "allow": true
   },
   "cache": {
     "enabled": true,
