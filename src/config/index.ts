@@ -138,14 +138,6 @@ const EnvBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
-const EnvPositiveInt = z.preprocess((value) => {
-  if (value === undefined) return undefined;
-  if (typeof value !== 'string') return value;
-  const trimmed = value.trim();
-  if (!trimmed) return value;
-  return Number(trimmed);
-}, z.number().int().positive().optional());
-
 const EnvAllowlist = z.preprocess((value) => {
   if (value === undefined) return undefined;
   if (typeof value !== 'string') return value;
@@ -168,18 +160,7 @@ const EnvSchema = z
     VRCHAT_MCP_COOKIE_FILE: EnvString,
     VRCHAT_MCP_ALLOW_WRITES: EnvBoolean,
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
-    VRCHAT_MCP_CACHE_TTL_FRIENDS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_STALE_TTL_FRIENDS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_TTL_USER_GROUPS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_STALE_TTL_USER_GROUPS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_TTL_GROUPS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_STALE_TTL_GROUPS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS: EnvPositiveInt,
-    VRCHAT_MCP_CACHE_STALE_TTL_NOTIFICATIONS: EnvPositiveInt,
     VRCHAT_MCP_PIPELINE_ENABLED: EnvBoolean,
-    VRCHAT_MCP_PIPELINE_URL: EnvString,
-    VRCHAT_MCP_PIPELINE_RECONNECT_MS: EnvPositiveInt,
-    VRCHAT_MCP_PIPELINE_CHANGE_BUFFER: EnvPositiveInt,
     VRCHAT_MCP_GROUP_ALLOWLIST: EnvAllowlist,
     VRCHAT_MCP_ENABLE_RAW_CALL: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: EnvBoolean,
@@ -290,35 +271,9 @@ function applyWriteEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValu
 
 function applyCacheEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   const cacheOverrides: Partial<ConfigBase['cache']> = {};
-  const ttlOverrides: Partial<ConfigBase['cache']['ttlSeconds']> = {};
-  const staleOverrides: Partial<ConfigBase['cache']['staleTtlSeconds']> = {};
 
   if (env.VRCHAT_MCP_CACHE_ENABLED !== undefined) {
     cacheOverrides.enabled = env.VRCHAT_MCP_CACHE_ENABLED;
-  }
-  if (env.VRCHAT_MCP_CACHE_TTL_FRIENDS !== undefined)
-    ttlOverrides.friends = env.VRCHAT_MCP_CACHE_TTL_FRIENDS;
-  if (env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS !== undefined)
-    ttlOverrides.userGroups = env.VRCHAT_MCP_CACHE_TTL_USER_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_TTL_GROUPS !== undefined)
-    ttlOverrides.groups = env.VRCHAT_MCP_CACHE_TTL_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS !== undefined)
-    ttlOverrides.notifications = env.VRCHAT_MCP_CACHE_TTL_NOTIFICATIONS;
-
-  if (env.VRCHAT_MCP_CACHE_STALE_TTL_FRIENDS !== undefined)
-    staleOverrides.friends = env.VRCHAT_MCP_CACHE_STALE_TTL_FRIENDS;
-  if (env.VRCHAT_MCP_CACHE_STALE_TTL_USER_GROUPS !== undefined)
-    staleOverrides.userGroups = env.VRCHAT_MCP_CACHE_STALE_TTL_USER_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_STALE_TTL_GROUPS !== undefined)
-    staleOverrides.groups = env.VRCHAT_MCP_CACHE_STALE_TTL_GROUPS;
-  if (env.VRCHAT_MCP_CACHE_STALE_TTL_NOTIFICATIONS !== undefined)
-    staleOverrides.notifications = env.VRCHAT_MCP_CACHE_STALE_TTL_NOTIFICATIONS;
-
-  if (Object.keys(ttlOverrides).length > 0) {
-    cacheOverrides.ttlSeconds = ttlOverrides as ConfigBase['cache']['ttlSeconds'];
-  }
-  if (Object.keys(staleOverrides).length > 0) {
-    cacheOverrides.staleTtlSeconds = staleOverrides as ConfigBase['cache']['staleTtlSeconds'];
   }
   if (Object.keys(cacheOverrides).length > 0) {
     overrides.cache = cacheOverrides as ConfigBase['cache'];
@@ -329,15 +284,6 @@ function applyPipelineEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvV
   const pipelineOverrides: Partial<ConfigBase['pipeline']> = {};
   if (env.VRCHAT_MCP_PIPELINE_ENABLED !== undefined) {
     pipelineOverrides.enabled = env.VRCHAT_MCP_PIPELINE_ENABLED;
-  }
-  if (env.VRCHAT_MCP_PIPELINE_URL) {
-    pipelineOverrides.url = env.VRCHAT_MCP_PIPELINE_URL;
-  }
-  if (env.VRCHAT_MCP_PIPELINE_RECONNECT_MS !== undefined) {
-    pipelineOverrides.reconnectMs = env.VRCHAT_MCP_PIPELINE_RECONNECT_MS;
-  }
-  if (env.VRCHAT_MCP_PIPELINE_CHANGE_BUFFER !== undefined) {
-    pipelineOverrides.changeBuffer = env.VRCHAT_MCP_PIPELINE_CHANGE_BUFFER;
   }
   if (Object.keys(pipelineOverrides).length > 0) {
     overrides.pipeline = pipelineOverrides as ConfigBase['pipeline'];
