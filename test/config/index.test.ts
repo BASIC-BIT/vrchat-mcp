@@ -55,9 +55,9 @@ describe('config loader', () => {
           pipeline: { userAgent: 'pipeline/{version}' },
         },
         null,
-        2,
+        2
       ),
-      'utf8',
+      'utf8'
     );
 
     const relativePath = path.relative(process.cwd(), filePath);
@@ -80,9 +80,9 @@ describe('config loader', () => {
           pipeline: { userAgent: '' },
         },
         null,
-        2,
+        2
       ),
-      'utf8',
+      'utf8'
     );
     const relativePath = path.relative(process.cwd(), filePath);
     setEnv('VRCHAT_MCP_CONFIG_FILE', relativePath);
@@ -94,13 +94,25 @@ describe('config loader', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('parses allowlist env values', () => {
-    setEnv('VRCHAT_MCP_GROUP_ALLOWLIST', 'off');
-    expect(getConfig().groups.allowlist).toEqual([]);
+  it('reads group allowlist from config file', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
+    const filePath = path.join(tempDir, 'config.json');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          groups: { allowlist: ['grp_1', 'grp_2'] },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    setEnv('VRCHAT_MCP_CONFIG_FILE', filePath);
 
-    resetConfigCacheForTest();
-    setEnv('VRCHAT_MCP_GROUP_ALLOWLIST', 'grp_1, grp_2');
     expect(getConfig().groups.allowlist).toEqual(['grp_1', 'grp_2']);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('supports boolean env parsing', () => {
@@ -110,7 +122,7 @@ describe('config loader', () => {
   });
 
   it('throws on invalid env values', () => {
-    setEnv('VRCHAT_MCP_CACHE_TTL_FRIENDS', 'nope');
+    setEnv('VRCHAT_MCP_CACHE_ENABLED', 'nope');
     expect(() => getConfig()).toThrow(/Invalid environment variables/);
   });
 

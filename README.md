@@ -40,13 +40,15 @@ Requirements:
 - Node.js 24.15.0 or newer. This is the current LTS baseline used for CI and release validation.
 - An MCP client such as Claude Desktop, OpenCode, or another MCP-compatible host.
 
-Run from npm:
+Run from npm. You do not need to clone this repository for normal use:
 
 ```bash
 npx -y @basicbit/vrchat-mcp
 ```
 
-Install from source:
+VRChat MCP is also published to the official MCP Registry as `io.github.BASIC-BIT/vrchat-mcp`.
+
+Develop from source, if you want to change the server locally:
 
 ```bash
 git clone https://github.com/BASIC-BIT/vrchat-mcp.git
@@ -59,7 +61,7 @@ Authentication depends on how you run the server.
 
 For the npm package, add the server to your MCP client first, then call the `vrchat_auth_begin` tool from that client. It returns a local browser login URL and keeps cookies according to your config.
 
-For a source checkout, you can use the local harness:
+For source development, you can use the local harness:
 
 ```bash
 npm run mcp:login
@@ -88,7 +90,7 @@ For the npm package:
 }
 ```
 
-For a source checkout, replace the path with your local checkout:
+For local source development, replace the path with your checkout:
 
 ```json
 {
@@ -144,18 +146,12 @@ Common environment variables:
 
 - `VRCHAT_MCP_CONFIG_FILE`: path to a JSON config file.
 - `VRCHAT_MCP_USER_AGENT`: descriptive user agent sent to the VRChat API. Include contact information when possible.
-- `VRCHAT_MCP_API_BASE`: override the API base URL. Defaults to `https://api.vrchat.cloud/api/1`.
-- `VRCHAT_MCP_SPEC_URL`: OpenAPI spec URL or local path. Supports `file:` and relative paths.
 - `VRCHAT_MCP_LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
 - `VRCHAT_MCP_COOKIE_STORE`: `memory`, `file`, or `keychain`.
 - `VRCHAT_MCP_COOKIE_FILE`: cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.
 - `VRCHAT_MCP_ALLOW_WRITES`: enable non-GET operations.
-- `VRCHAT_MCP_GROUP_ALLOWLIST`: comma-separated list of group IDs permitted for group write actions.
-- `VRCHAT_MCP_ENABLE_RAW_CALL`: enable the raw `vrchat_call` tool. Disabled by default.
-- `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS`: disable auto-generated read tools.
-- `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS`: disable auto-generated write tools.
 
-Cache and realtime pipeline tuning are configured in JSON. See `src/config/defaults.json` for the full set of defaults.
+Group allowlists, cache timing, realtime pipeline tuning, and generated tool controls are configured in JSON. See `src/config/defaults.json` for the full set of defaults.
 
 ## Tool Surface
 

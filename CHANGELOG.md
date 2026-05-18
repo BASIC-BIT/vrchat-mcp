@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 - 2026-05-17
+
+- Simplify registry-visible configuration to the common user-facing environment variables.
+- Keep low-level cache, pipeline, and group allowlist tuning in JSON config instead of environment variables.
+
 ## 0.1.2 - 2026-05-16
 
 - Match MCP Registry server namespace casing to the GitHub organization namespace authorized by registry login.
