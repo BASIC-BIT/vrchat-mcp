@@ -151,7 +151,11 @@ Common environment variables:
 - `VRCHAT_MCP_COOKIE_FILE`: cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.
 - `VRCHAT_MCP_ALLOW_WRITES`: enable non-GET operations.
 
-Group allowlists, cache timing, realtime pipeline tuning, and generated tool controls are configured in JSON. See `src/config/defaults.json` for the full set of defaults.
+Group allowlists, cache timing, realtime pipeline tuning, and generated tool controls are configured in JSON. `VRCHAT_MCP_GROUP_ALLOWLIST` remains honored for compatibility, but new setups should use `groups.allowlist` in the JSON config file.
+
+Advanced environment overrides still supported outside the registry metadata include `VRCHAT_MCP_API_BASE`, `VRCHAT_MCP_SPEC_URL`, `VRCHAT_MCP_CACHE_ENABLED`, `VRCHAT_MCP_PIPELINE_ENABLED`, `VRCHAT_MCP_ENABLE_RAW_CALL`, `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS`, and `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS`.
+
+See [`src/config/defaults.json`](https://github.com/BASIC-BIT/vrchat-mcp/blob/main/src/config/defaults.json) for the full set of defaults.
 
 ## Tool Surface
 

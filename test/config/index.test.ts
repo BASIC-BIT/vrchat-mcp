@@ -115,6 +115,15 @@ describe('config loader', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('still honors legacy group allowlist env values', () => {
+    setEnv('VRCHAT_MCP_GROUP_ALLOWLIST', 'off');
+    expect(getConfig().groups.allowlist).toEqual([]);
+
+    resetConfigCacheForTest();
+    setEnv('VRCHAT_MCP_GROUP_ALLOWLIST', 'grp_1, grp_2');
+    expect(getConfig().groups.allowlist).toEqual(['grp_1', 'grp_2']);
+  });
+
   it('supports boolean env parsing', () => {
     setEnv('VRCHAT_MCP_ALLOW_WRITES', 'yes');
     const config = getConfig();

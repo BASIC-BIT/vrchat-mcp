@@ -5,6 +5,8 @@ import { z } from 'zod';
 import pkg from '../../package.json' with { type: 'json' };
 import defaultsJson from './defaults.json' with { type: 'json' };
 
+const DISABLED_ALLOWLIST_VALUES = new Set(['', '0', 'false', 'no', 'off']);
+
 const ConfigBaseSchema = z
   .object({
     api: z
@@ -136,6 +138,18 @@ const EnvBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const EnvAllowlist = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (DISABLED_ALLOWLIST_VALUES.has(trimmed.toLowerCase())) return [];
+  return trimmed
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}, z.array(z.string()).optional());
+
 const EnvSchema = z
   .object({
     VRCHAT_MCP_API_BASE: EnvString,
@@ -147,6 +161,7 @@ const EnvSchema = z
     VRCHAT_MCP_ALLOW_WRITES: EnvBoolean,
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
     VRCHAT_MCP_PIPELINE_ENABLED: EnvBoolean,
+    VRCHAT_MCP_GROUP_ALLOWLIST: EnvAllowlist,
     VRCHAT_MCP_ENABLE_RAW_CALL: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS: EnvBoolean,
@@ -275,6 +290,12 @@ function applyPipelineEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvV
   }
 }
 
+function applyGroupEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
+  if (env.VRCHAT_MCP_GROUP_ALLOWLIST !== undefined) {
+    overrides.groups = { allowlist: env.VRCHAT_MCP_GROUP_ALLOWLIST };
+  }
+}
+
 function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_ENABLE_RAW_CALL !== undefined) {
     overrides.rawTools = { enabled: env.VRCHAT_MCP_ENABLE_RAW_CALL };
@@ -322,6 +343,7 @@ function readEnvOverrides(): {
   applyWriteEnvOverrides(overrides, env);
   applyCacheEnvOverrides(overrides, env);
   applyPipelineEnvOverrides(overrides, env);
+  applyGroupEnvOverrides(overrides, env);
   applyToolingEnvOverrides(overrides, env);
 
   return {

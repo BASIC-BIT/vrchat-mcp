@@ -6,6 +6,7 @@ import path from 'node:path';
 let tempDir: string | null = null;
 
 function setGroupAllowlist(allowlist: string[]) {
+  expect(tempDir).toBeNull();
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
   const filePath = path.join(tempDir, 'config.json');
   fs.writeFileSync(filePath, JSON.stringify({ groups: { allowlist } }), 'utf8');
