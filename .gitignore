@@ -8,6 +8,7 @@ dist/
 # Test output
 coverage/
 .vitest/
+.playwright-mcp/
 static_analysis_semgrep_*/
 
 # Logs
