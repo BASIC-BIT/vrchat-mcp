@@ -1,6 +1,6 @@
 {
   "name": "@basicbit/vrchat-mcp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "mcpName": "io.github.BASIC-BIT/vrchat-mcp",
   "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
