@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5 - 2026-05-19
+
+- Correct the MCP Registry package metadata so the npm package entry points at the published release version.
+
 ## 0.1.4 - 2026-05-18
 
 - Default authentication cookie storage to the OS keychain, with file storage fallback when the keychain backend is unavailable.
