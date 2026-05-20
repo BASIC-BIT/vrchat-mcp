@@ -147,6 +147,7 @@ function buildErrorPayload(params: {
   status: number;
   url: string;
   data: unknown;
+  headers?: Record<string, string>;
   message?: string;
 }): Record<string, unknown> {
   const payload: Record<string, unknown> = {
@@ -154,6 +155,7 @@ function buildErrorPayload(params: {
     url: params.url,
     error: params.data,
   };
+  if (params.headers) payload.headers = params.headers;
   if (params.message) payload.message = params.message;
   return payload;
 }
@@ -250,7 +252,12 @@ async function storeCookiesFromResponse(url: string, res: Response): Promise<voi
   await authManager.setCookiesFromResponse(url, setCookieHeaders);
 }
 
-function buildNonOkCallError(params: { status: number; url: string; data: unknown }): CallError {
+function buildNonOkCallError(params: {
+  status: number;
+  url: string;
+  data: unknown;
+  headers?: Record<string, string>;
+}): CallError {
   const isClientError = params.status >= 400 && params.status < 500;
   const errorMessage = isClientError ? extractErrorMessage(params.data) : undefined;
   const message = errorMessage
@@ -261,6 +268,7 @@ function buildNonOkCallError(params: { status: number; url: string; data: unknow
         status: params.status,
         url: params.url,
         data: params.data,
+        headers: params.headers,
         message: errorMessage,
       })
     : undefined;
@@ -285,7 +293,12 @@ async function executeRequestWithHandling(input: {
     }
 
     if (!res.ok) {
-      throw buildNonOkCallError({ status: res.status, url: input.url, data });
+      throw buildNonOkCallError({
+        status: res.status,
+        url: input.url,
+        data,
+        headers: headersRecord,
+      });
     }
 
     return { url: input.url, data };

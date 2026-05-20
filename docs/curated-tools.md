@@ -93,7 +93,15 @@ Events and calendar (write):
 Instances and invites (write):
 
 - `vrchat_instance_create`
+- `vrchat_invite`
 - `vrchat_invite_user`
+- `vrchat_invite_user_to_me`
+
+Groups and social writes:
+
+- `vrchat_group_invite`
+- `vrchat_friend_request`
+- `vrchat_boop`
 
 Invites (write, low-risk):
 

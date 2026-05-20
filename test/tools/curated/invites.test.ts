@@ -3,28 +3,74 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerCuratedInviteTools } from '../../../src/tools/curated/invites.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 import {
+  inviteUsers,
+  inviteUsersToGroup,
   inviteUserToCurrentInstance,
   prepareInviteUser,
   resolveInviteLocation,
+  sendBoops,
+  sendFriendRequests,
   sendSelfInvite,
   sendUserInvite,
 } from '../../../src/services/invites/index.js';
 
 vi.mock('../../../src/services/invites/index.js', () => ({
+  inviteUsers: vi.fn(),
+  inviteUsersToGroup: vi.fn(),
   inviteUserToCurrentInstance: vi.fn(),
   prepareInviteUser: vi.fn(),
   resolveInviteLocation: vi.fn(),
+  sendBoops: vi.fn(),
+  sendFriendRequests: vi.fn(),
   sendSelfInvite: vi.fn(),
   sendUserInvite: vi.fn(),
 }));
 
 describe('curated invite tools', () => {
   beforeEach(() => {
+    vi.mocked(inviteUsers).mockReset();
+    vi.mocked(inviteUsersToGroup).mockReset();
     vi.mocked(prepareInviteUser).mockReset();
     vi.mocked(inviteUserToCurrentInstance).mockReset();
     vi.mocked(resolveInviteLocation).mockReset();
+    vi.mocked(sendBoops).mockReset();
+    vi.mocked(sendFriendRequests).mockReset();
     vi.mocked(sendSelfInvite).mockReset();
     vi.mocked(sendUserInvite).mockReset();
+  });
+
+  it('registers unified bulk invite tool', async () => {
+    const server = new FakeServer();
+    registerCuratedInviteTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_invite');
+    expect(tool).toBeTruthy();
+
+    vi.mocked(inviteUsers).mockResolvedValue({
+      status: 'completed',
+      dryRun: false,
+      continueOnError: true,
+      totalTargets: 1,
+      sent: 1,
+      failed: 0,
+      skipped: 0,
+      destination: { kind: 'here', location: 'wrld_1:inst_1', worldId: 'wrld_1', instanceId: 'inst_1' },
+      results: [{ target: 'usr_1', userId: 'usr_1', status: 'sent' }],
+    });
+
+    const result = await tool!.handler({ here: true, user: 'usr_1' });
+
+    expect(inviteUsers).toHaveBeenCalledWith({ here: true, user: 'usr_1' });
+    expect(result).toMatchObject({ structuredContent: { sent: 1 } });
+  });
+
+  it('registers group invite, friend request, and boop bulk tools', () => {
+    const server = new FakeServer();
+    registerCuratedInviteTools(server as unknown as McpServer);
+    const names = server.tools.map((entry) => entry.name);
+
+    expect(names).toContain('vrchat_group_invite');
+    expect(names).toContain('vrchat_friend_request');
+    expect(names).toContain('vrchat_boop');
   });
 
   it('invites self using location', async () => {
