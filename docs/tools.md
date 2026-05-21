@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-20T03:38:07.497Z
+Generated: 2026-05-21T07:50:03.940Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -7942,7 +7942,7 @@ Output schema:
 ```
 
 ### vrchat_group_invite
-Invite one or many users to a group. Users may be usr_ ids or exact display names. Requires groupId or shortCode. (write)
+Invite one or many users to a group. Users may be usr_ ids or exact display names. Requires groupId or shortCode. confirmOverrideBlock defaults false; pass true only to override an existing target-user block. (write)
 
 Input schema:
 
@@ -7998,6 +7998,7 @@ Input schema:
       "type": "string"
     },
     "confirmOverrideBlock": {
+      "default": false,
       "type": "boolean"
     }
   },

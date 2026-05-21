@@ -109,7 +109,7 @@ export const UnifiedInviteOutputSchema = BulkWriteSummarySchema.extend({
 export const GroupInviteSchema = BulkUserTargetsSchema.merge(BulkWriteOptionsSchema).extend({
   groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
-  confirmOverrideBlock: z.boolean().optional(),
+  confirmOverrideBlock: z.boolean().default(false).optional(),
 });
 
 export const GroupInviteOutputSchema = BulkWriteSummarySchema.extend({

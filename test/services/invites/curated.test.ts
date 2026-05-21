@@ -146,10 +146,6 @@ describe('invites curated service', () => {
         url: 'https://example.test/getCurrentUser',
       })
       .mockResolvedValueOnce({
-        data: { id: 'usr_self' },
-        url: 'https://example.test/getCurrentUser',
-      })
-      .mockResolvedValueOnce({
         data: [{ slot: 3, message: 'come hang', canBeUpdated: true, remainingCooldownMinutes: 0 }],
         url: 'https://example.test/getInviteMessages',
       })
@@ -164,12 +160,12 @@ describe('invites curated service', () => {
 
     const result = await inviteUsers({ here: true, users: ['usr_1', 'usr_2'], message: 'come hang' });
 
-    expect(callOperation).toHaveBeenNthCalledWith(4, {
+    expect(callOperation).toHaveBeenNthCalledWith(3, {
       operationId: 'inviteUser',
       params: { userId: 'usr_1' },
       body: { instanceId: 'inst_2', messageSlot: 3 },
     });
-    expect(callOperation).toHaveBeenNthCalledWith(5, {
+    expect(callOperation).toHaveBeenNthCalledWith(4, {
       operationId: 'inviteUser',
       params: { userId: 'usr_2' },
       body: { instanceId: 'inst_2', messageSlot: 3 },
@@ -255,6 +251,30 @@ describe('invites curated service', () => {
     });
   });
 
+  it('keeps original target count when stopping after send failure', async () => {
+    vi.mocked(callOperation)
+      .mockResolvedValueOnce({
+        data: { id: 'ntf_1' },
+        url: 'https://example.test/inviteUser',
+      })
+      .mockRejectedValueOnce(Object.assign(new Error('blocked'), { status: 400 }));
+
+    const result = await inviteUsers({
+      instanceId: 'inst_1',
+      users: ['usr_1', 'usr_2', 'usr_3'],
+      continueOnError: false,
+    });
+
+    expect(callOperation).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({
+      totalTargets: 3,
+      sent: 1,
+      failed: 1,
+      stoppedAfterFailure: true,
+    });
+    expect(result.results).toHaveLength(2);
+  });
+
   it('rejects self invite with bare instance id', async () => {
     await expect(inviteUsers({ self: true, instanceId: 'inst_1' })).rejects.toThrow(
       'Self-invite requires a full destination'
@@ -269,6 +289,21 @@ describe('invites curated service', () => {
       status: 'dry_run',
       groupId: 'grp_1',
       results: [{ target: 'usr_1', userId: 'usr_1', status: 'would_send' }],
+    });
+  });
+
+  it('does not override group invite blocks unless explicitly requested', async () => {
+    vi.mocked(callOperation).mockResolvedValueOnce({
+      data: { id: 'grp_invite' },
+      url: 'https://example.test/createGroupInvite',
+    });
+
+    await inviteUsersToGroup({ groupId: 'grp_1', user: 'usr_1' });
+
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'createGroupInvite',
+      params: { groupId: 'grp_1' },
+      body: { userId: 'usr_1', confirmOverrideBlock: false },
     });
   });
 });

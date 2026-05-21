@@ -59,7 +59,7 @@ export function registerCuratedInviteTools(server: McpServer): void {
     toolName('vrchat.group.invite'),
     {
       description:
-        'Invite one or many users to a group. Users may be usr_ ids or exact display names. Requires groupId or shortCode.',
+        'Invite one or many users to a group. Users may be usr_ ids or exact display names. Requires groupId or shortCode. confirmOverrideBlock defaults false; pass true only to override an existing target-user block.',
       inputSchema: GroupInviteSchema,
       outputSchema: GroupInviteOutputSchema,
       annotations: writeToolAnnotations,

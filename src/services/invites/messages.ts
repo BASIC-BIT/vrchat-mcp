@@ -47,6 +47,7 @@ function getMessageSlotRecord(
 export async function resolveInviteMessagePlan(
   input: UnifiedInviteInput,
   dryRun: boolean,
+  currentUserId?: string,
 ): Promise<InviteMessagePlan | undefined> {
   const message = typeof input.message === 'string' ? input.message.trim() : '';
   if (!message) return undefined;
@@ -54,7 +55,7 @@ export async function resolveInviteMessagePlan(
     throw new Error('Self-invite cannot use invite messages because VRChat self-invite has no message slot body.');
   }
 
-  const userId = await getCurrentUserId();
+  const userId = currentUserId ?? await getCurrentUserId();
   const messages = await fetchInviteMessages(userId);
   const existingSlot = findInviteMessageSlot(messages, message);
   if (existingSlot !== null) {

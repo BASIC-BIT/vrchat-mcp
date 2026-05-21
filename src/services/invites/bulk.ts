@@ -75,6 +75,12 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function errorRetryAfter(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object') return undefined;
+  const retryAfter = (err as { retryAfter?: unknown }).retryAfter;
+  return typeof retryAfter === 'string' ? retryAfter : undefined;
+}
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
@@ -88,21 +94,8 @@ function errorStatus(err: unknown): number | undefined {
   return typeof status === 'number' ? status : undefined;
 }
 
-function errorHeaders(err: unknown): Record<string, string> | undefined {
-  if (!err || typeof err !== 'object') return undefined;
-  const payload = asRecord((err as { payload?: unknown }).payload);
-  const headers = asRecord(payload?.headers);
-  if (!headers) return undefined;
-
-  const result: Record<string, string> = {};
-  for (const [key, value] of Object.entries(headers)) {
-    if (typeof value === 'string') result[key.toLowerCase()] = value;
-  }
-  return result;
-}
-
 function retryAfterMs(err: unknown): number | undefined {
-  const header = errorHeaders(err)?.['retry-after'];
+  const header = errorRetryAfter(err);
   if (!header) return undefined;
   const seconds = Number(header);
   if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000;
@@ -292,6 +285,7 @@ export function summarizeBulk(input: {
   dryRun: boolean;
   continueOnError: boolean;
   results: BulkTargetResult[];
+  totalTargets?: number;
   stoppedAfterFailure?: boolean;
 }): BulkWriteSummary {
   const sent = input.results.filter((result) => result.status === 'sent').length;
@@ -301,7 +295,7 @@ export function summarizeBulk(input: {
     status: input.dryRun ? 'dry_run' : 'completed',
     dryRun: input.dryRun,
     continueOnError: input.continueOnError,
-    totalTargets: input.results.length,
+    totalTargets: input.totalTargets ?? input.results.length,
     sent,
     failed,
     skipped,
@@ -314,6 +308,7 @@ export function summarizeBulk(input: {
 export async function executeResolvedUserWrites(input: {
   targets: ResolvedUserTarget[];
   initialResults?: BulkTargetResult[];
+  totalTargets?: number;
   stoppedAfterFailure?: boolean;
   dryRun: boolean;
   continueOnError: boolean;
@@ -369,6 +364,7 @@ export async function executeResolvedUserWrites(input: {
     dryRun: input.dryRun,
     continueOnError: input.continueOnError,
     results,
+    totalTargets: input.totalTargets,
     stoppedAfterFailure,
   });
 }
@@ -385,6 +381,7 @@ export async function executeBulkUserWrites(input: {
   return executeResolvedUserWrites({
     targets: resolution.targets,
     initialResults: resolution.results,
+    totalTargets: input.targets.length,
     stoppedAfterFailure: resolution.stopped,
     dryRun: input.dryRun,
     continueOnError: input.continueOnError,

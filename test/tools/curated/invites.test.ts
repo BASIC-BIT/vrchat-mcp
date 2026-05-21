@@ -99,12 +99,12 @@ describe('curated invite tools', () => {
       userId: 'usr_1',
       request: { instanceId: 'inst_9', messageSlot: 2 },
     });
+    vi.mocked(sendUserInvite).mockResolvedValue({ id: 'ntf_2' });
     const result = await tool!.handler({
       userId: 'usr_1',
       location: 'wrld_9:inst_9',
       messageSlot: 2,
     });
-    vi.mocked(sendUserInvite).mockResolvedValue({ id: 'ntf_2' });
 
     expect(prepareInviteUser).toHaveBeenCalledWith({
       userId: 'usr_1',
@@ -112,7 +112,7 @@ describe('curated invite tools', () => {
       messageSlot: 2,
     });
     expect(sendUserInvite).toHaveBeenCalledWith('usr_1', { instanceId: 'inst_9', messageSlot: 2 });
-    expect(result).toMatchObject({ structuredContent: { status: 'sent' } });
+    expect(result).toMatchObject({ structuredContent: { status: 'sent', notification: { id: 'ntf_2' } } });
   });
 
   it('returns tool error when invite preparation fails', async () => {

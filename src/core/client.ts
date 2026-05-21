@@ -32,11 +32,18 @@ export interface CallInput {
 export class CallError extends Error {
   status?: number;
   payload?: Record<string, unknown>;
-  constructor(message: string, status?: number, payload?: Record<string, unknown>) {
+  retryAfter?: string;
+  constructor(
+    message: string,
+    status?: number,
+    payload?: Record<string, unknown>,
+    retryAfter?: string,
+  ) {
     super(message);
     this.name = 'CallError';
     this.status = status;
     this.payload = payload;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -147,7 +154,6 @@ function buildErrorPayload(params: {
   status: number;
   url: string;
   data: unknown;
-  headers?: Record<string, string>;
   message?: string;
 }): Record<string, unknown> {
   const payload: Record<string, unknown> = {
@@ -155,7 +161,6 @@ function buildErrorPayload(params: {
     url: params.url,
     error: params.data,
   };
-  if (params.headers) payload.headers = params.headers;
   if (params.message) payload.message = params.message;
   return payload;
 }
@@ -241,7 +246,7 @@ function parseResponseText(text: string): unknown {
 function headersToRecord(headers: Headers): Record<string, string> {
   const headersRecord: Record<string, string> = {};
   headers.forEach((value, key) => {
-    headersRecord[key] = value;
+    headersRecord[key.toLowerCase()] = value;
   });
   return headersRecord;
 }
@@ -257,6 +262,7 @@ function buildNonOkCallError(params: {
   url: string;
   data: unknown;
   headers?: Record<string, string>;
+  retryAfter?: string;
 }): CallError {
   const isClientError = params.status >= 400 && params.status < 500;
   const errorMessage = isClientError ? extractErrorMessage(params.data) : undefined;
@@ -264,15 +270,14 @@ function buildNonOkCallError(params: {
     ? `VRChat API returned ${params.status}: ${errorMessage}`
     : `VRChat API returned ${params.status}`;
   const payload = isClientError
-    ? buildErrorPayload({
-        status: params.status,
-        url: params.url,
-        data: params.data,
-        headers: params.headers,
-        message: errorMessage,
-      })
+      ? buildErrorPayload({
+          status: params.status,
+          url: params.url,
+          data: params.data,
+          message: errorMessage,
+        })
     : undefined;
-  return new CallError(message, params.status, payload);
+  return new CallError(message, params.status, payload, params.retryAfter ?? params.headers?.['retry-after']);
 }
 
 async function executeRequestWithHandling(input: {
@@ -298,6 +303,7 @@ async function executeRequestWithHandling(input: {
         url: input.url,
         data,
         headers: headersRecord,
+        retryAfter: res.headers.get('retry-after') ?? undefined,
       });
     }
 

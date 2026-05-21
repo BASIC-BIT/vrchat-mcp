@@ -37,6 +37,10 @@ export interface InviteCurrentLocation extends InviteLocation {
   location: string;
 }
 
+interface CurrentInviteContext extends InviteCurrentLocation {
+  userId?: string;
+}
+
 export type InviteUserPreparation =
   | { ok: true; userId: string; request: InviteRequest }
   | { ok: false; reason: string };
@@ -48,6 +52,11 @@ interface UnifiedInviteDestination {
   location?: string;
   worldId?: string;
   instanceId?: string;
+}
+
+interface ResolvedInviteDestination {
+  destination: UnifiedInviteDestination;
+  currentUserId?: string;
 }
 
 export function resolveInviteLocation(args: InviteSelfInput): InviteLocation {
@@ -110,10 +119,11 @@ export async function sendUserInvite(
   return result.data ?? null;
 }
 
-export async function resolveCurrentInviteLocation(): Promise<InviteCurrentLocation> {
+async function resolveCurrentInviteContext(): Promise<CurrentInviteContext> {
   const currentResult = await callReadOperationParsed('getCurrentUser', {});
   const currentUser = currentResult.data;
   const location = typeof currentUser?.location === 'string' ? currentUser.location : '';
+  const userId = typeof currentUser?.id === 'string' ? currentUser.id : undefined;
 
   if (!location?.includes(':')) {
     throw new Error(
@@ -130,7 +140,16 @@ export async function resolveCurrentInviteLocation(): Promise<InviteCurrentLocat
     );
   }
 
-  return { worldId, instanceId, location };
+  return { worldId, instanceId, location, userId };
+}
+
+export async function resolveCurrentInviteLocation(): Promise<InviteCurrentLocation> {
+  const current = await resolveCurrentInviteContext();
+  return {
+    worldId: current.worldId,
+    instanceId: current.instanceId,
+    location: current.location,
+  };
 }
 
 export async function inviteUserToCurrentInstance(input: InviteUserToMeInput): Promise<{
@@ -158,7 +177,7 @@ export async function inviteUserToCurrentInstance(input: InviteUserToMeInput): P
   };
 }
 
-async function resolveInviteDestination(input: UnifiedInviteInput): Promise<UnifiedInviteDestination> {
+async function resolveInviteDestination(input: UnifiedInviteInput): Promise<ResolvedInviteDestination> {
   const hasHere = input.here === true;
   const hasLocation = typeof input.location === 'string' && input.location.trim().length > 0;
   const hasWorldId = typeof input.worldId === 'string' && input.worldId.trim().length > 0;
@@ -175,14 +194,16 @@ async function resolveInviteDestination(input: UnifiedInviteInput): Promise<Unif
     if (input.self) {
       throw new Error('Self-invite requires a full destination because VRChat needs worldId and instanceId. Use here=true, location="wrld_:instance", or worldId + instanceId. Bare instanceId is only valid when inviting other users.');
     }
-    return { kind: 'instance', instanceId: input.instanceId };
+    return { destination: { kind: 'instance', instanceId: input.instanceId } };
   }
   if (hasWorldId && hasInstanceId) {
     return {
-      kind: 'world_instance',
-      worldId: input.worldId,
-      instanceId: input.instanceId,
-      location: `${input.worldId}:${input.instanceId}`,
+      destination: {
+        kind: 'world_instance',
+        worldId: input.worldId,
+        instanceId: input.instanceId,
+        location: `${input.worldId}:${input.instanceId}`,
+      },
     };
   }
   if (hasLocation) {
@@ -196,15 +217,18 @@ async function resolveInviteDestination(input: UnifiedInviteInput): Promise<Unif
     if (!worldId || !instanceId) {
       throw new Error('location must include both worldId and instanceId, like "wrld_:instance".');
     }
-    return { kind: 'location', location, worldId, instanceId };
+    return { destination: { kind: 'location', location, worldId, instanceId } };
   }
 
-  const current = await resolveCurrentInviteLocation();
+  const current = await resolveCurrentInviteContext();
   return {
-    kind: 'here',
-    location: current.location,
-    worldId: current.worldId,
-    instanceId: current.instanceId,
+    destination: {
+      kind: 'here',
+      location: current.location,
+      worldId: current.worldId,
+      instanceId: current.instanceId,
+    },
+    currentUserId: current.userId,
   };
 }
 
@@ -236,7 +260,8 @@ export async function inviteUsers(input: UnifiedInviteInput): Promise<BulkWriteS
   const dryRun = getDryRun(input);
   const continueOnError = getContinueOnError(input);
   const retry = normalizeRetryOptions(input);
-  const destination = await resolveInviteDestination(input);
+  const destinationContext = await resolveInviteDestination(input);
+  const { destination } = destinationContext;
   const targetInputs = collectTargetInputs(input);
 
   if (input.self) {
@@ -269,17 +294,19 @@ export async function inviteUsers(input: UnifiedInviteInput): Promise<BulkWriteS
         dryRun,
         continueOnError,
         results: resolution.results,
+        totalTargets: targetInputs.length,
         stoppedAfterFailure: resolution.stopped,
       }),
       destination,
     };
   }
 
-  const messagePlan = await resolveInviteMessagePlan(input, dryRun);
+  const messagePlan = await resolveInviteMessagePlan(input, dryRun, destinationContext.currentUserId);
   const request = inviteRequestForDestination(destination, messagePlan);
   const summary = await executeResolvedUserWrites({
     targets: resolution.targets,
     initialResults: resolution.results,
+    totalTargets: targetInputs.length,
     stoppedAfterFailure: resolution.stopped,
     dryRun,
     continueOnError,
@@ -311,7 +338,7 @@ export async function inviteUsersToGroup(input: GroupInviteInput): Promise<BulkW
         params: { groupId: resolved.groupId },
         body: {
           userId: target.userId,
-          confirmOverrideBlock: input.confirmOverrideBlock ?? true,
+          confirmOverrideBlock: input.confirmOverrideBlock === true,
         },
       });
       return result.data ?? null;
