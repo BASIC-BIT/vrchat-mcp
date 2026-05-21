@@ -153,7 +153,10 @@ Common curated tools include:
 - `vrchat_group_profile`
 - `vrchat_events_upcoming`
 - `vrchat_notifications_recent`
-- `vrchat_invite_user_to_me`
+- `vrchat_invite`
+- `vrchat_group_invite`
+- `vrchat_friend_request`
+- `vrchat_boop`
 - `vrcx_instances_recent`
 
 Generated tools use these naming patterns:

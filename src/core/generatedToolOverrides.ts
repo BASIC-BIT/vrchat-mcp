@@ -28,7 +28,10 @@ const CURATED_READ_TOOL_MAP = new Map<string, string>([
 ]);
 
 const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
+  ['boop', toToolName('vrchat.boop')],
+  ['createGroupInvite', toToolName('vrchat.group.invite')],
   ['createInstance', toToolName('vrchat.instance.create')],
+  ['friend', toToolName('vrchat.friend.request')],
   ['inviteMyselfTo', toToolName('vrchat.invite.self')],
   ['inviteUser', toToolName('vrchat.invite.user')],
   ['createGroupCalendarEvent', toToolName('vrchat.event.create')],
@@ -67,7 +70,13 @@ const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
 ]);
 
 const GENERATED_WRITE_TOOL_DESCRIPTIONS = new Map<string, string>([
+  ['boop', 'Send a boop (raw API). Prefer vrchat_boop for one or many users.'],
+  [
+    'createGroupInvite',
+    'Invite a user to a group (raw API). Prefer vrchat_group_invite for one or many users.',
+  ],
   ['createInstance', 'Create a VRChat instance (raw API). Prefer vrchat_instance_create.'],
+  ['friend', 'Send a friend request (raw API). Prefer vrchat_friend_request for one or many users.'],
   [
     'inviteUser',
     'Invite a user to an instance (raw API). Prefer vrchat_invite_user or vrchat_invite_user_to_me when inviting to your current instance.',

@@ -109,7 +109,7 @@ describe('callOperation behavior', () => {
 
   it('includes error details for 4xx responses', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
-    const headers = new Headers();
+    const headers = new Headers({ 'retry-after': '3', 'set-cookie': 'auth=secret' });
     const errorBody = {
       error: {
         message: 'Current Password required',
@@ -137,10 +137,12 @@ describe('callOperation behavior', () => {
     );
     expect(captured && typeof captured === 'object').toBe(true);
     const payload = (captured as { payload?: unknown }).payload as
-      | { status?: number; error?: unknown }
+      | { status?: number; error?: unknown; headers?: unknown }
       | undefined;
     expect(payload?.status).toBe(400);
     expect(payload?.error).toEqual(errorBody);
+    expect(payload?.headers).toBeUndefined();
+    expect((captured as { retryAfter?: unknown }).retryAfter).toBe('3');
   });
 
   it('throws on write operations when writes are disabled', async () => {

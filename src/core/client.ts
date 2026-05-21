@@ -32,11 +32,18 @@ export interface CallInput {
 export class CallError extends Error {
   status?: number;
   payload?: Record<string, unknown>;
-  constructor(message: string, status?: number, payload?: Record<string, unknown>) {
+  retryAfter?: string;
+  constructor(
+    message: string,
+    status?: number,
+    payload?: Record<string, unknown>,
+    retryAfter?: string,
+  ) {
     super(message);
     this.name = 'CallError';
     this.status = status;
     this.payload = payload;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -239,7 +246,7 @@ function parseResponseText(text: string): unknown {
 function headersToRecord(headers: Headers): Record<string, string> {
   const headersRecord: Record<string, string> = {};
   headers.forEach((value, key) => {
-    headersRecord[key] = value;
+    headersRecord[key.toLowerCase()] = value;
   });
   return headersRecord;
 }
@@ -250,21 +257,27 @@ async function storeCookiesFromResponse(url: string, res: Response): Promise<voi
   await authManager.setCookiesFromResponse(url, setCookieHeaders);
 }
 
-function buildNonOkCallError(params: { status: number; url: string; data: unknown }): CallError {
+function buildNonOkCallError(params: {
+  status: number;
+  url: string;
+  data: unknown;
+  headers?: Record<string, string>;
+  retryAfter?: string;
+}): CallError {
   const isClientError = params.status >= 400 && params.status < 500;
   const errorMessage = isClientError ? extractErrorMessage(params.data) : undefined;
   const message = errorMessage
     ? `VRChat API returned ${params.status}: ${errorMessage}`
     : `VRChat API returned ${params.status}`;
   const payload = isClientError
-    ? buildErrorPayload({
-        status: params.status,
-        url: params.url,
-        data: params.data,
-        message: errorMessage,
-      })
+      ? buildErrorPayload({
+          status: params.status,
+          url: params.url,
+          data: params.data,
+          message: errorMessage,
+        })
     : undefined;
-  return new CallError(message, params.status, payload);
+  return new CallError(message, params.status, payload, params.retryAfter ?? params.headers?.['retry-after']);
 }
 
 async function executeRequestWithHandling(input: {
@@ -285,7 +298,13 @@ async function executeRequestWithHandling(input: {
     }
 
     if (!res.ok) {
-      throw buildNonOkCallError({ status: res.status, url: input.url, data });
+      throw buildNonOkCallError({
+        status: res.status,
+        url: input.url,
+        data,
+        headers: headersRecord,
+        retryAfter: res.headers.get('retry-after') ?? undefined,
+      });
     }
 
     return { url: input.url, data };

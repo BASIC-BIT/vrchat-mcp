@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-18T09:05:56.266Z
+Generated: 2026-05-21T07:50:03.940Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -420,6 +420,316 @@ Output schema:
     "avatarId",
     "stale",
     "avatar"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_boop
+Send boops to one or many users. Users may be usr_ ids or exact display names. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "string",
+      "minLength": 1
+    },
+    "users": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "maxAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "baseDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "maxDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000
+        }
+      },
+      "additionalProperties": false
+    },
+    "emojiId": {
+      "type": "string"
+    },
+    "emojiVersion": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "inventoryItemId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "dry_run"
+      ]
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "totalTargets": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "skipped": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "stoppedAfterFailure": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "skipped",
+              "would_send"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "details": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "emojiId": {
+                        "type": "string"
+                      },
+                      "emojiVersion": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "inventoryItemId": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inviteMessage": {
+                        "type": "string"
+                      },
+                      "worldId": {
+                        "type": "string"
+                      },
+                      "worldName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "worldId",
+                      "worldName"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "responseMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo",
+                      "responseMessage"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "initiatorUserId": {
+                        "type": "string"
+                      },
+                      "userToKickId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "initiatorUserId",
+                      "userToKickId"
+                    ],
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "message": {
+                "type": "string"
+              },
+              "receiverUserId": {
+                "type": "string"
+              },
+              "senderUserId": {
+                "type": "string"
+              },
+              "senderUsername": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "default": "friendRequest",
+                "type": "string",
+                "enum": [
+                  "boop",
+                  "friendRequest",
+                  "invite",
+                  "inviteResponse",
+                  "message",
+                  "requestInvite",
+                  "requestInviteResponse",
+                  "votetokick"
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "data": {},
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "status",
+    "dryRun",
+    "continueOnError",
+    "totalTargets",
+    "sent",
+    "failed",
+    "skipped",
+    "results"
   ],
   "additionalProperties": false
 }
@@ -4273,6 +4583,305 @@ Output schema:
 }
 ```
 
+### vrchat_friend_request
+Send friend requests to one or many users. Users may be usr_ ids or exact display names. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "string",
+      "minLength": 1
+    },
+    "users": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "maxAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "baseDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "maxDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "dry_run"
+      ]
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "totalTargets": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "skipped": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "stoppedAfterFailure": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "skipped",
+              "would_send"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "details": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "emojiId": {
+                        "type": "string"
+                      },
+                      "emojiVersion": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "inventoryItemId": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inviteMessage": {
+                        "type": "string"
+                      },
+                      "worldId": {
+                        "type": "string"
+                      },
+                      "worldName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "worldId",
+                      "worldName"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "responseMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo",
+                      "responseMessage"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "initiatorUserId": {
+                        "type": "string"
+                      },
+                      "userToKickId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "initiatorUserId",
+                      "userToKickId"
+                    ],
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "message": {
+                "type": "string"
+              },
+              "receiverUserId": {
+                "type": "string"
+              },
+              "senderUserId": {
+                "type": "string"
+              },
+              "senderUsername": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "default": "friendRequest",
+                "type": "string",
+                "enum": [
+                  "boop",
+                  "friendRequest",
+                  "invite",
+                  "inviteResponse",
+                  "message",
+                  "requestInvite",
+                  "requestInviteResponse",
+                  "votetokick"
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "data": {},
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "status",
+    "dryRun",
+    "continueOnError",
+    "totalTargets",
+    "sent",
+    "failed",
+    "skipped",
+    "results"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_friends_list
 List friends with cache-backed pagination (read-only). Defaults to online-only; set includeOffline=true to include offline friends. (read-only)
 
@@ -7332,6 +7941,319 @@ Output schema:
 }
 ```
 
+### vrchat_group_invite
+Invite one or many users to a group. Users may be usr_ ids or exact display names. Requires groupId or shortCode. confirmOverrideBlock defaults false; pass true only to override an existing target-user block. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "string",
+      "minLength": 1
+    },
+    "users": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "maxAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "baseDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "maxDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000
+        }
+      },
+      "additionalProperties": false
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "shortCode": {
+      "type": "string"
+    },
+    "confirmOverrideBlock": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "dry_run"
+      ]
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "totalTargets": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "skipped": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "stoppedAfterFailure": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "skipped",
+              "would_send"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "details": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "emojiId": {
+                        "type": "string"
+                      },
+                      "emojiVersion": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "inventoryItemId": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inviteMessage": {
+                        "type": "string"
+                      },
+                      "worldId": {
+                        "type": "string"
+                      },
+                      "worldName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "worldId",
+                      "worldName"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "responseMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo",
+                      "responseMessage"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "initiatorUserId": {
+                        "type": "string"
+                      },
+                      "userToKickId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "initiatorUserId",
+                      "userToKickId"
+                    ],
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "message": {
+                "type": "string"
+              },
+              "receiverUserId": {
+                "type": "string"
+              },
+              "senderUserId": {
+                "type": "string"
+              },
+              "senderUsername": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "default": "friendRequest",
+                "type": "string",
+                "enum": [
+                  "boop",
+                  "friendRequest",
+                  "invite",
+                  "inviteResponse",
+                  "message",
+                  "requestInvite",
+                  "requestInviteResponse",
+                  "votetokick"
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "data": {},
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "groupId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "dryRun",
+    "continueOnError",
+    "totalTargets",
+    "sent",
+    "failed",
+    "skipped",
+    "results",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_group_members
 List group members by userId + displayName (read-only). (read-only)
 
@@ -8638,6 +9560,385 @@ Output schema:
   },
   "required": [
     "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_invite
+Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Supports here=true, full location, worldId+instanceId, or bare instanceId for user invites. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "string",
+      "minLength": 1
+    },
+    "users": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "maxAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "baseDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "maxDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000
+        }
+      },
+      "additionalProperties": false
+    },
+    "here": {
+      "type": "boolean"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1
+    },
+    "worldId": {
+      "type": "string"
+    },
+    "instanceId": {
+      "type": "string"
+    },
+    "self": {
+      "type": "boolean"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "overwriteMessageSlot": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 11
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "dry_run"
+      ]
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "continueOnError": {
+      "type": "boolean"
+    },
+    "totalTargets": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "skipped": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "stoppedAfterFailure": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "skipped",
+              "would_send"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "details": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "emojiId": {
+                        "type": "string"
+                      },
+                      "emojiVersion": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "inventoryItemId": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inviteMessage": {
+                        "type": "string"
+                      },
+                      "worldId": {
+                        "type": "string"
+                      },
+                      "worldName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "worldId",
+                      "worldName"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "responseMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo",
+                      "responseMessage"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inResponseTo": {
+                        "type": "string"
+                      },
+                      "requestMessage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "inResponseTo"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "initiatorUserId": {
+                        "type": "string"
+                      },
+                      "userToKickId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "initiatorUserId",
+                      "userToKickId"
+                    ],
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "message": {
+                "type": "string"
+              },
+              "receiverUserId": {
+                "type": "string"
+              },
+              "senderUserId": {
+                "type": "string"
+              },
+              "senderUsername": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "default": "friendRequest",
+                "type": "string",
+                "enum": [
+                  "boop",
+                  "friendRequest",
+                  "invite",
+                  "inviteResponse",
+                  "message",
+                  "requestInvite",
+                  "requestInviteResponse",
+                  "votetokick"
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "data": {},
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "here",
+            "location",
+            "world_instance",
+            "instance"
+          ]
+        },
+        "location": {
+          "type": "string"
+        },
+        "worldId": {
+          "type": "string"
+        },
+        "instanceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "requested": {
+          "type": "string"
+        },
+        "slot": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11
+        },
+        "matchedExisting": {
+          "type": "boolean"
+        },
+        "overwrittenSlot": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11
+        },
+        "wouldOverwriteSlot": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "status",
+    "dryRun",
+    "continueOnError",
+    "totalTargets",
+    "sent",
+    "failed",
+    "skipped",
+    "results",
+    "destination"
   ],
   "additionalProperties": false
 }
@@ -13753,7 +15054,6 @@ Output schema:
 - `vrchat_write_addTags` (POST /users/{userId}/addTags) - Add User Tags
 - `vrchat_write_banGroupMember` (POST /groups/{groupId}/bans) - Ban Group Member
 - `vrchat_write_blockGroup` (POST /groups/{groupId}/block) - Block Group
-- `vrchat_write_boop` (POST /users/{userId}/boop) - Send Boop
 - `vrchat_write_cancelGroupRequest` (DELETE /groups/{groupId}/requests) - Cancel Group Join Request
 - `vrchat_write_cancelGroupTransfer` (DELETE /groups/{groupId}/transfer) - Cancel Group Transfer
 - `vrchat_write_cancelPending2FA` (DELETE /auth/twofactorauth/totp/pending) - Cancel pending enabling of time-based 2FA codes
@@ -13768,7 +15068,6 @@ Output schema:
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Create Global Avatar Moderation
 - `vrchat_write_createGroup` (POST /groups) - Create Group
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Create Group Gallery
-- `vrchat_write_createGroupInvite` (POST /groups/{groupId}/invites) - Invite User to Group
 - `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Create GroupRole
 - `vrchat_write_createProp` (POST /props) - Create Prop
 - `vrchat_write_createWorld` (POST /worlds) - Create World
@@ -13802,7 +15101,6 @@ Output schema:
 - `vrchat_write_enqueueImpostor` (POST /avatars/{avatarId}/impostor/enqueue) - Enqueue Impostor generation
 - `vrchat_write_equipOwnInventoryItem` (PUT /inventory/{inventoryItemId}/equip) - Equip Own Inventory Item
 - `vrchat_write_finishFileDataUpload` (PUT /file/{fileId}/{versionId}/{fileType}/finish) - Finish FileData Upload
-- `vrchat_write_friend` (POST /user/{userId}/friendRequest) - Send Friend Request
 - `vrchat_write_initiateOrAcceptGroupTransfer` (POST /groups/{groupId}/transfer) - Initiate or Accept Group Transfer
 - `vrchat_write_inviteUserWithPhoto` (POST /invite/{userId}/photo) - Invite User with photo
 - `vrchat_write_joinGroup` (POST /groups/{groupId}/join) - Join Group
