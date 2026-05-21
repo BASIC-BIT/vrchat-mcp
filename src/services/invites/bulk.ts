@@ -51,6 +51,8 @@ const DEFAULT_RETRY: RetryOptions = {
   maxDelayMs: 30_000,
 };
 
+export const DEFAULT_BULK_WRITE_DELAY_MS = 500;
+
 const RETRYABLE_STATUS_MIN = 500;
 
 export function normalizeRetryOptions(input: { retry?: Partial<RetryOptions> }): RetryOptions {
@@ -310,6 +312,7 @@ export async function executeResolvedUserWrites(input: {
   initialResults?: BulkTargetResult[];
   totalTargets?: number;
   stoppedAfterFailure?: boolean;
+  interRequestDelayMs?: number;
   dryRun: boolean;
   continueOnError: boolean;
   retry: RetryOptions;
@@ -319,6 +322,8 @@ export async function executeResolvedUserWrites(input: {
   const results = [...(input.initialResults ?? [])];
   let stoppedAfterFailure = input.stoppedAfterFailure === true;
   const dryRunStatus = input.dryRunStatus ?? 'would_send';
+  const interRequestDelayMs = input.interRequestDelayMs ?? DEFAULT_BULK_WRITE_DELAY_MS;
+  let writesAttempted = 0;
 
   for (const target of input.targets) {
     if (input.dryRun) {
@@ -331,6 +336,11 @@ export async function executeResolvedUserWrites(input: {
       });
       continue;
     }
+
+    if (writesAttempted > 0) {
+      await sleep(interRequestDelayMs);
+    }
+    writesAttempted += 1;
 
     try {
       const { data, attempts } = await callWithRetry(() => input.send(target), input.retry);
@@ -376,6 +386,7 @@ export async function executeBulkUserWrites(input: {
   retry: RetryOptions;
   send: SendOperation;
   dryRunStatus?: TargetStatus;
+  interRequestDelayMs?: number;
 }): Promise<BulkWriteSummary> {
   const resolution = await resolveUserTargets(input.targets, input.continueOnError);
   return executeResolvedUserWrites({
@@ -388,5 +399,6 @@ export async function executeBulkUserWrites(input: {
     retry: input.retry,
     send: input.send,
     dryRunStatus: input.dryRunStatus,
+    interRequestDelayMs: input.interRequestDelayMs,
   });
 }
