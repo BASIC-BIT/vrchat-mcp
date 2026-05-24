@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 const mockConfig = {
-  generatedReadTools: { disable: false },
+  generatedReadTools: { enabled: true, operationIds: [] as string[] },
   logging: { level: 'info' },
 };
 
@@ -23,48 +23,77 @@ vi.mock('../../src/core/spec.js', () => {
   return {
     getSpecIndex: () =>
       Promise.resolve({
-      raw: {
-        paths: {
-          '/config': { get: { operationId: 'getConfig', summary: 'Get Config' } },
-          '/widgets': { get: { operationId: 'getWidget', summary: 'Get Widget' } },
-          '/users/{userId}': {
-            get: { operationId: 'getUser', summary: 'Get User' },
+        raw: {
+          paths: {
+            '/config': { get: { operationId: 'getConfig', summary: 'Get Config' } },
+            '/widgets': { get: { operationId: 'getWidget', summary: 'Get Widget' } },
+            '/users/{userId}': {
+              get: { operationId: 'getWidgetUser', summary: 'Get Widget User' },
+            },
+            '/curated-users/{userId}': { get: { operationId: 'getUser', summary: 'Get User' } },
+            '/me': { post: { operationId: 'updateUser', summary: 'Update User' } },
           },
-          '/me': { post: { operationId: 'updateUser', summary: 'Update User' } },
         },
-      },
-      operations: new Map([
-        [
-          'getConfig',
-          { operationId: 'getConfig', method: 'GET', path: '/config', parameters: [], hasRequestBody: false },
-        ],
-        [
-          'getWidget',
-          { operationId: 'getWidget', method: 'GET', path: '/widgets', parameters: [], hasRequestBody: false },
-        ],
-        [
-          'getUser',
-          {
-            operationId: 'getUser',
-            method: 'GET',
-            path: '/users/{userId}',
-            parameters: [
-              {
-                name: 'userId',
-                in: 'path',
-                required: true,
-                schema: { type: 'string' },
-              },
-            ],
-            hasRequestBody: false,
-          },
-        ],
-        [
-          'updateUser',
-          { operationId: 'updateUser', method: 'POST', path: '/me', parameters: [], hasRequestBody: true },
-        ],
-      ]),
-    }),
+        operations: new Map([
+          [
+            'getConfig',
+            {
+              operationId: 'getConfig',
+              method: 'GET',
+              path: '/config',
+              parameters: [],
+              hasRequestBody: false,
+            },
+          ],
+          [
+            'getWidget',
+            {
+              operationId: 'getWidget',
+              method: 'GET',
+              path: '/widgets',
+              parameters: [],
+              hasRequestBody: false,
+            },
+          ],
+          [
+            'getWidgetUser',
+            {
+              operationId: 'getWidgetUser',
+              method: 'GET',
+              path: '/users/{userId}',
+              parameters: [
+                {
+                  name: 'userId',
+                  in: 'path',
+                  required: true,
+                  schema: { type: 'string' },
+                },
+              ],
+              hasRequestBody: false,
+            },
+          ],
+          [
+            'getUser',
+            {
+              operationId: 'getUser',
+              method: 'GET',
+              path: '/curated-users/{userId}',
+              parameters: [],
+              hasRequestBody: false,
+            },
+          ],
+          [
+            'updateUser',
+            {
+              operationId: 'updateUser',
+              method: 'POST',
+              path: '/me',
+              parameters: [],
+              hasRequestBody: true,
+            },
+          ],
+        ]),
+      }),
   };
 });
 vi.mock('../../src/core/readTools.js', () => ({
@@ -73,12 +102,12 @@ vi.mock('../../src/core/readTools.js', () => ({
 
 describe('read tool registry', () => {
   beforeEach(() => {
-    mockConfig.generatedReadTools = { disable: false };
+    mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
     vi.resetModules();
   });
 
   afterEach(() => {
-    mockConfig.generatedReadTools = { disable: false };
+    mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
   });
 
   it('skips tools in skip list and only registers GET', async () => {
@@ -98,14 +127,20 @@ describe('read tool registry', () => {
     });
 
     expect(count).toBe(2);
-    expect(registered).toEqual(['vrchat_read_getWidget', 'vrchat_read_getUser']);
+    expect(registered).toEqual(['vrchat_read_getWidget', 'vrchat_read_getWidgetUser']);
   });
 
   it('marks required params as required in the schema', async () => {
     const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
-    const metas: Record<string, { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }> = {};
+    const metas: Record<
+      string,
+      { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
+    > = {};
     const server = {
-      registerTool: (name: string, meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }) => {
+      registerTool: (
+        name: string,
+        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
+      ) => {
         metas[name] = meta;
       },
     };
@@ -116,14 +151,50 @@ describe('read tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    const schema = metas.vrchat_read_getUser?.inputSchema;
+    const schema = metas.vrchat_read_getWidgetUser?.inputSchema;
     expect(schema).toBeDefined();
     expect(schema?.safeParse({}).success).toBe(false);
     expect(schema?.safeParse({ params: { userId: 'usr_123' } }).success).toBe(true);
   });
 
   it('can be disabled entirely', async () => {
-    mockConfig.generatedReadTools = { disable: true };
+    mockConfig.generatedReadTools = { enabled: false, operationIds: [] };
+    const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
+    const server = { registerTool: vi.fn() };
+
+    const count = await registerGeneratedReadTools(server as never, {
+      readOptionsSchema: z.object({}),
+      readOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    expect(count).toBe(0);
+    expect(server.registerTool).not.toHaveBeenCalled();
+  });
+
+  it('can be allowlisted by operationId', async () => {
+    mockConfig.generatedReadTools = { enabled: true, operationIds: ['getWidgetUser'] };
+    const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
+
+    const registered: string[] = [];
+    const server = {
+      registerTool: (name: string) => {
+        registered.push(name);
+      },
+    };
+
+    const count = await registerGeneratedReadTools(server as never, {
+      readOptionsSchema: z.object({}),
+      readOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    expect(count).toBe(1);
+    expect(registered).toEqual(['vrchat_read_getWidgetUser']);
+  });
+
+  it('skips operations that have curated replacements even when allowlisted', async () => {
+    mockConfig.generatedReadTools = { enabled: true, operationIds: ['getUser'] };
     const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
     const server = { registerTool: vi.fn() };
 
@@ -164,7 +235,7 @@ describe('read tool registry', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'getWidget',
       {},
-      expect.objectContaining({ includeMeta: undefined }),
+      expect.objectContaining({ includeMeta: undefined })
     );
     expect(response?.isError).toBe(true);
     expect(response?.content[0]?.text).toBe('boom');

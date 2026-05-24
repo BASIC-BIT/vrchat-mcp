@@ -5,7 +5,7 @@ This is the working checklist for taking VRChat MCP from private repo to public 
 ## Goals
 
 - Make the project discoverable to people searching for VRChat, MCP, Claude, OpenCode, and VRCX tooling.
-- Lead with the defaults: local authentication, zero-config setup, available write tools, and no affiliation with VRChat Inc.
+- Lead with the defaults: local authentication, zero-config full-capability local setup, client/harness-controlled writes, and no affiliation with VRChat Inc.
 - Prefer durable developer surfaces over broad paid ads for the first launch.
 - Use a short feedback loop: ship public, watch installs/issues/stars/registry traffic, then decide whether broader promotion is worth it.
 

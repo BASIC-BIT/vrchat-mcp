@@ -59,7 +59,7 @@
         },
         {
           "name": "VRCHAT_MCP_ALLOW_WRITES",
-          "description": "Allow non-GET VRChat API write operations. Set to false for read-only mode.",
+          "description": "Allow non-GET VRChat API write operations. Defaults to true for local full-capability use; set to false for read-only mode.",
           "format": "boolean",
           "default": "true",
           "isRequired": false,

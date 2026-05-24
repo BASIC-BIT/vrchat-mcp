@@ -1,21 +1,57 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { request } from 'node:http';
 
 const authModulePath = '../../src/auth/index.js';
+
+interface AuthManagerForTest {
+  init: () => Promise<void>;
+  logout: () => Promise<void>;
+  startLoginServer: () => Promise<{ url: string; token: string }>;
+  getCookieHeader: (url: string) => Promise<string>;
+  getCookieValue: (name: string, url?: string) => Promise<string | undefined>;
+  setCookiesFromResponse: (url: string, setCookieHeaders: string[]) => Promise<void>;
+  getStatus: () => { loggedIn: boolean };
+  onStatusChange: (listener: (status: { loggedIn: boolean }) => void) => () => void;
+}
+
+const loadedAuthManagers: AuthManagerForTest[] = [];
 
 async function loadAuthManager() {
   vi.resetModules();
   const mod = (await import(authModulePath)) as unknown as {
-    authManager: {
-      init: () => Promise<void>;
-      logout: () => Promise<void>;
-      getCookieHeader: (url: string) => Promise<string>;
-      getCookieValue: (name: string, url?: string) => Promise<string | undefined>;
-      setCookiesFromResponse: (url: string, setCookieHeaders: string[]) => Promise<void>;
-      getStatus: () => { loggedIn: boolean };
-      onStatusChange: (listener: (status: { loggedIn: boolean }) => void) => () => void;
-    };
+    authManager: AuthManagerForTest;
   };
+  loadedAuthManagers.push(mod.authManager);
   return mod.authManager;
+}
+
+async function requestText(
+  url: string,
+  options: { method?: string; headers?: Record<string, string>; body?: string } = {}
+): Promise<{ statusCode: number | undefined; body: string }> {
+  const parsed = new URL(url);
+  return await new Promise<{ statusCode: number | undefined; body: string }>((resolve, reject) => {
+    const req = request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: options.method ?? 'GET',
+        headers: options.headers,
+      },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk: string) => {
+          body += chunk;
+        });
+        res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+      }
+    );
+    req.on('error', reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
 }
 
 describe('auth manager', () => {
@@ -26,8 +62,9 @@ describe('auth manager', () => {
   });
 
   afterEach(async () => {
-    const authManager = await loadAuthManager();
-    await authManager.logout();
+    for (const authManager of loadedAuthManagers.splice(0)) {
+      await authManager.logout();
+    }
     if (prevStore === undefined) {
       delete process.env.VRCHAT_MCP_COOKIE_STORE;
     } else {
@@ -73,5 +110,32 @@ describe('auth manager', () => {
     expect(listener).toHaveBeenCalledWith({ loggedIn: false });
 
     unsubscribe();
+  });
+
+  it('rejects login requests with an unexpected host header', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+
+    const res = await requestText(url, { headers: { host: 'evil.example' } });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toBe('Invalid host');
+  });
+
+  it('rejects login form posts from unexpected origins', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+
+    const res = await requestText(url.replace('/?', '/submit?'), {
+      method: 'POST',
+      headers: {
+        origin: 'http://evil.example',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'username=test&password=test',
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toBe('Invalid origin');
   });
 });

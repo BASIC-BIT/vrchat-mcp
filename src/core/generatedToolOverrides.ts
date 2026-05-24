@@ -25,6 +25,7 @@ const CURATED_READ_TOOL_MAP = new Map<string, string>([
   ['getCalendarEvents', toToolName('vrchat.events.upcoming')],
   ['discoverCalendarEvents', toToolName('vrchat.events.discover')],
   ['searchCalendarEvents', toToolName('vrchat.events.search')],
+  ['getAvatar', toToolName('vrchat.avatar.profile')],
 ]);
 
 const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
@@ -39,6 +40,7 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['deleteGroupCalendarEvent', toToolName('vrchat.event.delete')],
   ['followGroupCalendarEvent', toToolName('vrchat.event.follow')],
   ['updateUser', toToolName('vrchat.profile.update')],
+  ['logout', toToolName('vrchat.auth.logout')],
 ]);
 
 const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
@@ -62,7 +64,10 @@ const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
     'List group calendar events (raw API). Prefer vrchat_group_events_list.',
   ],
   ['getGroupCalendarEvent', 'Get a group calendar event (raw API). Prefer vrchat_group_event_get.'],
-  ['getGroupNextCalendarEvent', 'Get the next group calendar event (raw API). Prefer vrchat_group_event_next.'],
+  [
+    'getGroupNextCalendarEvent',
+    'Get the next group calendar event (raw API). Prefer vrchat_group_event_next.',
+  ],
   ['getNotifications', 'List recent notifications (raw API). Prefer vrchat_notifications_recent.'],
   ['getCalendarEvents', 'List upcoming calendar events (raw API). Prefer vrchat_events_upcoming.'],
   ['discoverCalendarEvents', 'Discover calendar events (raw API). Prefer vrchat_events_discover.'],
@@ -76,7 +81,10 @@ const GENERATED_WRITE_TOOL_DESCRIPTIONS = new Map<string, string>([
     'Invite a user to a group (raw API). Prefer vrchat_group_invite for one or many users.',
   ],
   ['createInstance', 'Create a VRChat instance (raw API). Prefer vrchat_instance_create.'],
-  ['friend', 'Send a friend request (raw API). Prefer vrchat_friend_request for one or many users.'],
+  [
+    'friend',
+    'Send a friend request (raw API). Prefer vrchat_friend_request for one or many users.',
+  ],
   [
     'inviteUser',
     'Invite a user to an instance (raw API). Prefer vrchat_invite_user or vrchat_invite_user_to_me when inviting to your current instance.',

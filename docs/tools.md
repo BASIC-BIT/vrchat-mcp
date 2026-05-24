@@ -1,10 +1,10 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-21T07:50:03.940Z
+Generated: 2026-05-24T07:46:08.340Z
 
 Spec: VRChat API Documentation (1.20.7)
 
-This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).
+This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read replacements are omitted).
 
 ## Curated tools
 ### vrchat_avatar_profile
@@ -14608,14 +14608,10 @@ Output schema:
   "properties": {
     "url": {
       "type": "string"
-    },
-    "token": {
-      "type": "string"
     }
   },
   "required": [
-    "url",
-    "token"
+    "url"
   ],
   "additionalProperties": false
 }
@@ -14864,21 +14860,17 @@ Output schema:
 - `vrchat_read_getActiveWorlds` (GET /worlds/active) - List Active Worlds
 - `vrchat_read_getAdminAssetBundle` (GET /adminassetbundles/{adminAssetBundleId}) - Get AdminAssetBundle
 - `vrchat_read_getAssignedPermissions` (GET /auth/permissions) - Get Assigned Permissions
-- `vrchat_read_getAvatar` (GET /avatars/{avatarId}) - Get Avatar
 - `vrchat_read_getAvatarStyles` (GET /avatarStyles) - Get Avatar Styles
 - `vrchat_read_getBalance` (GET /user/{userId}/balance) - Get Balance
 - `vrchat_read_getBalanceEarnings` (GET /user/{userId}/balance/earnings) - Get Balance Earnings
 - `vrchat_read_getBlockedGroups` (GET /users/{userId}/groups/userblocked) - Get User Group Blocks
 - `vrchat_read_getBulkGiftPurchases` (GET /user/bulk/gift/purchases) - Get Bulk Gift Purchases
-- `vrchat_read_getCalendarEvents` (GET /calendar) - List calendar events (curated: vrchat_events_upcoming)
 - `vrchat_read_getContentAgreementStatus` (GET /agreement) - Get Content Agreement Status
 - `vrchat_read_getCSS` (GET /css/app.css) - Download CSS
 - `vrchat_read_getCurrentOnlineUsers` (GET /visits) - Current Online Users
 - `vrchat_read_getCurrentSubscriptions` (GET /auth/user/subscription) - Get Current Subscriptions
-- `vrchat_read_getCurrentUser` (GET /auth/user) - Login and/or Get Current User Info (curated: vrchat_me)
 - `vrchat_read_getEconomyAccount` (GET /user/{userId}/economy/account) - Get Economy Account
 - `vrchat_read_getFavoritedAvatars` (GET /avatars/favorites) - List Favorited Avatars
-- `vrchat_read_getFavoritedWorlds` (GET /worlds/favorites) - List Favorited Worlds (curated: vrchat_worlds_favorites)
 - `vrchat_read_getFavoriteGroup` (GET /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Show Favorite Group
 - `vrchat_read_getFavoriteGroups` (GET /favorite/groups) - List Favorite Groups
 - `vrchat_read_getFavoriteLimits` (GET /auth/user/favoritelimits) - Get Favorite Limits
@@ -14898,12 +14890,9 @@ Output schema:
 - `vrchat_read_getGroupBans` (GET /groups/{groupId}/bans) - Get Group Bans
 - `vrchat_read_getGroupCalendarEventICS` (GET /calendar/{groupId}/{calendarId}.ics) - Download calendar event as ICS
 - `vrchat_read_getGroupGalleryImages` (GET /groups/{groupId}/galleries/{groupGalleryId}) - Get Group Gallery Images
-- `vrchat_read_getGroupInstances` (GET /groups/{groupId}/instances) - Get Group Instances (curated: vrchat_group_instances_overview)
 - `vrchat_read_getGroupInvites` (GET /groups/{groupId}/invites) - Get Group Invites Sent
 - `vrchat_read_getGroupMember` (GET /groups/{groupId}/members/{userId}) - Get Group Member
-- `vrchat_read_getGroupMembers` (GET /groups/{groupId}/members) - List Group Members (curated: vrchat_group_members)
 - `vrchat_read_getGroupPermissions` (GET /groups/{groupId}/permissions) - List Group Permissions
-- `vrchat_read_getGroupPosts` (GET /groups/{groupId}/posts) - Get posts from a Group (curated: vrchat_group_posts_recent)
 - `vrchat_read_getGroupRequests` (GET /groups/{groupId}/requests) - Get Group Join Requests
 - `vrchat_read_getGroupRoles` (GET /groups/{groupId}/roles) - Get Group Roles
 - `vrchat_read_getGroupRoleTemplates` (GET /groups/roleTemplates) - Get Group Role Templates
@@ -14931,7 +14920,6 @@ Output schema:
 - `vrchat_read_getMutualGroups` (GET /users/{userId}/mutuals/groups) - Get User Mutual Groups
 - `vrchat_read_getMutuals` (GET /users/{userId}/mutuals) - Get User Mutuals
 - `vrchat_read_getNotification` (GET /auth/user/notifications/{notificationId}) - Show notification
-- `vrchat_read_getNotifications` (GET /auth/user/notifications) - List Notifications (curated: vrchat_notifications_recent)
 - `vrchat_read_getNotificationV2` (GET /notifications/{notificationId}) - Get NotificationV2
 - `vrchat_read_getNotificationV2s` (GET /notifications) - List NotificationV2s
 - `vrchat_read_getOwnAvatar` (GET /users/{userId}/avatar) - Get Own Avatar
@@ -14964,7 +14952,6 @@ Output schema:
 - `vrchat_read_getUserGroupInstances` (GET /users/{userId}/instances/groups) - Get User Group Instances
 - `vrchat_read_getUserGroupInstancesForGroup` (GET /users/{userId}/instances/groups/{groupId}) - Get User Group Instances for a specific Group
 - `vrchat_read_getUserGroupRequests` (GET /users/{userId}/groups/requested) - Get User Group Requests
-- `vrchat_read_getUserGroups` (GET /users/{userId}/groups) - Get User Groups (curated: vrchat_user_groups)
 - `vrchat_read_getUserInventoryItem` (GET /user/{userId}/inventory/{inventoryItemId}) - Get User Inventory Item
 - `vrchat_read_getUserNote` (GET /userNotes/{userNoteId}) - Get User Note
 - `vrchat_read_getUserNotes` (GET /userNotes) - Get User Notes
@@ -14977,9 +14964,7 @@ Output schema:
 - `vrchat_read_listProps` (GET /props) - List Props
 - `vrchat_read_searchAvatars` (GET /avatars) - Search Avatars
 - `vrchat_read_searchGroupMembers` (GET /groups/{groupId}/members/search) - Search Group Members
-- `vrchat_read_searchGroups` (GET /groups) - Search Group (curated: vrchat_groups_search)
 - `vrchat_read_searchUsers` (GET /users) - Search All Users
-- `vrchat_read_searchWorlds` (GET /worlds) - Search All Worlds (curated: vrchat_worlds_search)
 - `vrchat_read_shareInventoryItemPedestal` (GET /inventory/cloning/pedestal) - Share Inventory Item by Pedestal
 - `vrchat_read_spawnInventoryItem` (GET /inventory/spawn) - Spawn Inventory Item
 - `vrchat_read_verifyAuthToken` (GET /auth) - Verify Auth Token
@@ -15054,6 +15039,7 @@ Output schema:
 - `vrchat_write_addTags` (POST /users/{userId}/addTags) - Add User Tags
 - `vrchat_write_banGroupMember` (POST /groups/{groupId}/bans) - Ban Group Member
 - `vrchat_write_blockGroup` (POST /groups/{groupId}/block) - Block Group
+- `vrchat_write_boop` (POST /users/{userId}/boop) - Send Boop (curated: vrchat_boop)
 - `vrchat_write_cancelGroupRequest` (DELETE /groups/{groupId}/requests) - Cancel Group Join Request
 - `vrchat_write_cancelGroupTransfer` (DELETE /groups/{groupId}/transfer) - Cancel Group Transfer
 - `vrchat_write_cancelPending2FA` (DELETE /auth/twofactorauth/totp/pending) - Cancel pending enabling of time-based 2FA codes
@@ -15067,8 +15053,11 @@ Output schema:
 - `vrchat_write_createFileVersion` (POST /file/{fileId}) - Create File Version
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Create Global Avatar Moderation
 - `vrchat_write_createGroup` (POST /groups) - Create Group
+- `vrchat_write_createGroupCalendarEvent` (POST /calendar/{groupId}/event) - Create a calendar event (curated: vrchat_event_create)
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Create Group Gallery
+- `vrchat_write_createGroupInvite` (POST /groups/{groupId}/invites) - Invite User to Group (curated: vrchat_group_invite)
 - `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Create GroupRole
+- `vrchat_write_createInstance` (POST /instances) - Create Instance (curated: vrchat_instance_create)
 - `vrchat_write_createProp` (POST /props) - Create Prop
 - `vrchat_write_createWorld` (POST /worlds) - Create World
 - `vrchat_write_declineGroupInvite` (PUT /groups/{groupId}/invites) - Decline Invite from Group
@@ -15080,6 +15069,7 @@ Output schema:
 - `vrchat_write_deleteFriendRequest` (DELETE /user/{userId}/friendRequest) - Delete Friend Request
 - `vrchat_write_deleteGlobalAvatarModeration` (DELETE /auth/user/avatarmoderations) - Delete Global Avatar Moderation
 - `vrchat_write_deleteGroup` (DELETE /groups/{groupId}) - Delete Group
+- `vrchat_write_deleteGroupCalendarEvent` (DELETE /calendar/{groupId}/{calendarId}) - Delete a calendar event (curated: vrchat_event_delete)
 - `vrchat_write_deleteGroupGallery` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Delete Group Gallery
 - `vrchat_write_deleteGroupGalleryImage` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Delete Group Gallery Image
 - `vrchat_write_deleteGroupInvite` (DELETE /groups/{groupId}/invites/{userId}) - Delete User Invite
@@ -15101,12 +15091,16 @@ Output schema:
 - `vrchat_write_enqueueImpostor` (POST /avatars/{avatarId}/impostor/enqueue) - Enqueue Impostor generation
 - `vrchat_write_equipOwnInventoryItem` (PUT /inventory/{inventoryItemId}/equip) - Equip Own Inventory Item
 - `vrchat_write_finishFileDataUpload` (PUT /file/{fileId}/{versionId}/{fileType}/finish) - Finish FileData Upload
+- `vrchat_write_followGroupCalendarEvent` (POST /calendar/{groupId}/{calendarId}/follow) - Follow a calendar event (curated: vrchat_event_follow)
+- `vrchat_write_friend` (POST /user/{userId}/friendRequest) - Send Friend Request (curated: vrchat_friend_request)
 - `vrchat_write_initiateOrAcceptGroupTransfer` (POST /groups/{groupId}/transfer) - Initiate or Accept Group Transfer
+- `vrchat_write_inviteMyselfTo` (POST /invite/myself/to/{worldId}:{instanceId}) - Invite Myself To Instance (curated: vrchat_invite_self)
+- `vrchat_write_inviteUser` (POST /invite/{userId}) - Invite User (curated: vrchat_invite_user)
 - `vrchat_write_inviteUserWithPhoto` (POST /invite/{userId}/photo) - Invite User with photo
 - `vrchat_write_joinGroup` (POST /groups/{groupId}/join) - Join Group
 - `vrchat_write_kickGroupMember` (DELETE /groups/{groupId}/members/{userId}) - Kick Group Member
 - `vrchat_write_leaveGroup` (POST /groups/{groupId}/leave) - Leave Group
-- `vrchat_write_logout` (PUT /logout) - Logout
+- `vrchat_write_logout` (PUT /logout) - Logout (curated: vrchat_auth_logout)
 - `vrchat_write_markNotificationAsRead` (PUT /auth/user/notifications/{notificationId}/see) - Mark Notification As Read
 - `vrchat_write_moderateUser` (POST /auth/user/playermoderations) - Moderate User
 - `vrchat_write_publishProp` (PUT /props/{propId}/publish) - Publish Prop
@@ -15143,6 +15137,7 @@ Output schema:
 - `vrchat_write_updateBadge` (PUT /users/{userId}/badges/{badgeId}) - Update User Badge
 - `vrchat_write_updateFavoriteGroup` (PUT /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Update Favorite Group
 - `vrchat_write_updateGroup` (PUT /groups/{groupId}) - Update Group
+- `vrchat_write_updateGroupCalendarEvent` (PUT /calendar/{groupId}/{calendarId}/event) - Update a calendar event (curated: vrchat_event_update)
 - `vrchat_write_updateGroupGallery` (PUT /groups/{groupId}/galleries/{groupGalleryId}) - Update Group Gallery
 - `vrchat_write_updateGroupMember` (PUT /groups/{groupId}/members/{userId}) - Update Group Member
 - `vrchat_write_updateGroupPost` (PUT /groups/{groupId}/posts/{notificationId}) - Edits a Group post
@@ -15152,6 +15147,7 @@ Output schema:
 - `vrchat_write_updateOwnInventoryItem` (PUT /inventory/{inventoryItemId}) - Update Own Inventory Item
 - `vrchat_write_updateProp` (PUT /props/{propId}) - Update Prop
 - `vrchat_write_updateTiliaTos` (PUT /user/{userId}/tilia/tos) - Update Tilia TOS Agreement Status
+- `vrchat_write_updateUser` (PUT /users/{userId}) - Update User Info (curated: vrchat_profile_update)
 - `vrchat_write_updateUserNote` (POST /userNotes) - Update User Note
 - `vrchat_write_updateWorld` (PUT /worlds/{worldId}) - Update World
 - `vrchat_write_uploadGalleryImage` (POST /gallery) - Upload gallery image

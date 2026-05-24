@@ -36,7 +36,8 @@ describe('auth tools', () => {
     const logoutTool = server.tools.find((tool) => tool.name === 'vrchat_auth_logout');
 
     const beginResult = await begin!.handler({});
-    expect(beginResult).toMatchObject({ structuredContent: { url: 'http://localhost/login', token: 'tok' } });
+    expect(beginResult).toMatchObject({ structuredContent: { url: 'http://localhost/login' } });
+    expect(beginResult.structuredContent).not.toHaveProperty('token');
 
     const statusResult = status!.handler({});
     expect(statusResult).toMatchObject({ structuredContent: { loggedIn: false } });

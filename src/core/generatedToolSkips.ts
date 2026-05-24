@@ -14,18 +14,4 @@ export const GENERATED_READ_SKIP_IDS = [
   'getWorld',
 ];
 
-export const GENERATED_WRITE_SKIP_IDS = [
-  'createInstance',
-  'boop',
-  'createGroupInvite',
-  'friend',
-  'inviteMyselfTo',
-  'inviteUser',
-  'createGroupAnnouncement',
-  'deleteGroupAnnouncement',
-  'createGroupCalendarEvent',
-  'updateGroupCalendarEvent',
-  'deleteGroupCalendarEvent',
-  'followGroupCalendarEvent',
-  'updateUser',
-];
+export const GENERATED_WRITE_SKIP_IDS = ['createGroupAnnouncement', 'deleteGroupAnnouncement'];

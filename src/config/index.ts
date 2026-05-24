@@ -78,12 +78,14 @@ const ConfigBaseSchema = z
       .strict(),
     generatedReadTools: z
       .object({
-        disable: z.boolean(),
+        enabled: z.boolean(),
+        operationIds: z.array(z.string()),
       })
       .strict(),
     generatedWriteTools: z
       .object({
-        disable: z.boolean(),
+        enabled: z.boolean(),
+        operationIds: z.array(z.string()),
       })
       .strict(),
     vrcx: z
@@ -304,14 +306,14 @@ function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvVa
   if (env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS !== undefined) {
     overrides.generatedReadTools = {
       ...overrides.generatedReadTools,
-      disable: env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS,
+      enabled: !env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS,
     };
   }
 
   if (env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS !== undefined) {
     overrides.generatedWriteTools = {
       ...overrides.generatedWriteTools,
-      disable: env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
+      enabled: !env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
     };
   }
 }

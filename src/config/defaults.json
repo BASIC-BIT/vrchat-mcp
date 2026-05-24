@@ -45,10 +45,12 @@
     "enabled": false
   },
   "generatedReadTools": {
-    "disable": false
+    "enabled": true,
+    "operationIds": []
   },
   "generatedWriteTools": {
-    "disable": false
+    "enabled": true,
+    "operationIds": []
   },
   "vrcx": {
     "enabled": true,

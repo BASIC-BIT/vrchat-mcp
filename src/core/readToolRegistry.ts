@@ -66,8 +66,10 @@ export async function registerGeneratedReadTools(
   }
 ): Promise<number> {
   const config = getConfig();
-  if (config.generatedReadTools.disable) return 0;
+  if (!config.generatedReadTools.enabled) return 0;
   const skipOperationIds = new Set(GENERATED_READ_SKIP_IDS);
+  const allowedOperationIds = new Set(config.generatedReadTools.operationIds);
+  const hasAllowlist = allowedOperationIds.size > 0;
 
   const index = await getSpecIndex();
   const spec = index.raw ?? {};
@@ -81,6 +83,8 @@ export async function registerGeneratedReadTools(
       if (!op?.operationId) continue;
       const operationId = op.operationId as string;
       if (skipOperationIds.has(operationId)) continue;
+      if (getCuratedReadToolName(operationId)) continue;
+      if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = readToolName(operationId);
       const description = buildGeneratedReadToolDescription(operationId, op);
       const inputSchema = buildGeneratedReadToolInputSchema({
