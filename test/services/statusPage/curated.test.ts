@@ -113,7 +113,7 @@ describe('status page curated service', () => {
           page: { name: 'VRChat', url: 'https://status.vrchat.com' },
           status: { indicator: 'critical', description: 'Major outage' },
           components: [
-            { id: 'cmp_ok', name: 'API', status: 'operational' },
+            { id: 'cmp_ok', name: 'API', status: 'operational', description: 'Core API' },
             { id: 'cmp_bad', name: 'Realtime', status: 'major_outage' },
           ],
         },
@@ -126,6 +126,14 @@ describe('status page curated service', () => {
               name: 'Realtime outage',
               status: 'investigating',
               updated_at: twoHoursAgo,
+              incident_updates: [
+                {
+                  id: 'upd_open',
+                  status: 'investigating',
+                  body: 'Investigating elevated API errors.',
+                  display_at: twoHoursAgo,
+                },
+              ],
             },
           ],
         },
@@ -139,14 +147,29 @@ describe('status page curated service', () => {
               status: 'investigating',
               updated_at: twoHoursAgo,
             },
-            { id: 'inc_recent', name: 'API slowdown', resolved_at: twoHoursAgo },
+            {
+              id: 'inc_recent',
+              name: 'API slowdown',
+              resolved_at: twoHoursAgo,
+              incident_updates: [
+                { id: 'upd_recent', status: 'resolved', body: 'The slowdown has been resolved.' },
+              ],
+            },
             { id: 'inc_old', name: 'Old incident', resolved_at: tenDaysAgo },
           ],
         },
       },
       'https://status.vrchat.com/api/v2/scheduled-maintenances/active.json': {
         body: {
-          scheduled_maintenances: [{ id: 'mnt_active', name: 'Active maintenance' }],
+          scheduled_maintenances: [
+            {
+              id: 'mnt_active',
+              name: 'Active maintenance',
+              incident_updates: [
+                { id: 'upd_maint', status: 'in_progress', body: 'Maintenance is in progress.' },
+              ],
+            },
+          ],
         },
       },
       'https://status.vrchat.com/api/v2/scheduled-maintenances/upcoming.json': {
@@ -161,8 +184,16 @@ describe('status page curated service', () => {
 
     expect(result.status).toMatchObject({ up: false, indicator: 'critical' });
     expect(result.components).toMatchObject({ total: 2, nonOperational: 1 });
+    expect((result.components as Record<string, unknown>).items).toBeUndefined();
     expect(result.incidents).toMatchObject({ unresolvedCount: 1, recentCount: 1 });
+    expect(result.incidents.unresolved[0]?.latestUpdate).toMatchObject({
+      id: 'upd_open',
+      body: 'Investigating elevated API errors.',
+    });
+    expect((result.incidents.unresolved[0] as Record<string, unknown>).updates).toBeUndefined();
+    expect(result.incidents.recent[0]?.latestUpdate).toMatchObject({ id: 'upd_recent' });
     expect(result.maintenances).toMatchObject({ activeCount: 1, upcomingCount: 1 });
+    expect(result.maintenances.active[0]?.latestUpdate).toMatchObject({ id: 'upd_maint' });
     expect(result.graphs).toHaveLength(6);
 
     const apiErrorRate = result.graphs.find((graph) => graph.key === 'api_error_rate');
