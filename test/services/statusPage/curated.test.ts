@@ -208,7 +208,7 @@ describe('status page curated service', () => {
       ...buildGraphRoutes(),
     });
 
-    const result = await getStatusPageOverview({ recentHours: 72, maxItems: 5 });
+    const result = await getStatusPageOverview({ recentHours: 72, maxItems: 5, includeGraphs: true });
 
     expect(result.status).toMatchObject({ up: false, indicator: 'critical' });
     expect(result.components).toMatchObject({ total: 2, nonOperational: 1 });
@@ -232,7 +232,7 @@ describe('status page curated service', () => {
     expect(steamAuth?.overlayCurrent).toBe(700);
   });
 
-  it('omits graph calls when includeGraphs=false', async () => {
+  it('omits graph calls by default', async () => {
     mockFetchByUrl({
       'https://status.vrchat.com/api/v2/summary.json': {
         body: {
@@ -251,10 +251,10 @@ describe('status page curated service', () => {
       },
     });
 
-    const result = await getStatusPageOverview({ includeGraphs: false });
+    const result = await getStatusPageOverview({});
 
     expect(result.graphs).toEqual([]);
-    expect(result.notes.join(' ')).toContain('includeGraphs=false');
+    expect(result.notes.join(' ')).toContain('includeGraphs=true');
   });
 
   it('adds note when optional endpoint fails', async () => {
