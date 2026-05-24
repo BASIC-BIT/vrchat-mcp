@@ -7,6 +7,13 @@ import defaultsJson from './defaults.json' with { type: 'json' };
 
 const DISABLED_ALLOWLIST_VALUES = new Set(['', '0', 'false', 'no', 'off']);
 
+const GeneratedToolConfigSchema = z
+  .object({
+    enabled: z.boolean(),
+    operationIds: z.array(z.string()),
+  })
+  .strict();
+
 const ConfigBaseSchema = z
   .object({
     api: z
@@ -76,16 +83,8 @@ const ConfigBaseSchema = z
         enabled: z.boolean(),
       })
       .strict(),
-    generatedReadTools: z
-      .object({
-        disable: z.boolean(),
-      })
-      .strict(),
-    generatedWriteTools: z
-      .object({
-        disable: z.boolean(),
-      })
-      .strict(),
+    generatedReadTools: GeneratedToolConfigSchema,
+    generatedWriteTools: GeneratedToolConfigSchema,
     vrcx: z
       .object({
         enabled: z.boolean(),
@@ -199,6 +198,7 @@ function readConfigFile(filePath: string | null): DeepPartial<ConfigBase> {
     if (!isPlainObject(parsed)) {
       throw new Error('Config file must contain a JSON object.');
     }
+    normalizeLegacyConfigFile(parsed);
     return parsed as DeepPartial<ConfigBase>;
   } catch (err) {
     if ((err as { code?: string }).code === 'ENOENT') return {};
@@ -208,6 +208,19 @@ function readConfigFile(filePath: string | null): DeepPartial<ConfigBase> {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeLegacyGeneratedToolConfig(value: unknown): void {
+  if (!isPlainObject(value)) return;
+  if (typeof value.disable === 'boolean') {
+    value.enabled = !value.disable;
+    delete value.disable;
+  }
+}
+
+function normalizeLegacyConfigFile(config: Record<string, unknown>): void {
+  normalizeLegacyGeneratedToolConfig(config.generatedReadTools);
+  normalizeLegacyGeneratedToolConfig(config.generatedWriteTools);
 }
 
 function mergeConfig<T>(base: T, override: DeepPartial<T>): T {
@@ -304,14 +317,14 @@ function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvVa
   if (env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS !== undefined) {
     overrides.generatedReadTools = {
       ...overrides.generatedReadTools,
-      disable: env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS,
+      enabled: !env.VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS,
     };
   }
 
   if (env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS !== undefined) {
     overrides.generatedWriteTools = {
       ...overrides.generatedWriteTools,
-      disable: env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
+      enabled: !env.VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS,
     };
   }
 }

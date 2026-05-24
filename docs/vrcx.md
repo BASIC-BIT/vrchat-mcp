@@ -1,6 +1,6 @@
 # VRCX Integration Notes
 
-This repo includes optional read-only tooling to pull _local_ context from the VRCX SQLite database.
+This repo includes read-only tooling to pull _local_ context from the VRCX SQLite database. VRCX integration is enabled by default for local full-capability use and can be disabled with `vrcx.enabled = false`.
 
 The goal is to expose information that VRChat's public API does not provide (e.g. local memos, your join/leave history, and time-spent estimates), while avoiding sensitive material (cookies, stored credentials).
 

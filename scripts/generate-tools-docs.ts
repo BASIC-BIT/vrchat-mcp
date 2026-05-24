@@ -128,7 +128,7 @@ function buildGeneratedList(spec: any) {
       const summary = toAscii(String(summaryRaw).split('\n')[0].trim());
       if (method.toLowerCase() === 'get') {
         const curated = getCuratedReadToolName(operationId);
-        if (readSkip.has(operationId)) continue;
+        if (readSkip.has(operationId) || curated) continue;
         readOps.push({
           operationId,
           method: method.toUpperCase(),
@@ -217,7 +217,7 @@ async function main() {
   md += `Generated: ${now}\n\n`;
   md += `Spec: ${specTitle} (${specVersion})\n\n`;
   md +=
-    'This file is generated without starting the MCP server. It reflects curated tools plus all possible auto-generated tools that are exposed (curated replacements are omitted).\n\n';
+    'This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read replacements are omitted).\n\n';
 
   md += '## Curated tools\n';
   md += renderToolList(curated) || '- (none)\n';

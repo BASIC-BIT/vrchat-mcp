@@ -97,8 +97,10 @@ export async function registerGeneratedWriteTools(
   }
 ): Promise<number> {
   const config = getConfig();
-  if (config.generatedWriteTools.disable) return 0;
+  if (!config.generatedWriteTools.enabled) return 0;
   const skipOperationIds = new Set(GENERATED_WRITE_SKIP_IDS);
+  const allowedOperationIds = new Set(config.generatedWriteTools.operationIds);
+  const hasAllowlist = allowedOperationIds.size > 0;
 
   const index = await getSpecIndex();
   const spec = index.raw as {
@@ -115,6 +117,7 @@ export async function registerGeneratedWriteTools(
       const info = getWriteOperationInfo(method, opValue, skipOperationIds);
       if (!info) continue;
       const { operationId, op } = info;
+      if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = writeToolName(operationId);
       const description = buildGeneratedWriteToolDescription(operationId, op);
       const inputSchema = buildGeneratedWriteToolInputSchema({

@@ -34,6 +34,8 @@ describe('mcp e2e (mock generated tools)', () => {
 
   beforeAll(async () => {
     server = await createMockServer({ specPath: SPEC_PATH });
+    const raw = await readFile(SPEC_PATH, 'utf8');
+    spec = YAML.parse(raw) as Spec;
     harness = await createMcpHarness({
       env: {
         VRCHAT_MCP_API_BASE: server.baseUrl,
@@ -41,10 +43,10 @@ describe('mcp e2e (mock generated tools)', () => {
         VRCHAT_MCP_COOKIE_STORE: 'memory',
         VRCHAT_MCP_USER_AGENT: 'vrchat-mcp-e2e',
         VRCHAT_MCP_ALLOW_WRITES: 'true',
+        VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: 'false',
+        VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS: 'false',
       },
     });
-    const raw = await readFile(SPEC_PATH, 'utf8');
-    spec = YAML.parse(raw) as Spec;
   }, 20000);
 
   afterAll(async () => {
@@ -77,24 +79,22 @@ describe('mcp e2e (mock generated tools)', () => {
       }
       case 'shortName':
         return Object.keys(data.instancesByShortName)[0];
-      case 'groupId':
-        {
-          const groupId = data.groups[0]?.id;
-          if (groupId) return groupId;
-          throw new Error('Missing fixture for required param: groupId');
-        }
+      case 'groupId': {
+        const groupId = data.groups[0]?.id;
+        if (groupId) return groupId;
+        throw new Error('Missing fixture for required param: groupId');
+      }
       case 'notificationId':
         return data.notifications[0].id;
       case 'avatarId':
         return data.avatars[0].id;
-      case 'calendarId':
-        {
-          const groupId = data.groups[0]?.id ?? Object.keys(data.calendarGroupEvents)[0];
-          const groupEvents = groupId ? data.calendarGroupEvents[groupId] : undefined;
-          const eventId = groupEvents?.[0]?.id ?? data.calendarEvents[0]?.id;
-          if (eventId) return eventId;
-          throw new Error('Missing fixture for required param: calendarId');
-        }
+      case 'calendarId': {
+        const groupId = data.groups[0]?.id ?? Object.keys(data.calendarGroupEvents)[0];
+        const groupEvents = groupId ? data.calendarGroupEvents[groupId] : undefined;
+        const eventId = groupEvents?.[0]?.id ?? data.calendarEvents[0]?.id;
+        if (eventId) return eventId;
+        throw new Error('Missing fixture for required param: calendarId');
+      }
       case 'searchTerm':
         return 'Event';
       case 'search':
@@ -118,7 +118,7 @@ describe('mcp e2e (mock generated tools)', () => {
 
   function buildParams(
     params: SpecParameter[] | undefined,
-    operationId?: string,
+    operationId?: string
   ): Record<string, unknown> {
     const args: Record<string, unknown> = {};
     for (const param of params ?? []) {
@@ -130,6 +130,24 @@ describe('mcp e2e (mock generated tools)', () => {
       }
     }
     return args;
+  }
+
+  function buildWriteBody(
+    operationId: string,
+    requestBody?: SpecOperation['requestBody']
+  ): unknown {
+    const data = server!.data;
+    const firstInstanceKey = Object.keys(data.instances)[0];
+    switch (operationId) {
+      case 'createInstance':
+        return { worldId: data.worlds[0].id, type: 'hidden', region: 'us' };
+      case 'inviteUser':
+        return { instanceId: firstInstanceKey };
+      case 'updateUser':
+        return { statusDescription: 'mock generated update' };
+      default:
+        return requestBody?.required ? {} : undefined;
+    }
   }
 
   it('invokes every generated read tool for GET operations', async () => {
@@ -169,7 +187,11 @@ describe('mcp e2e (mock generated tools)', () => {
   it('invokes every generated write tool for non-GET operations', async () => {
     const listed = await harness!.client.listTools();
     const available = new Set((listed.tools ?? []).map((tool) => tool.name));
-    const operations: { operationId: string; params?: SpecParameter[]; requestBody?: SpecOperation['requestBody'] }[] = [];
+    const operations: {
+      operationId: string;
+      params?: SpecParameter[];
+      requestBody?: SpecOperation['requestBody'];
+    }[] = [];
     for (const pathItem of Object.values(spec!.paths)) {
       for (const [method, op] of Object.entries(pathItem)) {
         if (method.toLowerCase() === 'get') continue;
@@ -186,7 +208,7 @@ describe('mcp e2e (mock generated tools)', () => {
       const tool = writeToolName(op.operationId);
       if (!available.has(tool)) continue;
       const params = buildParams(op.params, op.operationId);
-      const body = op.requestBody?.required ? {} : undefined;
+      const body = buildWriteBody(op.operationId, op.requestBody);
       const args = {
         ...(Object.keys(params).length ? { params } : {}),
         ...(body !== undefined ? { body } : {}),

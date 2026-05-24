@@ -9,12 +9,13 @@ without wading through hundreds of low-level endpoints.
 - Small and explicit: each tool has a single, obvious purpose.
 - Human-input friendly: accept names or natural inputs where reasonable.
 - Composable: outputs include IDs and metadata for follow-ups.
-- Practical by default: write tools are available out of the box, with `writes.allow` for read-only mode and group allowlists for group-scoped writes.
+- Local full capability by default: curated write tools are enabled, with account-changing approval expected from the MCP client or agent harness. Group allowlists can further restrict group-scoped writes.
 
 ## Write controls
 
 - Read-only tools are always enabled.
-- Write tools are enabled unless `writes.allow = false`.
+- Curated write tools are enabled by default through `writes.allow = true`.
+- Set `writes.allow = false` or `VRCHAT_MCP_ALLOW_WRITES=false` for read-only mode.
 - Group-scoped writes additionally honor `groups.allowlist`.
 
 ## Current curated tools (implemented)
@@ -129,10 +130,9 @@ Automation hooks:
 
 - `vrchat_status_guard` (periodic check + corrective update)
 
-## Toolset toggles (planned)
+## Toolset toggles
 
-Auto-generated read tools are enabled by default (`vrchat_read_<operationId>`).
-Auto-generated write tools are enabled by default (`vrchat_write_<operationId>`) unless disabled by `writes.allow`.
+The default toolset is curated plus generated read and write tools. Auto-generated read tools (`vrchat_read_<operationId>`) are enabled by default for API exploration and can be narrowed with `generatedReadTools.operationIds` or disabled with `generatedReadTools.enabled = false`. Generated write tools (`vrchat_write_<operationId>`) are enabled by default for API coverage and can be narrowed with `generatedWriteTools.operationIds` or disabled with `generatedWriteTools.enabled = false`. Generated read tools do not expose operations with curated replacements; generated write tools remain available so the local server keeps pace with the VRChat API.
 The raw tool (`vrchat_call`) is disabled by default and can be enabled via config/environment flags.
 
 ## Group allowlist guard

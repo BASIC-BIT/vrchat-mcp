@@ -135,9 +135,109 @@ describe('config loader', () => {
     expect(config.writes.allow).toBe(true);
   });
 
-  it('allows writes by default', () => {
+  it('allows writes by default for local full-capability use', () => {
     setEnv('VRCHAT_MCP_ALLOW_WRITES', undefined);
     expect(getConfig().writes.allow).toBe(true);
+  });
+
+  it('enables VRCX by default for local full-capability use', () => {
+    expect(getConfig().vrcx.enabled).toBe(true);
+  });
+
+  it('enables generated OpenAPI tools by default for local full-capability use', () => {
+    expect(getConfig().generatedReadTools).toEqual({ enabled: true, operationIds: [] });
+    expect(getConfig().generatedWriteTools).toEqual({ enabled: true, operationIds: [] });
+
+    resetConfigCacheForTest();
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS', 'true');
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS', 'true');
+
+    expect(getConfig().generatedReadTools.enabled).toBe(false);
+    expect(getConfig().generatedWriteTools.enabled).toBe(false);
+
+    resetConfigCacheForTest();
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS', 'false');
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS', 'false');
+
+    expect(getConfig().generatedReadTools.enabled).toBe(true);
+    expect(getConfig().generatedWriteTools.enabled).toBe(true);
+  });
+
+  it('reads generated tool operation allowlists from config file', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
+    const filePath = path.join(tempDir, 'config.json');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          generatedReadTools: { enabled: true, operationIds: ['getAvatar'] },
+          generatedWriteTools: { enabled: true, operationIds: ['selectAvatar'] },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    setEnv('VRCHAT_MCP_CONFIG_FILE', filePath);
+
+    expect(getConfig().generatedReadTools).toEqual({ enabled: true, operationIds: ['getAvatar'] });
+    expect(getConfig().generatedWriteTools).toEqual({
+      enabled: true,
+      operationIds: ['selectAvatar'],
+    });
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('supports legacy generated tool disable config keys', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
+    const filePath = path.join(tempDir, 'config.json');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          generatedReadTools: { disable: true },
+          generatedWriteTools: { disable: false, operationIds: ['selectAvatar'] },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    setEnv('VRCHAT_MCP_CONFIG_FILE', filePath);
+
+    expect(getConfig().generatedReadTools).toEqual({ enabled: false, operationIds: [] });
+    expect(getConfig().generatedWriteTools).toEqual({
+      enabled: true,
+      operationIds: ['selectAvatar'],
+    });
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('lets generated tool env overrides supersede legacy disable config keys', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vrchat-mcp-config-'));
+    const filePath = path.join(tempDir, 'config.json');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          generatedReadTools: { disable: true },
+          generatedWriteTools: { disable: false },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    setEnv('VRCHAT_MCP_CONFIG_FILE', filePath);
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS', 'false');
+    setEnv('VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS', 'true');
+
+    expect(getConfig().generatedReadTools.enabled).toBe(true);
+    expect(getConfig().generatedWriteTools.enabled).toBe(false);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('throws on invalid env values', () => {

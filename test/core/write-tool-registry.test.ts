@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 
 const mockConfig = {
-  generatedWriteTools: { disable: false },
+  generatedWriteTools: { enabled: true, operationIds: [] as string[] },
   logging: { level: 'info' },
 };
 
@@ -24,13 +24,22 @@ vi.mock('../../src/core/spec.js', () => {
             '/widgets': {
               post: { operationId: 'createWidget', summary: 'Create Widget' },
             },
+            '/invite/{userId}': {
+              post: { operationId: 'inviteUser', summary: 'Invite User' },
+            },
             '/me': { post: { operationId: 'updateUser', summary: 'Update User' } },
           },
         },
         operations: new Map([
           [
             'getConfig',
-            { operationId: 'getConfig', method: 'GET', path: '/config', parameters: [], hasRequestBody: false },
+            {
+              operationId: 'getConfig',
+              method: 'GET',
+              path: '/config',
+              parameters: [],
+              hasRequestBody: false,
+            },
           ],
           [
             'createWidget',
@@ -52,7 +61,23 @@ vi.mock('../../src/core/spec.js', () => {
           ],
           [
             'updateUser',
-            { operationId: 'updateUser', method: 'POST', path: '/me', parameters: [], hasRequestBody: true },
+            {
+              operationId: 'updateUser',
+              method: 'POST',
+              path: '/me',
+              parameters: [],
+              hasRequestBody: true,
+            },
+          ],
+          [
+            'inviteUser',
+            {
+              operationId: 'inviteUser',
+              method: 'POST',
+              path: '/invite/{userId}',
+              parameters: [],
+              hasRequestBody: true,
+            },
           ],
         ]),
       }),
@@ -71,15 +96,39 @@ vi.mock('../../src/core/client.js', () => {
 
 describe('write tool registry', () => {
   beforeEach(() => {
-    mockConfig.generatedWriteTools = { disable: false };
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
     vi.resetModules();
   });
 
   afterEach(() => {
-    mockConfig.generatedWriteTools = { disable: false };
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
   });
 
-  it('skips tools in skip list and only registers non-GET', async () => {
+  it('registers generated writes broadly when no operation allowlist is set', async () => {
+    const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
+
+    const registered: string[] = [];
+    const server = {
+      registerTool: (name: string) => {
+        registered.push(name);
+      },
+    };
+
+    const count = await registerGeneratedWriteTools(server as never, {
+      writeOptionsSchema: z.object({}),
+      writeOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    expect(count).toBe(2);
+    expect(registered).toEqual(['vrchat_write_createWidget', 'vrchat_write_inviteUser']);
+  });
+
+  it('skips tools in skip list and only registers non-GET operations', async () => {
+    mockConfig.generatedWriteTools = {
+      enabled: true,
+      operationIds: ['createWidget', 'updateUser'],
+    };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
 
     const registered: string[] = [];
@@ -100,7 +149,7 @@ describe('write tool registry', () => {
   });
 
   it('can be disabled entirely', async () => {
-    mockConfig.generatedWriteTools = { disable: true };
+    mockConfig.generatedWriteTools = { enabled: false, operationIds: [] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
     const server = { registerTool: vi.fn() };
 
@@ -114,7 +163,49 @@ describe('write tool registry', () => {
     expect(server.registerTool).not.toHaveBeenCalled();
   });
 
+  it('can be narrowed by operationId', async () => {
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['createWidget'] };
+    const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
+
+    const registered: string[] = [];
+    const server = {
+      registerTool: (name: string) => {
+        registered.push(name);
+      },
+    };
+
+    const count = await registerGeneratedWriteTools(server as never, {
+      writeOptionsSchema: z.object({}),
+      writeOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    expect(count).toBe(1);
+    expect(registered).toEqual(['vrchat_write_createWidget']);
+  });
+
+  it('allows generated operations that have curated replacements', async () => {
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['inviteUser'] };
+    const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
+    const registered: string[] = [];
+    const server = {
+      registerTool: (name: string) => {
+        registered.push(name);
+      },
+    };
+
+    const count = await registerGeneratedWriteTools(server as never, {
+      writeOptionsSchema: z.object({}),
+      writeOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    expect(count).toBe(1);
+    expect(registered).toEqual(['vrchat_write_inviteUser']);
+  });
+
   it('returns toolError when write operation throws', async () => {
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['createWidget'] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
     const { callOperation } = await import('../../src/core/client.js');
     vi.mocked(callOperation).mockRejectedValueOnce(new Error('boom'));
@@ -149,12 +240,16 @@ describe('write tool registry', () => {
   });
 
   it('marks required body as required in the schema', async () => {
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['createWidget'] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
-    const metas: Record<string, { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }> = {};
+    const metas: Record<
+      string,
+      { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
+    > = {};
     const server = {
       registerTool: (
         name: string,
-        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } },
+        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
       ) => {
         metas[name] = meta;
       },

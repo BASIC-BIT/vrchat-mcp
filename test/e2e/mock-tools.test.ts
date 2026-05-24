@@ -94,7 +94,7 @@ describe('mcp e2e (mock tools)', () => {
     const begin = await client.callTool({ name: 'vrchat_auth_begin', arguments: {} });
     const beginStructured = begin.structuredContent as { url?: string; token?: string } | undefined;
     expect(typeof beginStructured?.url).toBe('string');
-    expect(typeof beginStructured?.token).toBe('string');
+    expect(beginStructured?.token).toBeUndefined();
 
     const logout = await client.callTool({ name: 'vrchat_auth_logout', arguments: {} });
     expect(logout).toMatchObject({ structuredContent: { loggedIn: false } });

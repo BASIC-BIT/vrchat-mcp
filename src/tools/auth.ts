@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { authManager } from '../auth/index.js';
 import { cacheManager } from '../services/cache.js';
 import { AuthStatusSchema } from '../schemas/auth.js';
-import {
-  readOnlyToolAnnotations,
-  writeToolAnnotations,
-} from '../utils/toolAnnotations.js';
+import { readOnlyToolAnnotations, writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
 
 export function registerAuthTools(server: McpServer): void {
@@ -14,14 +11,14 @@ export function registerAuthTools(server: McpServer): void {
     toolName('vrchat.auth.begin'),
     {
       description: 'Begin login flow via local browser UI.',
-      outputSchema: z.object({ url: z.string(), token: z.string() }),
+      outputSchema: z.object({ url: z.string() }),
       annotations: writeToolAnnotations,
     },
     async () => {
-      const { url, token } = await authManager.startLoginServer();
+      const { url } = await authManager.startLoginServer();
       return {
         content: [{ type: 'text', text: `Open in browser: ${url}` }],
-        structuredContent: { url, token },
+        structuredContent: { url },
       };
     }
   );

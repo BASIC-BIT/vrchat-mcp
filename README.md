@@ -4,13 +4,19 @@
 
 # VRChat MCP
 
-Unofficial [Model Context Protocol](https://modelcontextprotocol.io/) tools for VRChat friends, worlds, groups, events, notifications, status, invites, and local VRCX history.
+Unofficial local [Model Context Protocol](https://modelcontextprotocol.io/) tools for VRChat friends, worlds, groups, events, notifications, status, invites, and local VRCX history.
 
 [![npm](https://img.shields.io/npm/v/%40basicbit%2Fvrchat-mcp)](https://www.npmjs.com/package/@basicbit/vrchat-mcp) [![license](https://img.shields.io/npm/l/%40basicbit%2Fvrchat-mcp)](./LICENSE)
 
-VRChat MCP runs locally through stdio. Your VRChat auth cookies stay on your machine and default to your OS keychain, with file storage as the fallback when a keychain backend is unavailable.
+VRChat MCP runs locally through stdio. Your VRChat auth cookies stay on your machine and default to your OS keychain, with file storage as the fallback when a keychain backend is unavailable. Curated write tools, generated read/write tools, and read-only VRCX local-history tools are available by default; use your MCP client or agent harness to approve account-changing tool calls.
 
 This project is unofficial and is not affiliated with VRChat Inc.
+
+## Policy and Safety Boundaries
+
+VRChat does not provide a public OAuth flow for third-party API applications. VRChat's Creator Guidelines say API applications should not request or store VRChat login credentials, auth tokens, or session data, should identify themselves with a clear User-Agent, should cache/back off instead of sending unmetered requests, and should not act on behalf of another user.
+
+This project is therefore intended only as a local, user-controlled personal tool. Do not run it as a hosted/public MCP service, do not collect anyone else's credentials or cookies, do not automate spam or harassment, and do not use it to evade VRChat enforcement or moderation. Use write tools only for actions you would intentionally perform yourself in VRChat.
 
 ## Install
 
@@ -18,6 +24,7 @@ Requirements:
 
 - Node.js 24.15.0 or newer.
 - An MCP client that can run local stdio servers.
+- Native dependencies are installed for keychain and VRCX SQLite support (`keytar`, `better-sqlite3`).
 
 On headless Linux or containers without a keychain daemon such as `libsecret`, set `VRCHAT_MCP_COOKIE_STORE=file` for explicit persistent cookie storage.
 
@@ -105,6 +112,8 @@ After adding the server to your MCP client, ask it to call `vrchat_auth_begin`. 
 
 After logging in, call `vrchat_auth_status` to confirm the session. By default, cookies are stored in the OS keychain so the login survives MCP server restarts. If the OS keychain is unavailable, VRChat MCP falls back to file storage.
 
+Do not ask another person to use this login flow for you. Do not send the local login URL, cookies, or session files to hosted tools or third-party services.
+
 Useful auth tools:
 
 - `vrchat_auth_begin`: start local browser login.
@@ -141,7 +150,7 @@ Show recent worlds from my local VRCX history.
 
 ## Tools
 
-VRChat MCP exposes curated tools for common tasks plus generated tools from the VRChat OpenAPI spec.
+VRChat MCP exposes curated tools plus generated read/write tools by default. Curated tools cover common tasks with compact, agent-friendly inputs and outputs.
 
 Common curated tools include:
 
@@ -159,16 +168,27 @@ Common curated tools include:
 - `vrchat_boop`
 - `vrcx_instances_recent`
 
-Generated tools use these naming patterns:
+Generated OpenAPI tools use these naming patterns:
 
 - `vrchat_read_<operationId>` for GET operations.
 - `vrchat_write_<operationId>` for non-GET operations.
+
+Generated read and write tools are enabled by default. Set `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS=true` or `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS=true` to hide them, or use JSON config to narrow either surface to specific operation IDs:
+
+```json
+{
+  "generatedReadTools": { "enabled": true, "operationIds": ["getAvatarStyles"] },
+  "generatedWriteTools": { "enabled": true, "operationIds": ["selectAvatar"] }
+}
+```
+
+When an `operationIds` list is empty and that generated tool class is enabled, all generated operations in that class are exposed except hard-skipped operations and generated read operations with curated replacements. Prefer curated tools for common workflows, but generated tools keep the local server capable as the VRChat API evolves.
 
 See `docs/tools-guide.md` for a short guide and `docs/tools.md` for the generated catalog.
 
 ## Write Controls
 
-Write tools are enabled by default so client installs work without extra setup. Your MCP client may still ask before executing tool calls, depending on its own permission model.
+Curated and generated write tools are enabled by default so the local MCP server is usable from the first run. Your MCP client or agent harness is expected to control tool-call permission, approval, and denial for account-changing actions.
 
 To force read-only mode, add this `env` fragment inside the server entry for your MCP client:
 
@@ -179,6 +199,8 @@ To force read-only mode, add this `env` fragment inside the server entry for you
   }
 }
 ```
+
+Only use write tools when you intend this local MCP server to perform VRChat account actions. Bulk social tools are capped and back off on 429s, but you are responsible for avoiding spam, harassment, or unwanted automation.
 
 For group write tools, you can restrict writes to specific group IDs with a JSON config file:
 
@@ -214,7 +236,8 @@ Example JSON config:
   "auth": { "cookieStore": "file" },
   "writes": { "allow": false },
   "groups": { "allowlist": ["grp_abc123"] },
-  "cache": { "enabled": true }
+  "cache": { "enabled": true },
+  "vrcx": { "enabled": true }
 }
 ```
 

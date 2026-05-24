@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { randomBytes } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { URL } from 'node:url';
+import { getConfig } from '../config/index.js';
 import { logger } from '../infra/logger.js';
 import { getCookieStore } from './cookieStore.js';
 
@@ -18,7 +19,7 @@ class AuthError extends Error {
   constructor(
     message: string,
     kind?: 'totp' | 'emailOtp' | 'unknown',
-    options: { isChallenge?: boolean } = {},
+    options: { isChallenge?: boolean } = {}
   ) {
     super(message);
     this.name = 'AuthError';
@@ -69,6 +70,10 @@ function parseLoginSubmission(params: URLSearchParams): LoginSubmission {
     totp: directTotp ?? (factorKind === 'totp' ? code : undefined),
     emailOtp: directEmailOtp ?? (factorKind === 'emailOtp' ? code : undefined),
   };
+}
+
+function loginUserAgent(): string {
+  return getConfig().api.userAgent;
 }
 
 class AuthManager {
@@ -230,7 +235,7 @@ class AuthManager {
           <button type="submit">${showOtp ? 'Verify' : 'Login'}</button>
           ${showOtp ? `<a class="link-button" href="/reset?token=${encodedToken}">Use another account</a>` : ''}
         </div>
-      </form>`,
+      </form>`
     );
   }
 
@@ -239,7 +244,7 @@ class AuthManager {
       res,
       `<div class="brand"><h1>Login successful</h1></div>
       <p class="notice">You're logged in.</p>
-      <p>You can close this window and return to your MCP client.</p>`,
+      <p>You can close this window and return to your MCP client.</p>`
     );
   }
 
@@ -247,14 +252,15 @@ class AuthManager {
     res: ServerResponse,
     token: string,
     err: unknown,
-    username: string,
+    username: string
   ): boolean {
     if (!(err instanceof AuthError) || !err.kind || err.kind === 'unknown') {
       return false;
     }
 
     const isChallenge = err.isChallenge;
-    const notice = err.kind === 'emailOtp' ? 'Email verification required' : 'Authenticator code required';
+    const notice =
+      err.kind === 'emailOtp' ? 'Email verification required' : 'Authenticator code required';
     this.renderForm(res, token, {
       error: isChallenge ? undefined : err.message,
       notice: isChallenge ? notice : undefined,
@@ -266,6 +272,12 @@ class AuthManager {
 
   private renderPage(res: ServerResponse, body: string) {
     res.setHeader('content-type', 'text/html; charset=utf-8');
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('x-frame-options', 'DENY');
+    res.setHeader(
+      'content-security-policy',
+      "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+    );
     res.end(`<!doctype html>
 <html lang="en">
   <head>
@@ -309,6 +321,20 @@ class AuthManager {
     if (!this.serverToken || !this.port) {
       res.statusCode = 503;
       res.end('Auth server not ready');
+      return null;
+    }
+
+    const expectedHost = `127.0.0.1:${this.port}`;
+    if (req.headers.host !== expectedHost) {
+      res.statusCode = 403;
+      res.end('Invalid host');
+      return null;
+    }
+
+    const origin = req.headers.origin;
+    if (origin && origin !== `http://${expectedHost}`) {
+      res.statusCode = 403;
+      res.end('Invalid origin');
       return null;
     }
 
@@ -408,7 +434,7 @@ class AuthManager {
       method: 'GET',
       headers: {
         authorization: `Basic ${basic}`,
-        'user-agent': 'vrchat-mcp-login',
+        'user-agent': loginUserAgent(),
       },
     });
 
@@ -426,7 +452,7 @@ class AuthManager {
           throw new AuthError(
             '2FA required (TOTP). Enter the code from your authenticator app.',
             'totp',
-            { isChallenge: true },
+            { isChallenge: true }
           );
         }
         const res2 = await fetch('https://api.vrchat.cloud/api/1/auth/twofactorauth/totp/verify', {
@@ -434,7 +460,7 @@ class AuthManager {
           headers: {
             cookie: cookieHeader,
             'content-type': 'application/json',
-            'user-agent': 'vrchat-mcp-login',
+            'user-agent': loginUserAgent(),
           },
           body: JSON.stringify({ code: totp }),
         });
@@ -451,7 +477,7 @@ class AuthManager {
           throw new AuthError(
             '2FA required (Email OTP). Check your email and enter the code.',
             'emailOtp',
-            { isChallenge: true },
+            { isChallenge: true }
           );
         }
         const res2 = await fetch(
@@ -461,7 +487,7 @@ class AuthManager {
             headers: {
               cookie: cookieHeader,
               'content-type': 'application/json',
-              'user-agent': 'vrchat-mcp-login',
+              'user-agent': loginUserAgent(),
             },
             body: JSON.stringify({ code: emailOtp }),
           }

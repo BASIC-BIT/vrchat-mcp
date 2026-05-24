@@ -5,9 +5,11 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 ## How to use tools
 
 - Prefer **curated tools** first. They include search and summary flows for common VRChat tasks.
-- Use **auto-generated tools** (`vrchat_read_<operationId>`, `vrchat_write_<operationId>`) only when a curated tool does not exist.
-- **Writes are enabled by default**. Set `writes.allow = false` (or `VRCHAT_MCP_ALLOW_WRITES=false`) for read-only mode.
+- Auto-generated read tools (`vrchat_read_<operationId>`) and write tools (`vrchat_write_<operationId>`) are enabled by default for API coverage. Use `generatedReadTools.operationIds` or `generatedWriteTools.operationIds` only when you want to narrow the generated surface.
+- Curated write tools are enabled by default for local full-capability use. Set `writes.allow = false` (or `VRCHAT_MCP_ALLOW_WRITES=false`) for read-only mode.
+- The MCP client or agent harness is expected to control approval/denial for account-changing tool calls.
 - Group write actions are restricted by `groups.allowlist` when set.
+- Do not expose this server as a hosted/public MCP service with VRChat cookies. Keep it local and user-controlled.
 
 ## MCP resources
 
@@ -23,5 +25,5 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 
 ## Where the truth lives
 
-- `docs/tools.md` is generated from code + the OpenAPI spec and reflects the actual exposed tools.
+- `docs/tools.md` is generated from code + the OpenAPI spec and includes curated tools plus the generated catalog.
 - `docs/curated-tools.md` describes the curated tool charter and risk tiers.
