@@ -24,6 +24,14 @@ export const StatusPageComponentSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.string(),
+  description: z.string().optional(),
+});
+
+export const StatusPageUpdateSchema = z.object({
+  id: z.string(),
+  status: z.string().optional(),
+  body: z.string().optional(),
+  displayAt: z.string().optional(),
 });
 
 export const StatusPageMetricSchema = z.object({
@@ -50,6 +58,7 @@ export const StatusPageIncidentSchema = z.object({
   startedAt: z.string().optional(),
   updatedAt: z.string().optional(),
   resolvedAt: z.string().optional(),
+  latestUpdate: StatusPageUpdateSchema.optional(),
 });
 
 export const StatusPageMaintenanceSchema = z.object({
@@ -61,6 +70,7 @@ export const StatusPageMaintenanceSchema = z.object({
   scheduledFor: z.string().optional(),
   scheduledUntil: z.string().optional(),
   updatedAt: z.string().optional(),
+  latestUpdate: StatusPageUpdateSchema.optional(),
 });
 
 export const StatusPageOverviewOutputSchema = z.object({
