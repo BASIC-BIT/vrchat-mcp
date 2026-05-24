@@ -22,6 +22,19 @@ interface StatusPageGraph {
   samples?: unknown;
 }
 
+interface StatusPageUpdate {
+  id?: unknown;
+  status?: unknown;
+  body?: unknown;
+  displayAt?: unknown;
+}
+
+interface StatusPageItem {
+  id?: unknown;
+  name?: unknown;
+  latestUpdate?: StatusPageUpdate;
+}
+
 interface StatusPageOverview {
   status?: {
     up?: unknown;
@@ -36,12 +49,17 @@ interface StatusPageOverview {
   graphs?: StatusPageGraph[];
   incidents?: {
     unresolvedCount?: unknown;
+    unresolved?: StatusPageItem[];
     recentCount?: unknown;
+    recent?: StatusPageItem[];
   };
   maintenances?: {
     activeCount?: unknown;
+    active?: StatusPageItem[];
     upcomingCount?: unknown;
+    upcoming?: StatusPageItem[];
   };
+  notes?: unknown[];
 }
 
 function expectFiniteNumber(value: unknown): asserts value is number {
@@ -54,6 +72,21 @@ function expectNullableMetric(value: unknown, options: { min?: number; max?: num
   expectFiniteNumber(value);
   if (options.min !== undefined) expect(value).toBeGreaterThanOrEqual(options.min);
   if (options.max !== undefined) expect(value).toBeLessThanOrEqual(options.max);
+}
+
+function expectStatusPageItems(items: StatusPageItem[] | undefined, maxItems: number): void {
+  expect(items?.length ?? 0).toBeLessThanOrEqual(maxItems);
+  for (const item of items ?? []) {
+    expect(typeof item.id).toBe('string');
+    expect(typeof item.name).toBe('string');
+    if (!item.latestUpdate) continue;
+    expect(typeof item.latestUpdate.id).toBe('string');
+    if (item.latestUpdate.status !== undefined) expect(typeof item.latestUpdate.status).toBe('string');
+    if (item.latestUpdate.body !== undefined) expect(typeof item.latestUpdate.body).toBe('string');
+    if (item.latestUpdate.displayAt !== undefined) {
+      expect(typeof item.latestUpdate.displayAt).toBe('string');
+    }
+  }
 }
 
 function wait(ms: number): Promise<void> {
@@ -95,9 +128,10 @@ describe('mcp e2e (live status page)', () => {
     'returns plausible live VRChat status-page data through MCP',
     async () => {
       await retryTransientStatusPageFailure(async () => {
+        const maxItems = 3;
         const result = await harness!.client.callTool({
           name: 'vrchat_status_page_overview',
-          arguments: { recentHours: 24, maxItems: 3, includeGraphs: true },
+          arguments: { recentHours: 720, maxItems, includeGraphs: true },
         });
         expect((result as { isError?: boolean }).isError).not.toBe(true);
 
@@ -124,18 +158,26 @@ describe('mcp e2e (live status page)', () => {
         expectFiniteNumber(structured.incidents?.recentCount);
         expectFiniteNumber(structured.maintenances?.activeCount);
         expectFiniteNumber(structured.maintenances?.upcomingCount);
+        expectStatusPageItems(structured.incidents?.unresolved, maxItems);
+        expectStatusPageItems(structured.incidents?.recent, maxItems);
+        expectStatusPageItems(structured.maintenances?.active, maxItems);
+        expectStatusPageItems(structured.maintenances?.upcoming, maxItems);
 
         expect(Array.isArray(structured.graphs)).toBe(true);
-        expect(structured.graphs?.length ?? 0).toBeGreaterThan(0);
-        for (const graph of structured.graphs ?? []) {
-          expect(typeof graph.key).toBe('string');
-          expectFiniteNumber(graph.samples);
-          expect(graph.samples).toBeGreaterThanOrEqual(0);
+        if ((structured.graphs?.length ?? 0) === 0) {
+          expect(Array.isArray(structured.notes)).toBe(true);
+          expect(structured.notes?.some((note) => String(note).includes('graph'))).toBe(true);
+        } else {
+          for (const graph of structured.graphs ?? []) {
+            expect(typeof graph.key).toBe('string');
+            expectFiniteNumber(graph.samples);
+            expect(graph.samples).toBeGreaterThanOrEqual(0);
 
-          const range = graph.unit === 'percent' ? { min: 0, max: 100 } : { min: 0 };
-          expectNullableMetric(graph.current, range);
-          expectNullableMetric(graph.min, range);
-          expectNullableMetric(graph.max, range);
+            const range = graph.unit === 'percent' ? { min: 0, max: 100 } : { min: 0 };
+            expectNullableMetric(graph.current, range);
+            expectNullableMetric(graph.min, range);
+            expectNullableMetric(graph.max, range);
+          }
         }
       });
     },

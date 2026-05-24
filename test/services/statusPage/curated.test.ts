@@ -128,7 +128,13 @@ describe('status page curated service', () => {
               updated_at: twoHoursAgo,
               incident_updates: [
                 {
-                  id: 'upd_open',
+                  id: 'upd_open_old',
+                  status: 'identified',
+                  body: 'We found the source of elevated API errors.',
+                  display_at: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+                },
+                {
+                  id: 'upd_open_new',
                   status: 'investigating',
                   body: 'Investigating elevated API errors.',
                   display_at: twoHoursAgo,
@@ -152,7 +158,18 @@ describe('status page curated service', () => {
               name: 'API slowdown',
               resolved_at: twoHoursAgo,
               incident_updates: [
-                { id: 'upd_recent', status: 'resolved', body: 'The slowdown has been resolved.' },
+                {
+                  id: 'upd_recent_old',
+                  status: 'investigating',
+                  body: 'Investigating API slowdown.',
+                  display_at: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+                },
+                {
+                  id: 'upd_recent',
+                  status: 'resolved',
+                  body: 'The slowdown has been resolved.',
+                  display_at: twoHoursAgo,
+                },
               ],
             },
             { id: 'inc_old', name: 'Old incident', resolved_at: tenDaysAgo },
@@ -166,7 +183,18 @@ describe('status page curated service', () => {
               id: 'mnt_active',
               name: 'Active maintenance',
               incident_updates: [
-                { id: 'upd_maint', status: 'in_progress', body: 'Maintenance is in progress.' },
+                {
+                  id: 'upd_maint_old',
+                  status: 'scheduled',
+                  body: 'Maintenance is scheduled.',
+                  display_at: new Date(now - 4 * 60 * 60 * 1000).toISOString(),
+                },
+                {
+                  id: 'upd_maint',
+                  status: 'in_progress',
+                  body: 'Maintenance is in progress.',
+                  display_at: twoHoursAgo,
+                },
               ],
             },
           ],
@@ -187,7 +215,7 @@ describe('status page curated service', () => {
     expect((result.components as Record<string, unknown>).items).toBeUndefined();
     expect(result.incidents).toMatchObject({ unresolvedCount: 1, recentCount: 1 });
     expect(result.incidents.unresolved[0]?.latestUpdate).toMatchObject({
-      id: 'upd_open',
+      id: 'upd_open_new',
       body: 'Investigating elevated API errors.',
     });
     expect((result.incidents.unresolved[0] as Record<string, unknown>).updates).toBeUndefined();

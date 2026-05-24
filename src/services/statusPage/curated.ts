@@ -63,6 +63,7 @@ const GRAPH_DEFINITIONS: GraphDefinition[] = [
 
 type Incident = StatusPageOverviewOutput['incidents']['unresolved'][number];
 type Maintenance = StatusPageOverviewOutput['maintenances']['active'][number];
+type LatestUpdate = NonNullable<Incident['latestUpdate']>;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -89,20 +90,31 @@ function mapPage(raw: unknown): StatusPageOverviewOutput['page'] {
   };
 }
 
-function mapUpdate(
-  raw: unknown
-): NonNullable<StatusPageOverviewOutput['incidents']['unresolved'][number]['latestUpdate']> | null {
+function mapUpdate(raw: unknown): { update: LatestUpdate; sortTimestamp: number } | null {
   const update = asRecord(raw);
   if (!update) return null;
   const id = asString(update.id);
   if (!id) return null;
+  const displayAt = asString(update.display_at);
+  const updatedAt = asString(update.updated_at);
+  const createdAt = asString(update.created_at);
 
   return {
-    id,
-    status: asString(update.status),
-    body: asString(update.body),
-    displayAt: asString(update.display_at),
+    update: {
+      id,
+      status: asString(update.status),
+      body: asString(update.body),
+      displayAt,
+    },
+    sortTimestamp: toTimestamp(displayAt) ?? toTimestamp(updatedAt) ?? toTimestamp(createdAt) ?? 0,
   };
+}
+
+function selectLatestUpdate(rawUpdates: unknown[]): LatestUpdate | undefined {
+  return rawUpdates
+    .map(mapUpdate)
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    .sort((a, b) => b.sortTimestamp - a.sortTimestamp)[0]?.update;
 }
 
 function mapIncident(raw: unknown): Incident | null {
@@ -113,10 +125,6 @@ function mapIncident(raw: unknown): Incident | null {
   if (!id || !name) return null;
 
   const updatesRaw = Array.isArray(incident.incident_updates) ? incident.incident_updates : [];
-  const updates = updatesRaw
-    .map(mapUpdate)
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
   return {
     id,
     name,
@@ -126,7 +134,7 @@ function mapIncident(raw: unknown): Incident | null {
     startedAt: asString(incident.started_at),
     updatedAt: asString(incident.updated_at),
     resolvedAt: asString(incident.resolved_at),
-    latestUpdate: updates[0],
+    latestUpdate: selectLatestUpdate(updatesRaw),
   };
 }
 
@@ -140,10 +148,6 @@ function mapMaintenance(raw: unknown): Maintenance | null {
   const updatesRaw = Array.isArray(maintenance.incident_updates)
     ? maintenance.incident_updates
     : [];
-  const updates = updatesRaw
-    .map(mapUpdate)
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
   return {
     id,
     name,
@@ -153,7 +157,7 @@ function mapMaintenance(raw: unknown): Maintenance | null {
     scheduledFor: asString(maintenance.scheduled_for),
     scheduledUntil: asString(maintenance.scheduled_until),
     updatedAt: asString(maintenance.updated_at),
-    latestUpdate: updates[0],
+    latestUpdate: selectLatestUpdate(updatesRaw),
   };
 }
 
