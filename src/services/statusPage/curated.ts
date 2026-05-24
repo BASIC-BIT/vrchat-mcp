@@ -4,7 +4,7 @@ import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 
 const STATUS_PAGE_API_BASE = 'https://status.vrchat.com/api/v2';
 const DEFAULT_RECENT_HOURS = 72;
-const DEFAULT_MAX_ITEMS = 5;
+const DEFAULT_MAX_ITEMS = 2;
 const FETCH_TIMEOUT_MS = 10_000;
 const OVERVIEW_CACHE_TTL_MS = cacheConfig.notificationsTtlMs;
 
@@ -378,7 +378,7 @@ async function buildStatusPageOverview(
     typeof input.recentHours === 'number' ? Math.floor(input.recentHours) : DEFAULT_RECENT_HOURS;
   const maxItems =
     typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : DEFAULT_MAX_ITEMS;
-  const includeGraphs = input.includeGraphs !== false;
+  const includeGraphs = input.includeGraphs === true;
 
   const notes: string[] = [];
   const checkedAt = new Date().toISOString();
@@ -395,7 +395,7 @@ async function buildStatusPageOverview(
     ]);
 
   if (!includeGraphs) {
-    notes.push('Graph stats omitted because includeGraphs=false.');
+    notes.push('Graph stats omitted; pass includeGraphs=true to include status-page chart stats.');
   }
 
   const status = asRecord(summaryPayload.status);
@@ -511,7 +511,7 @@ export async function getStatusPageOverview(
     typeof input.recentHours === 'number' ? Math.floor(input.recentHours) : DEFAULT_RECENT_HOURS;
   const maxItems =
     typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : DEFAULT_MAX_ITEMS;
-  const includeGraphs = input.includeGraphs !== false;
+  const includeGraphs = input.includeGraphs === true;
 
   const cacheKey = buildCacheKey('status-page:overview', {
     recentHours,
