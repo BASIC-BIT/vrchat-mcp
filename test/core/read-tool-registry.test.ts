@@ -6,7 +6,7 @@ const mockConfig = {
 };
 
 vi.mock('../../src/core/generatedToolSkips.js', () => ({
-  GENERATED_READ_SKIP_IDS: ['getConfig'],
+  GENERATED_READ_SKIP_IDS: ['getHardSkipped'],
 }));
 
 vi.mock('../../src/config/index.js', () => ({
@@ -26,6 +26,7 @@ vi.mock('../../src/core/spec.js', () => {
         raw: {
           paths: {
             '/config': { get: { operationId: 'getConfig', summary: 'Get Config' } },
+            '/hard-skip': { get: { operationId: 'getHardSkipped', summary: 'Hard Skipped' } },
             '/widgets': { get: { operationId: 'getWidget', summary: 'Get Widget' } },
             '/users/{userId}': {
               get: { operationId: 'getWidgetUser', summary: 'Get Widget User' },
@@ -41,6 +42,16 @@ vi.mock('../../src/core/spec.js', () => {
               operationId: 'getConfig',
               method: 'GET',
               path: '/config',
+              parameters: [],
+              hasRequestBody: false,
+            },
+          ],
+          [
+            'getHardSkipped',
+            {
+              operationId: 'getHardSkipped',
+              method: 'GET',
+              path: '/hard-skip',
               parameters: [],
               hasRequestBody: false,
             },

@@ -8,7 +8,6 @@ import { logger } from '../infra/logger.js';
 import { getCookieStore } from './cookieStore.js';
 
 const MAX_LOGIN_BODY_BYTES = 16 * 1024;
-const LOGIN_USER_AGENT = getConfig().api.userAgent;
 
 export interface AuthStatus extends Record<string, unknown> {
   loggedIn: boolean;
@@ -71,6 +70,10 @@ function parseLoginSubmission(params: URLSearchParams): LoginSubmission {
     totp: directTotp ?? (factorKind === 'totp' ? code : undefined),
     emailOtp: directEmailOtp ?? (factorKind === 'emailOtp' ? code : undefined),
   };
+}
+
+function loginUserAgent(): string {
+  return getConfig().api.userAgent;
 }
 
 class AuthManager {
@@ -431,7 +434,7 @@ class AuthManager {
       method: 'GET',
       headers: {
         authorization: `Basic ${basic}`,
-        'user-agent': LOGIN_USER_AGENT,
+        'user-agent': loginUserAgent(),
       },
     });
 
@@ -457,7 +460,7 @@ class AuthManager {
           headers: {
             cookie: cookieHeader,
             'content-type': 'application/json',
-            'user-agent': LOGIN_USER_AGENT,
+            'user-agent': loginUserAgent(),
           },
           body: JSON.stringify({ code: totp }),
         });
@@ -484,7 +487,7 @@ class AuthManager {
             headers: {
               cookie: cookieHeader,
               'content-type': 'application/json',
-              'user-agent': LOGIN_USER_AGENT,
+              'user-agent': loginUserAgent(),
             },
             body: JSON.stringify({ code: emailOtp }),
           }
