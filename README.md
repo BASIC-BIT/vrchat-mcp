@@ -182,13 +182,13 @@ Generated read and write tools are enabled by default. Set `VRCHAT_MCP_DISABLE_G
 }
 ```
 
-When an `operationIds` list is empty and that generated tool class is enabled, all generated operations in that class are exposed except hard-skipped operations and generated read operations with curated replacements. Prefer curated tools for common workflows, but generated tools keep the local server capable as the VRChat API evolves.
+When an `operationIds` list is empty and that generated tool class is enabled, all generated operations in that class are exposed except hard-skipped operations and operations with curated replacements. Prefer curated tools for common workflows, but generated tools keep the local server capable as the VRChat API evolves without duplicating known curated coverage or exposing generated endpoints this client cannot reliably call.
 
 See `docs/tools-guide.md` for a short guide and `docs/tools.md` for the generated catalog.
 
 ## Write Controls
 
-Curated and generated write tools are enabled by default so the local MCP server is usable from the first run. Your MCP client or agent harness is expected to control tool-call permission, approval, and denial for account-changing actions.
+Curated write tools and generated write tools for API gaps are enabled by default so the local MCP server is usable from the first run. Your MCP client or agent harness is expected to control tool-call permission, approval, and denial for account-changing actions.
 
 To force read-only mode, add this `env` fragment inside the server entry for your MCP client:
 

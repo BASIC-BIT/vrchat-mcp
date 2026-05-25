@@ -104,7 +104,7 @@ describe('write tool registry', () => {
     mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
   });
 
-  it('registers generated writes broadly when no operation allowlist is set', async () => {
+  it('registers only generated write gaps when no operation allowlist is set', async () => {
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
 
     const registered: string[] = [];
@@ -120,8 +120,8 @@ describe('write tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    expect(count).toBe(2);
-    expect(registered).toEqual(['vrchat_write_createWidget', 'vrchat_write_inviteUser']);
+    expect(count).toBe(1);
+    expect(registered).toEqual(['vrchat_write_createWidget']);
   });
 
   it('skips tools in skip list and only registers non-GET operations', async () => {
@@ -184,7 +184,7 @@ describe('write tool registry', () => {
     expect(registered).toEqual(['vrchat_write_createWidget']);
   });
 
-  it('allows generated operations that have curated replacements', async () => {
+  it('skips operations that have curated replacements even when allowlisted', async () => {
     mockConfig.generatedWriteTools = { enabled: true, operationIds: ['inviteUser'] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
     const registered: string[] = [];
@@ -200,8 +200,8 @@ describe('write tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_write_inviteUser']);
+    expect(count).toBe(0);
+    expect(registered).toEqual([]);
   });
 
   it('returns toolError when write operation throws', async () => {

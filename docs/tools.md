@@ -1,10 +1,10 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-24T07:46:08.340Z
+Generated: 2026-05-25T05:16:55.619Z
 
 Spec: VRChat API Documentation (1.20.7)
 
-This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read replacements are omitted).
+This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read/write replacements are omitted).
 
 ## Curated tools
 ### vrchat_avatar_profile
@@ -15039,7 +15039,6 @@ Output schema:
 - `vrchat_write_addTags` (POST /users/{userId}/addTags) - Add User Tags
 - `vrchat_write_banGroupMember` (POST /groups/{groupId}/bans) - Ban Group Member
 - `vrchat_write_blockGroup` (POST /groups/{groupId}/block) - Block Group
-- `vrchat_write_boop` (POST /users/{userId}/boop) - Send Boop (curated: vrchat_boop)
 - `vrchat_write_cancelGroupRequest` (DELETE /groups/{groupId}/requests) - Cancel Group Join Request
 - `vrchat_write_cancelGroupTransfer` (DELETE /groups/{groupId}/transfer) - Cancel Group Transfer
 - `vrchat_write_cancelPending2FA` (DELETE /auth/twofactorauth/totp/pending) - Cancel pending enabling of time-based 2FA codes
@@ -15053,11 +15052,8 @@ Output schema:
 - `vrchat_write_createFileVersion` (POST /file/{fileId}) - Create File Version
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Create Global Avatar Moderation
 - `vrchat_write_createGroup` (POST /groups) - Create Group
-- `vrchat_write_createGroupCalendarEvent` (POST /calendar/{groupId}/event) - Create a calendar event (curated: vrchat_event_create)
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Create Group Gallery
-- `vrchat_write_createGroupInvite` (POST /groups/{groupId}/invites) - Invite User to Group (curated: vrchat_group_invite)
 - `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Create GroupRole
-- `vrchat_write_createInstance` (POST /instances) - Create Instance (curated: vrchat_instance_create)
 - `vrchat_write_createProp` (POST /props) - Create Prop
 - `vrchat_write_createWorld` (POST /worlds) - Create World
 - `vrchat_write_declineGroupInvite` (PUT /groups/{groupId}/invites) - Decline Invite from Group
@@ -15069,7 +15065,6 @@ Output schema:
 - `vrchat_write_deleteFriendRequest` (DELETE /user/{userId}/friendRequest) - Delete Friend Request
 - `vrchat_write_deleteGlobalAvatarModeration` (DELETE /auth/user/avatarmoderations) - Delete Global Avatar Moderation
 - `vrchat_write_deleteGroup` (DELETE /groups/{groupId}) - Delete Group
-- `vrchat_write_deleteGroupCalendarEvent` (DELETE /calendar/{groupId}/{calendarId}) - Delete a calendar event (curated: vrchat_event_delete)
 - `vrchat_write_deleteGroupGallery` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Delete Group Gallery
 - `vrchat_write_deleteGroupGalleryImage` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Delete Group Gallery Image
 - `vrchat_write_deleteGroupInvite` (DELETE /groups/{groupId}/invites/{userId}) - Delete User Invite
@@ -15091,16 +15086,10 @@ Output schema:
 - `vrchat_write_enqueueImpostor` (POST /avatars/{avatarId}/impostor/enqueue) - Enqueue Impostor generation
 - `vrchat_write_equipOwnInventoryItem` (PUT /inventory/{inventoryItemId}/equip) - Equip Own Inventory Item
 - `vrchat_write_finishFileDataUpload` (PUT /file/{fileId}/{versionId}/{fileType}/finish) - Finish FileData Upload
-- `vrchat_write_followGroupCalendarEvent` (POST /calendar/{groupId}/{calendarId}/follow) - Follow a calendar event (curated: vrchat_event_follow)
-- `vrchat_write_friend` (POST /user/{userId}/friendRequest) - Send Friend Request (curated: vrchat_friend_request)
 - `vrchat_write_initiateOrAcceptGroupTransfer` (POST /groups/{groupId}/transfer) - Initiate or Accept Group Transfer
-- `vrchat_write_inviteMyselfTo` (POST /invite/myself/to/{worldId}:{instanceId}) - Invite Myself To Instance (curated: vrchat_invite_self)
-- `vrchat_write_inviteUser` (POST /invite/{userId}) - Invite User (curated: vrchat_invite_user)
-- `vrchat_write_inviteUserWithPhoto` (POST /invite/{userId}/photo) - Invite User with photo
 - `vrchat_write_joinGroup` (POST /groups/{groupId}/join) - Join Group
 - `vrchat_write_kickGroupMember` (DELETE /groups/{groupId}/members/{userId}) - Kick Group Member
 - `vrchat_write_leaveGroup` (POST /groups/{groupId}/leave) - Leave Group
-- `vrchat_write_logout` (PUT /logout) - Logout (curated: vrchat_auth_logout)
 - `vrchat_write_markNotificationAsRead` (PUT /auth/user/notifications/{notificationId}/see) - Mark Notification As Read
 - `vrchat_write_moderateUser` (POST /auth/user/playermoderations) - Moderate User
 - `vrchat_write_publishProp` (PUT /props/{propId}/publish) - Publish Prop
@@ -15112,7 +15101,6 @@ Output schema:
 - `vrchat_write_removeTags` (POST /users/{userId}/removeTags) - Remove User Tags
 - `vrchat_write_replyNotificationV2` (POST /notifications/{notificationId}/reply) - Reply NotificationV2
 - `vrchat_write_requestInvite` (POST /requestInvite/{userId}) - Request Invite
-- `vrchat_write_requestInviteWithPhoto` (POST /requestInvite/{userId}/photo) - Request Invite with photo
 - `vrchat_write_resendEmailConfirmation` (POST /auth/user/resendEmail) - Resend Email Confirmation
 - `vrchat_write_resetInviteMessage` (DELETE /message/{userId}/{messageType}/{slot}) - Reset Invite Message
 - `vrchat_write_respondGroupJoinRequest` (PUT /groups/{groupId}/requests/{userId}) - Respond Group Join request
@@ -15137,7 +15125,6 @@ Output schema:
 - `vrchat_write_updateBadge` (PUT /users/{userId}/badges/{badgeId}) - Update User Badge
 - `vrchat_write_updateFavoriteGroup` (PUT /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Update Favorite Group
 - `vrchat_write_updateGroup` (PUT /groups/{groupId}) - Update Group
-- `vrchat_write_updateGroupCalendarEvent` (PUT /calendar/{groupId}/{calendarId}/event) - Update a calendar event (curated: vrchat_event_update)
 - `vrchat_write_updateGroupGallery` (PUT /groups/{groupId}/galleries/{groupGalleryId}) - Update Group Gallery
 - `vrchat_write_updateGroupMember` (PUT /groups/{groupId}/members/{userId}) - Update Group Member
 - `vrchat_write_updateGroupPost` (PUT /groups/{groupId}/posts/{notificationId}) - Edits a Group post
@@ -15147,7 +15134,6 @@ Output schema:
 - `vrchat_write_updateOwnInventoryItem` (PUT /inventory/{inventoryItemId}) - Update Own Inventory Item
 - `vrchat_write_updateProp` (PUT /props/{propId}) - Update Prop
 - `vrchat_write_updateTiliaTos` (PUT /user/{userId}/tilia/tos) - Update Tilia TOS Agreement Status
-- `vrchat_write_updateUser` (PUT /users/{userId}) - Update User Info (curated: vrchat_profile_update)
 - `vrchat_write_updateUserNote` (POST /userNotes) - Update User Note
 - `vrchat_write_updateWorld` (PUT /worlds/{worldId}) - Update World
 - `vrchat_write_uploadGalleryImage` (POST /gallery) - Upload gallery image

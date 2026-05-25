@@ -56,7 +56,6 @@ function buildGeneratedWriteToolDescription(
     (typeof op.description === 'string' ? op.description : undefined) ??
     '';
   const summaryLine = String(summary).split('\n')[0].trim();
-  const curated = getCuratedWriteToolName(operationId);
   const override = getGeneratedWriteToolDescription(operationId);
 
   if (override) return override;
@@ -64,7 +63,6 @@ function buildGeneratedWriteToolDescription(
   const fallback = summaryLine
     ? `Auto-generated write tool. ${summaryLine}`
     : `Auto-generated write tool for ${operationId}.`;
-  if (curated) return `${fallback} Prefer curated tool: ${curated}.`;
   return `${fallback} Prefer curated tools when available.`;
 }
 
@@ -117,6 +115,7 @@ export async function registerGeneratedWriteTools(
       const info = getWriteOperationInfo(method, opValue, skipOperationIds);
       if (!info) continue;
       const { operationId, op } = info;
+      if (getCuratedWriteToolName(operationId)) continue;
       if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = writeToolName(operationId);
       const description = buildGeneratedWriteToolDescription(operationId, op);

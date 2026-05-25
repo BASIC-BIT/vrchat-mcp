@@ -139,7 +139,7 @@ function buildGeneratedList(spec: any) {
         });
       } else {
         const curated = getCuratedWriteToolName(operationId);
-        if (writeSkip.has(operationId)) continue;
+        if (writeSkip.has(operationId) || curated) continue;
         writeOps.push({
           operationId,
           method: method.toUpperCase(),
@@ -217,7 +217,7 @@ async function main() {
   md += `Generated: ${now}\n\n`;
   md += `Spec: ${specTitle} (${specVersion})\n\n`;
   md +=
-    'This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read replacements are omitted).\n\n';
+    'This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read/write replacements are omitted).\n\n';
 
   md += '## Curated tools\n';
   md += renderToolList(curated) || '- (none)\n';

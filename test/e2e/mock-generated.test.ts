@@ -2,6 +2,7 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
+import { getCuratedWriteToolName } from '../../src/core/generatedToolOverrides.js';
 import { readToolName, writeToolName } from '../../src/utils/toolNames.js';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
@@ -206,6 +207,10 @@ describe('mcp e2e (mock generated tools)', () => {
 
     for (const op of operations) {
       const tool = writeToolName(op.operationId);
+      if (getCuratedWriteToolName(op.operationId)) {
+        expect(available.has(tool)).toBe(false);
+        continue;
+      }
       if (!available.has(tool)) continue;
       const params = buildParams(op.params, op.operationId);
       const body = buildWriteBody(op.operationId, op.requestBody);
