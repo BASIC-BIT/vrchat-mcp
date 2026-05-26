@@ -43,45 +43,10 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['logout', toToolName('vrchat.auth.logout')],
 ]);
 
-const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
-  ['getConfig', 'Get VRChat API config (includes the current client API key).'],
-  ['getSystemTime', 'Get VRChat server time.'],
-  ['getCurrentUser', 'Fetch the current user (raw API; large payload). Prefer vrchat_me.'],
-  ['getFriends', 'List friends (raw API; prefers pagination).'],
-  ['getUser', 'Fetch a user by userId (raw API). Prefer vrchat_user_profile.'],
-  ['getUserByName', 'Fetch a user by name (raw API). Prefer vrchat_user_profile.'],
-  ['getUserGroups', 'List groups for a user (raw API). Prefer vrchat_user_groups.'],
-  ['getWorld', 'Fetch a world by worldId (raw API). Prefer vrchat_world_profile.'],
-  ['searchWorlds', 'Search worlds (raw API). Prefer vrchat_worlds_search.'],
-  ['getFavoritedWorlds', 'List favorited worlds (raw API). Prefer vrchat_worlds_favorites.'],
-  ['getGroup', 'Fetch a group profile (raw API). Prefer vrchat_group_profile.'],
-  ['searchGroups', 'Search groups (raw API). Prefer vrchat_groups_search.'],
-  ['getGroupMembers', 'List group members (raw API). Prefer vrchat_group_members.'],
-  ['getGroupPosts', 'List group posts (raw API). Prefer vrchat_group_posts_recent.'],
-  ['getGroupInstances', 'List group instances (raw API). Prefer vrchat_group_instances_overview.'],
-  [
-    'getGroupCalendarEvents',
-    'List group calendar events (raw API). Prefer vrchat_group_events_list.',
-  ],
-  ['getGroupCalendarEvent', 'Get a group calendar event (raw API). Prefer vrchat_group_event_get.'],
-  [
-    'getGroupNextCalendarEvent',
-    'Get the next group calendar event (raw API). Prefer vrchat_group_event_next.',
-  ],
-  ['getNotifications', 'List recent notifications (raw API). Prefer vrchat_notifications_recent.'],
-  ['getCalendarEvents', 'List upcoming calendar events (raw API). Prefer vrchat_events_upcoming.'],
-  ['discoverCalendarEvents', 'Discover calendar events (raw API). Prefer vrchat_events_discover.'],
-  ['searchCalendarEvents', 'Search calendar events (raw API). Prefer vrchat_events_search.'],
-]);
-
 export function getCuratedReadToolName(operationId: string): string | undefined {
   return CURATED_READ_TOOL_MAP.get(operationId);
 }
 
 export function getCuratedWriteToolName(operationId: string): string | undefined {
   return CURATED_WRITE_TOOL_MAP.get(operationId);
-}
-
-export function getGeneratedReadToolDescription(operationId: string): string | undefined {
-  return GENERATED_READ_TOOL_DESCRIPTIONS.get(operationId);
 }
