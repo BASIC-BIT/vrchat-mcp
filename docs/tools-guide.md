@@ -13,7 +13,7 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 
 ## Metadata budget
 
-Tool names, tool descriptions, argument names, and argument descriptions consume model context. Run `npm run metrics:tool-budget` to report the estimated default tool metadata token budget, blank tool-description coverage, argument-description coverage, and the largest tools by metadata size. CI includes this in `npm run metrics`; keep the budget from drifting upward unless the extra guidance is worth the context cost.
+Tool names, tool descriptions, argument names, and argument descriptions consume model context. Run `npm run metrics:tool-budget` to report the estimated default tool metadata token budget, category breakdown, blank tool-description coverage, argument-description coverage, and the largest tools by metadata size. CI includes this in `npm run metrics`; keep the budget from drifting upward unless the extra guidance is worth the context cost.
 
 ## MCP resources
 

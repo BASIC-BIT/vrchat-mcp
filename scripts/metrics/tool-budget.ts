@@ -38,6 +38,24 @@ interface ArgumentEntry {
   description?: string;
 }
 
+interface ToolMetric {
+  name: string;
+  category: string;
+  args: number;
+  missingArgDescriptions: number;
+  toolDescriptionTokens: number;
+  argumentTokens: number;
+  totalTokens: number;
+}
+
+interface CategoryMetric {
+  category: string;
+  tools: number;
+  args: number;
+  missingArgDescriptions: number;
+  totalTokens: number;
+}
+
 class ToolCollector {
   tools: RegisteredTool[] = [];
 
@@ -109,19 +127,66 @@ function collectArguments(schema: unknown, basePath = '', seen = new Set<unknown
   return entries;
 }
 
-function topToolsByTokens(tools: RegisteredTool[]): { name: string; tokens: number }[] {
-  return tools
-    .map((tool) => {
-      const args = collectArguments(schemaToJson(tool.config.inputSchema));
-      const text = [
-        tool.name,
-        tool.config.description ?? '',
-        ...args.flatMap((arg) => [arg.path, arg.description ?? '']),
-      ].join('\n');
-      return { name: tool.name, tokens: estimateTokens(text) };
-    })
+function categorizeTool(name: string): string {
+  if (name.startsWith('vrchat_read_')) return 'generated-read';
+  if (name.startsWith('vrchat_write_')) return 'generated-write';
+  if (name === 'vrchat_call') return 'raw';
+  if (name.startsWith('vrchat_auth_') || name.startsWith('vrchat_cache_')) return 'support';
+  return 'curated';
+}
+
+function metricForTool(tool: RegisteredTool): ToolMetric {
+  const args = collectArguments(schemaToJson(tool.config.inputSchema));
+  const toolDescriptionTokens = estimateTokens(`${tool.name}\n${tool.config.description ?? ''}`);
+  const argumentText = args.map((arg) => `${arg.path}\n${arg.description ?? ''}`).join('\n');
+  const argumentTokens = estimateTokens(argumentText);
+
+  return {
+    name: tool.name,
+    category: categorizeTool(tool.name),
+    args: args.length,
+    missingArgDescriptions: args.filter((arg) => !normalizeDescription(arg.description)).length,
+    toolDescriptionTokens,
+    argumentTokens,
+    totalTokens: toolDescriptionTokens + argumentTokens,
+  };
+}
+
+function topToolsByTokens(metrics: ToolMetric[]): { name: string; tokens: number }[] {
+  return metrics
+    .map((metric) => ({ name: metric.name, tokens: metric.totalTokens }))
     .sort((a, b) => b.tokens - a.tokens)
     .slice(0, 10);
+}
+
+function summarizeCategories(metrics: ToolMetric[]): CategoryMetric[] {
+  const byCategory = new Map<string, CategoryMetric>();
+  for (const metric of metrics) {
+    const current =
+      byCategory.get(metric.category) ??
+      {
+        category: metric.category,
+        tools: 0,
+        args: 0,
+        missingArgDescriptions: 0,
+        totalTokens: 0,
+      };
+    current.tools += 1;
+    current.args += metric.args;
+    current.missingArgDescriptions += metric.missingArgDescriptions;
+    current.totalTokens += metric.totalTokens;
+    byCategory.set(metric.category, current);
+  }
+  return [...byCategory.values()].sort((a, b) => b.totalTokens - a.totalTokens);
+}
+
+function formatCategories(categories: CategoryMetric[]): string {
+  return categories
+    .map(
+      (category) =>
+        `${category.category}:tokens=${category.totalTokens},tools=${category.tools},args=${category.args},missingArgDescriptions=${category.missingArgDescriptions}`
+    )
+    .join(' | ');
 }
 
 async function collectTools(): Promise<RegisteredTool[]> {
@@ -143,14 +208,14 @@ function writeSummary(markdown: string): void {
 
 async function main(): Promise<void> {
   const tools = await collectTools();
-  const toolDescriptionText = tools.map((tool) => `${tool.name}\n${tool.config.description ?? ''}`).join('\n');
+  const metrics = tools.map(metricForTool);
+  const categories = summarizeCategories(metrics);
   const allArgs = tools.flatMap((tool) => collectArguments(schemaToJson(tool.config.inputSchema)));
-  const argumentText = allArgs.map((arg) => `${arg.path}\n${arg.description ?? ''}`).join('\n');
 
   const missingToolDescriptions = tools.filter((tool) => !normalizeDescription(tool.config.description));
   const missingArgumentDescriptions = allArgs.filter((arg) => !normalizeDescription(arg.description));
-  const toolDescriptionTokens = estimateTokens(toolDescriptionText);
-  const argumentTokens = estimateTokens(argumentText);
+  const toolDescriptionTokens = metrics.reduce((total, metric) => total + metric.toolDescriptionTokens, 0);
+  const argumentTokens = metrics.reduce((total, metric) => total + metric.argumentTokens, 0);
   const totalTokens = toolDescriptionTokens + argumentTokens;
   const maxTokens = asNumber(process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOKENS, DEFAULT_MAX_ESTIMATED_TOKENS);
   const maxToolDescriptionTokens = asNumber(
@@ -162,10 +227,11 @@ async function main(): Promise<void> {
     DEFAULT_MAX_MISSING_TOOL_DESCRIPTIONS
   );
 
-  const topTools = topToolsByTokens(tools);
+  const topTools = topToolsByTokens(metrics);
   const summary = [
     `tool-budget: tools=${tools.length}, args=${allArgs.length}`,
     `tool-budget: estimatedTokens total=${totalTokens}, toolNamesDescriptions=${toolDescriptionTokens}, argumentNamesDescriptions=${argumentTokens}`,
+    `tool-budget: categories=${formatCategories(categories)}`,
     `tool-budget: missingDescriptions tools=${missingToolDescriptions.length}, args=${missingArgumentDescriptions.length}`,
     `tool-budget: topTools=${topTools.map((tool) => `${tool.name}:${tool.tokens}`).join(', ')}`,
   ];
