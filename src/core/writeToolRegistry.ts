@@ -7,10 +7,8 @@ import { buildParamsSchema, buildRequestBodySchema } from './operationSchemas.js
 import { writeToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 import { annotationsForWriteMethod } from '../utils/toolAnnotations.js';
-import {
-  getCuratedWriteToolName,
-  getGeneratedWriteToolDescription,
-} from './generatedToolOverrides.js';
+import { getCuratedWriteToolName } from './generatedToolOverrides.js';
+import { buildGeneratedToolDescription } from './generatedToolDescriptions.js';
 import { GENERATED_WRITE_SKIP_IDS } from './generatedToolSkips.js';
 
 export type WriteToolResponder = (
@@ -47,27 +45,6 @@ function getWriteOperationInfo(
   return { operationId, op };
 }
 
-function buildGeneratedWriteToolDescription(
-  operationId: string,
-  op: { summary?: unknown; description?: unknown }
-): string {
-  const summary =
-    (typeof op.summary === 'string' ? op.summary : undefined) ??
-    (typeof op.description === 'string' ? op.description : undefined) ??
-    '';
-  const summaryLine = String(summary).split('\n')[0].trim();
-  const curated = getCuratedWriteToolName(operationId);
-  const override = getGeneratedWriteToolDescription(operationId);
-
-  if (override) return override;
-
-  const fallback = summaryLine
-    ? `Auto-generated write tool. ${summaryLine}`
-    : `Auto-generated write tool for ${operationId}.`;
-  if (curated) return `${fallback} Prefer curated tool: ${curated}.`;
-  return `${fallback} Prefer curated tools when available.`;
-}
-
 function buildGeneratedWriteToolInputSchema(input: {
   operationId: string;
   index: Awaited<ReturnType<typeof getSpecIndex>>;
@@ -80,10 +57,12 @@ function buildGeneratedWriteToolInputSchema(input: {
 
   const shape: Record<string, z.ZodTypeAny> = {};
   if (paramsInfo.schema) {
-    shape.params = paramsInfo.required ? paramsInfo.schema : paramsInfo.schema.optional();
+    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
+    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
   }
   if (bodyInfo.schema) {
-    shape.body = bodyInfo.required ? bodyInfo.schema : bodyInfo.schema.optional();
+    const bodySchema = bodyInfo.schema.describe('OpenAPI request body.');
+    shape.body = bodyInfo.required ? bodySchema : bodySchema.optional();
   }
   return z.object(shape).merge(input.writeOptionsSchema).passthrough();
 }
@@ -117,9 +96,10 @@ export async function registerGeneratedWriteTools(
       const info = getWriteOperationInfo(method, opValue, skipOperationIds);
       if (!info) continue;
       const { operationId, op } = info;
+      if (getCuratedWriteToolName(operationId)) continue;
       if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = writeToolName(operationId);
-      const description = buildGeneratedWriteToolDescription(operationId, op);
+      const description = buildGeneratedToolDescription('write', operationId, op);
       const inputSchema = buildGeneratedWriteToolInputSchema({
         operationId,
         index,

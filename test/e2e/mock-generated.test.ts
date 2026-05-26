@@ -2,6 +2,7 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
+import { getCuratedWriteToolName } from '../../src/core/generatedToolOverrides.js';
 import { readToolName, writeToolName } from '../../src/utils/toolNames.js';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
@@ -132,22 +133,8 @@ describe('mcp e2e (mock generated tools)', () => {
     return args;
   }
 
-  function buildWriteBody(
-    operationId: string,
-    requestBody?: SpecOperation['requestBody']
-  ): unknown {
-    const data = server!.data;
-    const firstInstanceKey = Object.keys(data.instances)[0];
-    switch (operationId) {
-      case 'createInstance':
-        return { worldId: data.worlds[0].id, type: 'hidden', region: 'us' };
-      case 'inviteUser':
-        return { instanceId: firstInstanceKey };
-      case 'updateUser':
-        return { statusDescription: 'mock generated update' };
-      default:
-        return requestBody?.required ? {} : undefined;
-    }
+  function buildWriteBody(requestBody?: SpecOperation['requestBody']): unknown {
+    return requestBody?.required ? {} : undefined;
   }
 
   it('invokes every generated read tool for GET operations', async () => {
@@ -206,9 +193,13 @@ describe('mcp e2e (mock generated tools)', () => {
 
     for (const op of operations) {
       const tool = writeToolName(op.operationId);
+      if (getCuratedWriteToolName(op.operationId)) {
+        expect(available.has(tool)).toBe(false);
+        continue;
+      }
       if (!available.has(tool)) continue;
       const params = buildParams(op.params, op.operationId);
-      const body = buildWriteBody(op.operationId, op.requestBody);
+      const body = buildWriteBody(op.requestBody);
       const args = {
         ...(Object.keys(params).length ? { params } : {}),
         ...(body !== undefined ? { body } : {}),

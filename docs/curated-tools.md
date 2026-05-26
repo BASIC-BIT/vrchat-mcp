@@ -132,8 +132,19 @@ Automation hooks:
 
 ## Toolset toggles
 
-The default toolset is curated plus generated read and write tools. Auto-generated read tools (`vrchat_read_<operationId>`) are enabled by default for API exploration and can be narrowed with `generatedReadTools.operationIds` or disabled with `generatedReadTools.enabled = false`. Generated write tools (`vrchat_write_<operationId>`) are enabled by default for API coverage and can be narrowed with `generatedWriteTools.operationIds` or disabled with `generatedWriteTools.enabled = false`. Generated read tools do not expose operations with curated replacements; generated write tools remain available so the local server keeps pace with the VRChat API.
+The default toolset is curated plus generated read and write tools for API gaps. Auto-generated read tools (`vrchat_read_<operationId>`) are enabled by default for API exploration and can be narrowed with `generatedReadTools.operationIds` or disabled with `generatedReadTools.enabled = false`. Generated write tools (`vrchat_write_<operationId>`) are enabled by default for API coverage and can be narrowed with `generatedWriteTools.operationIds` or disabled with `generatedWriteTools.enabled = false`. Generated read and write tools do not expose hard-skipped operations or operations with curated replacements, even if those operation IDs appear in an `operationIds` narrowing list.
 The raw tool (`vrchat_call`) is disabled by default and can be enabled via config/environment flags.
+
+## Consolidation candidates
+
+Prefer fewer, higher-confidence curated tools when multiple endpoint-shaped tools represent one user intent. A combined tool should keep the target and side effect explicit, expose IDs in outputs for follow-ups, and preserve confirmation/risk controls.
+
+Near-term candidates:
+
+- Keep `vrchat_invite` as the primary invite entry point for self-invites, user invites, and invite-to-current-instance flows; keep narrow invite tools only when they avoid ambiguity for agents.
+- Keep social write tools batch-capable where safe (`vrchat_boop`, `vrchat_friend_request`, `vrchat_group_invite`) instead of exposing one generated endpoint per target.
+- Consider a single event management surface only if create/update/delete/follow can stay explicit enough to avoid accidental destructive calls.
+- Keep profile/status writes separate unless the combined tool can make status changes, profile edits, and preserved fields obvious to the caller.
 
 ## Group allowlist guard
 

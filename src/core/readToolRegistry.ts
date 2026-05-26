@@ -8,10 +8,8 @@ import { buildParamsSchema } from './operationSchemas.js';
 import { readToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 import { readOnlyToolAnnotations } from '../utils/toolAnnotations.js';
-import {
-  getCuratedReadToolName,
-  getGeneratedReadToolDescription,
-} from './generatedToolOverrides.js';
+import { getCuratedReadToolName } from './generatedToolOverrides.js';
+import { buildGeneratedToolDescription } from './generatedToolDescriptions.js';
 import { GENERATED_READ_SKIP_IDS } from './generatedToolSkips.js';
 
 export type ReadToolResponder = (
@@ -21,22 +19,6 @@ export type ReadToolResponder = (
   content: { type: 'text'; text: string }[];
   structuredContent: Record<string, unknown>;
 };
-
-function buildGeneratedReadToolDescription(operationId: string, op: any): string {
-  const summary = op?.summary ?? op?.description ?? '';
-  const summaryLine = String(summary).split('\n')[0].trim();
-  const curated = getCuratedReadToolName(operationId);
-  const override = getGeneratedReadToolDescription(operationId);
-
-  if (override) return override;
-
-  const fallback = summaryLine
-    ? `Auto-generated read tool. ${summaryLine}`
-    : `Auto-generated read tool for ${operationId}.`;
-
-  if (curated) return `${fallback} Prefer curated tool: ${curated}.`;
-  return `${fallback} Prefer curated tools when available.`;
-}
 
 function buildGeneratedReadToolInputSchema(input: {
   operationId: string;
@@ -51,7 +33,8 @@ function buildGeneratedReadToolInputSchema(input: {
 
   const shape: Record<string, z.ZodTypeAny> = {};
   if (paramsInfo.schema) {
-    shape.params = paramsInfo.required ? paramsInfo.schema : paramsInfo.schema.optional();
+    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
+    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
   }
 
   return z.object(shape).merge(input.readOptionsSchema).passthrough();
@@ -86,7 +69,7 @@ export async function registerGeneratedReadTools(
       if (getCuratedReadToolName(operationId)) continue;
       if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = readToolName(operationId);
-      const description = buildGeneratedReadToolDescription(operationId, op);
+      const description = buildGeneratedToolDescription('read', operationId, op);
       const inputSchema = buildGeneratedReadToolInputSchema({
         operationId,
         index,

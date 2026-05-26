@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
 export const WriteOptionsSchema = z.object({
-  includeMeta: z.boolean().optional(),
+  includeMeta: z.boolean().describe('Include URL, status, and response headers.').optional(),
   options: z
     .object({
-      dryRun: z.boolean().optional(),
-      rawResponse: z.boolean().optional(),
+      dryRun: z.boolean().describe('Build the request without sending it.').optional(),
+      rawResponse: z.boolean().describe('Return the raw response metadata when supported.').optional(),
     })
+    .describe('Generated write call options.')
     .optional(),
 });
 

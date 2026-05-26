@@ -8,6 +8,7 @@ import {
   getCuratedReadToolName,
   getCuratedWriteToolName,
 } from '../src/core/generatedToolOverrides.js';
+import { buildGeneratedToolDescription } from '../src/core/generatedToolDescriptions.js';
 import {
   GENERATED_READ_SKIP_IDS,
   GENERATED_WRITE_SKIP_IDS,
@@ -107,25 +108,21 @@ function buildGeneratedList(spec: any) {
     operationId: string;
     method: string;
     path: string;
-    summary: string;
+    description: string;
     toolName: string;
-    curated?: string;
   }[] = [];
   const writeOps: {
     operationId: string;
     method: string;
     path: string;
-    summary: string;
+    description: string;
     toolName: string;
-    curated?: string;
   }[] = [];
 
   for (const [pathKey, pathItem] of Object.entries(spec.paths ?? {})) {
     for (const [method, op] of Object.entries<any>(pathItem ?? {})) {
       if (!op?.operationId) continue;
       const operationId = String(op.operationId);
-      const summaryRaw = op.summary ?? op.description ?? '';
-      const summary = toAscii(String(summaryRaw).split('\n')[0].trim());
       if (method.toLowerCase() === 'get') {
         const curated = getCuratedReadToolName(operationId);
         if (readSkip.has(operationId) || curated) continue;
@@ -133,20 +130,17 @@ function buildGeneratedList(spec: any) {
           operationId,
           method: method.toUpperCase(),
           path: String(pathKey),
-          summary,
+          description: toAscii(buildGeneratedToolDescription('read', operationId, op)),
           toolName: readToolName(operationId),
-          curated,
         });
       } else {
-        const curated = getCuratedWriteToolName(operationId);
-        if (writeSkip.has(operationId)) continue;
+        if (writeSkip.has(operationId) || getCuratedWriteToolName(operationId)) continue;
         writeOps.push({
           operationId,
           method: method.toUpperCase(),
           path: String(pathKey),
-          summary,
+          description: toAscii(buildGeneratedToolDescription('write', operationId, op)),
           toolName: writeToolName(operationId),
-          curated,
         });
       }
     }
@@ -217,7 +211,7 @@ async function main() {
   md += `Generated: ${now}\n\n`;
   md += `Spec: ${specTitle} (${specVersion})\n\n`;
   md +=
-    'This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read replacements are omitted).\n\n';
+    'This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read/write replacements are omitted).\n\n';
 
   md += '## Curated tools\n';
   md += renderToolList(curated) || '- (none)\n';
@@ -246,9 +240,7 @@ async function main() {
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(ReadOptionsSchema), null, 2)}\n\`\`\`\n\n`;
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(ReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of readOps) {
-    const summary = op.summary ? ` - ${toAscii(op.summary)}` : '';
-    const curated = op.curated ? ` (curated: ${op.curated})` : '';
-    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}${curated}\n`;
+    md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
   md += '\n';
 
@@ -259,9 +251,7 @@ async function main() {
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(WriteOptionsSchema), null, 2)}\n\`\`\`\n\n`;
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(WriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of writeOps) {
-    const summary = op.summary ? ` - ${toAscii(op.summary)}` : '';
-    const curated = op.curated ? ` (curated: ${op.curated})` : '';
-    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}${curated}\n`;
+    md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });

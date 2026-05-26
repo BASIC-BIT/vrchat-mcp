@@ -1,18 +1,19 @@
 import { z } from 'zod';
 
 export const ReadOptionsSchema = z.object({
-  fields: z.array(z.string()).optional(),
-  compact: z.boolean().optional(),
-  maxArrayLength: z.number().int().positive().optional(),
-  includeMeta: z.boolean().optional(),
+  fields: z.array(z.string()).describe('Optional response fields to keep.').optional(),
+  compact: z.boolean().describe('Return a smaller response shape when supported.').optional(),
+  maxArrayLength: z.number().int().positive().describe('Maximum array items to return.').optional(),
+  includeMeta: z.boolean().describe('Include request URL and pagination metadata.').optional(),
   page: z
     .object({
-      enabled: z.boolean().optional(),
-      size: z.number().int().min(1).optional(),
-      maxPages: z.number().int().min(1).optional(),
-      maxItems: z.number().int().min(1).optional(),
-      offset: z.number().int().min(0).optional(),
+      enabled: z.boolean().describe('Enable internal pagination.').optional(),
+      size: z.number().int().min(1).describe('Items per page.').optional(),
+      maxPages: z.number().int().min(1).describe('Maximum pages to fetch.').optional(),
+      maxItems: z.number().int().min(1).describe('Maximum total items to return.').optional(),
+      offset: z.number().int().min(0).describe('Starting item offset.').optional(),
     })
+    .describe('Pagination controls for generated read tools.')
     .optional(),
 });
 

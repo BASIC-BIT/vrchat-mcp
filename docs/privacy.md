@@ -16,7 +16,7 @@ VRChat's Creator Guidelines caution third-party API applications not to request 
 
 The server makes requests to VRChat APIs, VRChat pipeline services, and VRChat status endpoints as needed for the tools you call. VRCX features read local VRCX database files on your machine when VRCX data is present.
 
-Curated write tools, generated write tools, generated read tools, and read-only VRCX local-history tools are enabled by default for local full-capability use. Use your MCP client or agent harness to control account-changing tool calls, or set `VRCHAT_MCP_ALLOW_WRITES=false` for read-only mode. VRCX tools stay read-only and avoid known cookie/credential storage.
+Curated write tools, generated write tools for API gaps, generated read tools, and read-only VRCX local-history tools are enabled by default for local full-capability use. Use your MCP client or agent harness to control account-changing tool calls, or set `VRCHAT_MCP_ALLOW_WRITES=false` for read-only mode. VRCX tools stay read-only and avoid known cookie/credential storage.
 
 ## Hosted Integrations
 
