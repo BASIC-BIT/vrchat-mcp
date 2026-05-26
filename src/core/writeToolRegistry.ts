@@ -57,10 +57,12 @@ function buildGeneratedWriteToolInputSchema(input: {
 
   const shape: Record<string, z.ZodTypeAny> = {};
   if (paramsInfo.schema) {
-    shape.params = paramsInfo.required ? paramsInfo.schema : paramsInfo.schema.optional();
+    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
+    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
   }
   if (bodyInfo.schema) {
-    shape.body = bodyInfo.required ? bodyInfo.schema : bodyInfo.schema.optional();
+    const bodySchema = bodyInfo.schema.describe('OpenAPI request body.');
+    shape.body = bodyInfo.required ? bodySchema : bodySchema.optional();
   }
   return z.object(shape).merge(input.writeOptionsSchema).passthrough();
 }

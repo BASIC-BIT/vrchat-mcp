@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-26T00:27:23.877Z
+Generated: 2026-05-26T00:54:55.005Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -14376,47 +14376,57 @@ Input schema:
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Optional response fields to keep."
     },
     "compact": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Return a smaller response shape when supported."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
-      "maximum": 9007199254740991
+      "maximum": 9007199254740991,
+      "description": "Maximum array items to return."
     },
     "includeMeta": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include request URL and pagination metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Enable internal pagination."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Items per page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum pages to fetch."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum total items to return."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Starting item offset."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Pagination controls for generated read tools."
     }
   },
   "additionalProperties": false
@@ -14492,47 +14502,57 @@ Input schema:
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Optional response fields to keep."
     },
     "compact": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Return a smaller response shape when supported."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
-      "maximum": 9007199254740991
+      "maximum": 9007199254740991,
+      "description": "Maximum array items to return."
     },
     "includeMeta": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include request URL and pagination metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Enable internal pagination."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Items per page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum pages to fetch."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum total items to return."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Starting item offset."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Pagination controls for generated read tools."
     }
   },
   "additionalProperties": false
@@ -14750,47 +14770,57 @@ Read options are shared across read tools:
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Optional response fields to keep."
     },
     "compact": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Return a smaller response shape when supported."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
-      "maximum": 9007199254740991
+      "maximum": 9007199254740991,
+      "description": "Maximum array items to return."
     },
     "includeMeta": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include request URL and pagination metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Enable internal pagination."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Items per page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum pages to fetch."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Maximum total items to return."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Starting item offset."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Pagination controls for generated read tools."
     }
   },
   "additionalProperties": false
@@ -14980,19 +15010,23 @@ Write options are shared across write tools:
   "type": "object",
   "properties": {
     "includeMeta": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include URL, status, and response headers."
     },
     "options": {
       "type": "object",
       "properties": {
         "dryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Build the request without sending it."
         },
         "rawResponse": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Return the raw response metadata when supported."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Generated write call options."
     }
   },
   "additionalProperties": false

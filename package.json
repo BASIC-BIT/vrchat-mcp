@@ -56,7 +56,8 @@
     "start": "node dist/bin/cli.js",
     "metrics:scc": "tsx scripts/metrics/scc.ts",
     "metrics:lizard": "tsx scripts/metrics/lizard.ts",
-    "metrics": "npm run metrics:scc && npm run metrics:lizard"
+    "metrics:tool-budget": "tsx scripts/metrics/tool-budget.ts",
+    "metrics": "npm run metrics:tool-budget && npm run metrics:scc && npm run metrics:lizard"
   },
   "engines": {
     "node": ">=24.15.0"

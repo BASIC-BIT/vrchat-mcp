@@ -33,7 +33,8 @@ function buildGeneratedReadToolInputSchema(input: {
 
   const shape: Record<string, z.ZodTypeAny> = {};
   if (paramsInfo.schema) {
-    shape.params = paramsInfo.required ? paramsInfo.schema : paramsInfo.schema.optional();
+    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
+    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
   }
 
   return z.object(shape).merge(input.readOptionsSchema).passthrough();

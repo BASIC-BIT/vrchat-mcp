@@ -11,6 +11,10 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 - Group write actions are restricted by `groups.allowlist` when set.
 - Do not expose this server as a hosted/public MCP service with VRChat cookies. Keep it local and user-controlled.
 
+## Metadata budget
+
+Tool names, tool descriptions, argument names, and argument descriptions consume model context. Run `npm run metrics:tool-budget` to report the estimated default tool metadata token budget, blank tool-description coverage, argument-description coverage, and the largest tools by metadata size. CI includes this in `npm run metrics`; keep the budget from drifting upward unless the extra guidance is worth the context cost.
+
 ## MCP resources
 
 - `vrchat://friends/changes{?after,limit}` - delta feed for friend updates.
