@@ -7,10 +7,7 @@ import { buildParamsSchema, buildRequestBodySchema } from './operationSchemas.js
 import { writeToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 import { annotationsForWriteMethod } from '../utils/toolAnnotations.js';
-import {
-  getCuratedWriteToolName,
-  getGeneratedWriteToolDescription,
-} from './generatedToolOverrides.js';
+import { getCuratedWriteToolName } from './generatedToolOverrides.js';
 import { GENERATED_WRITE_SKIP_IDS } from './generatedToolSkips.js';
 
 export type WriteToolResponder = (
@@ -56,9 +53,6 @@ function buildGeneratedWriteToolDescription(
     (typeof op.description === 'string' ? op.description : undefined) ??
     '';
   const summaryLine = String(summary).split('\n')[0].trim();
-  const override = getGeneratedWriteToolDescription(operationId);
-
-  if (override) return override;
 
   const fallback = summaryLine
     ? `Auto-generated write tool. ${summaryLine}`

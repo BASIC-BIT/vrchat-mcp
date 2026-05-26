@@ -109,7 +109,6 @@ function buildGeneratedList(spec: any) {
     path: string;
     summary: string;
     toolName: string;
-    curated?: string;
   }[] = [];
   const writeOps: {
     operationId: string;
@@ -117,7 +116,6 @@ function buildGeneratedList(spec: any) {
     path: string;
     summary: string;
     toolName: string;
-    curated?: string;
   }[] = [];
 
   for (const [pathKey, pathItem] of Object.entries(spec.paths ?? {})) {
@@ -135,18 +133,15 @@ function buildGeneratedList(spec: any) {
           path: String(pathKey),
           summary,
           toolName: readToolName(operationId),
-          curated,
         });
       } else {
-        const curated = getCuratedWriteToolName(operationId);
-        if (writeSkip.has(operationId) || curated) continue;
+        if (writeSkip.has(operationId) || getCuratedWriteToolName(operationId)) continue;
         writeOps.push({
           operationId,
           method: method.toUpperCase(),
           path: String(pathKey),
           summary,
           toolName: writeToolName(operationId),
-          curated,
         });
       }
     }
@@ -247,8 +242,7 @@ async function main() {
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(ReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of readOps) {
     const summary = op.summary ? ` - ${toAscii(op.summary)}` : '';
-    const curated = op.curated ? ` (curated: ${op.curated})` : '';
-    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}${curated}\n`;
+    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}\n`;
   }
   md += '\n';
 
@@ -260,8 +254,7 @@ async function main() {
   md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(WriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of writeOps) {
     const summary = op.summary ? ` - ${toAscii(op.summary)}` : '';
-    const curated = op.curated ? ` (curated: ${op.curated})` : '';
-    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}${curated}\n`;
+    md += `- \`${op.toolName}\` (${op.method} ${op.path})${summary}\n`;
   }
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });

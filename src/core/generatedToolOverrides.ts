@@ -74,44 +74,6 @@ const GENERATED_READ_TOOL_DESCRIPTIONS = new Map<string, string>([
   ['searchCalendarEvents', 'Search calendar events (raw API). Prefer vrchat_events_search.'],
 ]);
 
-const GENERATED_WRITE_TOOL_DESCRIPTIONS = new Map<string, string>([
-  ['boop', 'Send a boop (raw API). Prefer vrchat_boop for one or many users.'],
-  [
-    'createGroupInvite',
-    'Invite a user to a group (raw API). Prefer vrchat_group_invite for one or many users.',
-  ],
-  ['createInstance', 'Create a VRChat instance (raw API). Prefer vrchat_instance_create.'],
-  [
-    'friend',
-    'Send a friend request (raw API). Prefer vrchat_friend_request for one or many users.',
-  ],
-  [
-    'inviteUser',
-    'Invite a user to an instance (raw API). Prefer vrchat_invite_user or vrchat_invite_user_to_me when inviting to your current instance.',
-  ],
-  ['inviteMyselfTo', 'Invite yourself to an instance (raw API). Prefer vrchat_invite_self.'],
-  [
-    'createGroupCalendarEvent',
-    'Create a group calendar event (raw API). Prefer vrchat_event_create.',
-  ],
-  [
-    'updateGroupCalendarEvent',
-    'Update a group calendar event (raw API). Prefer vrchat_event_update.',
-  ],
-  [
-    'deleteGroupCalendarEvent',
-    'Delete a group calendar event (raw API). Prefer vrchat_event_delete.',
-  ],
-  [
-    'followGroupCalendarEvent',
-    'Follow or unfollow a group calendar event (raw API). Prefer vrchat_event_follow.',
-  ],
-  [
-    'updateUser',
-    'Update the current user profile (raw API). Prefer vrchat_profile_update (or vrchat_status_set for status-only changes).',
-  ],
-]);
-
 export function getCuratedReadToolName(operationId: string): string | undefined {
   return CURATED_READ_TOOL_MAP.get(operationId);
 }
@@ -122,8 +84,4 @@ export function getCuratedWriteToolName(operationId: string): string | undefined
 
 export function getGeneratedReadToolDescription(operationId: string): string | undefined {
   return GENERATED_READ_TOOL_DESCRIPTIONS.get(operationId);
-}
-
-export function getGeneratedWriteToolDescription(operationId: string): string | undefined {
-  return GENERATED_WRITE_TOOL_DESCRIPTIONS.get(operationId);
 }
