@@ -2,9 +2,10 @@ import { appendFileSync } from 'node:fs';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { toJSONSchema, type ZodTypeAny } from 'zod';
 
-const DEFAULT_MAX_ESTIMATED_TOKENS = 40_000;
+const DEFAULT_MAX_ESTIMATED_TOKENS = 160_000;
 const DEFAULT_MAX_TOOL_DESCRIPTION_TOKENS = 8_000;
 const DEFAULT_MAX_MISSING_TOOL_DESCRIPTIONS = 0;
+const TOP_COUNT = 10;
 
 const CONFIG_ENV_KEYS = [
   'VRCHAT_MCP_CONFIG_FILE',
@@ -43,8 +44,12 @@ interface ToolMetric {
   category: string;
   args: number;
   missingArgDescriptions: number;
+  toolNameTokens: number;
   toolDescriptionTokens: number;
-  argumentTokens: number;
+  argumentNameTokens: number;
+  argumentDescriptionTokens: number;
+  inputSchemaStructureTokens: number;
+  outputSchemaStructureTokens: number;
   totalTokens: number;
 }
 
@@ -53,7 +58,19 @@ interface CategoryMetric {
   tools: number;
   args: number;
   missingArgDescriptions: number;
+  toolNameTokens: number;
+  toolDescriptionTokens: number;
+  argumentNameTokens: number;
+  argumentDescriptionTokens: number;
+  schemaStructureTokens: number;
   totalTokens: number;
+}
+
+interface DuplicateDescriptionMetric {
+  description: string;
+  count: number;
+  tokens: number;
+  repeatedTokens: number;
 }
 
 class ToolCollector {
@@ -82,6 +99,10 @@ function estimateTokens(value: string): number {
   return Math.ceil(value.length / 4);
 }
 
+function estimateJsonTokens(value: unknown): number {
+  return estimateTokens(JSON.stringify(value) ?? '');
+}
+
 function normalizeDescription(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
@@ -93,6 +114,32 @@ function schemaToJson(schema: ZodTypeAny | undefined): unknown {
   } catch {
     return undefined;
   }
+}
+
+function stripSchemaText(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((entry) => stripSchemaText(entry));
+  if (!isRecord(value)) return value;
+
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (['description', 'title', '$comment', 'default', 'examples'].includes(key)) continue;
+    if (key === 'properties' && isRecord(entry)) {
+      const properties: Record<string, unknown> = {};
+      let index = 0;
+      for (const child of Object.values(entry)) {
+        index += 1;
+        properties[`arg${index}`] = stripSchemaText(child);
+      }
+      out.properties = properties;
+      continue;
+    }
+    if (key === 'required' && Array.isArray(entry)) {
+      out.required = entry.map(() => '*');
+      continue;
+    }
+    out[key] = stripSchemaText(entry);
+  }
+  return out;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -136,27 +183,43 @@ function categorizeTool(name: string): string {
 }
 
 function metricForTool(tool: RegisteredTool): ToolMetric {
-  const args = collectArguments(schemaToJson(tool.config.inputSchema));
-  const toolDescriptionTokens = estimateTokens(`${tool.name}\n${tool.config.description ?? ''}`);
-  const argumentText = args.map((arg) => `${arg.path}\n${arg.description ?? ''}`).join('\n');
-  const argumentTokens = estimateTokens(argumentText);
+  const inputSchema = schemaToJson(tool.config.inputSchema);
+  const outputSchema = schemaToJson(tool.config.outputSchema);
+  const args = collectArguments(inputSchema);
+  const toolNameTokens = estimateTokens(tool.name);
+  const toolDescriptionTokens = estimateTokens(tool.config.description ?? '');
+  const argumentNameTokens = estimateTokens(args.map((arg) => arg.path).join('\n'));
+  const argumentDescriptionTokens = estimateTokens(
+    args.map((arg) => arg.description ?? '').join('\n')
+  );
+  const inputSchemaStructureTokens = estimateJsonTokens(stripSchemaText(inputSchema));
+  const outputSchemaStructureTokens = estimateJsonTokens(stripSchemaText(outputSchema));
 
   return {
     name: tool.name,
     category: categorizeTool(tool.name),
     args: args.length,
     missingArgDescriptions: args.filter((arg) => !normalizeDescription(arg.description)).length,
+    toolNameTokens,
     toolDescriptionTokens,
-    argumentTokens,
-    totalTokens: toolDescriptionTokens + argumentTokens,
+    argumentNameTokens,
+    argumentDescriptionTokens,
+    inputSchemaStructureTokens,
+    outputSchemaStructureTokens,
+    totalTokens:
+      toolNameTokens +
+      toolDescriptionTokens +
+      argumentNameTokens +
+      argumentDescriptionTokens +
+      inputSchemaStructureTokens +
+      outputSchemaStructureTokens,
   };
 }
 
-function topToolsByTokens(metrics: ToolMetric[]): { name: string; tokens: number }[] {
+function topToolsByTokens(metrics: ToolMetric[]): ToolMetric[] {
   return metrics
-    .map((metric) => ({ name: metric.name, tokens: metric.totalTokens }))
-    .sort((a, b) => b.tokens - a.tokens)
-    .slice(0, 10);
+    .sort((a, b) => b.totalTokens - a.totalTokens)
+    .slice(0, TOP_COUNT);
 }
 
 function summarizeCategories(metrics: ToolMetric[]): CategoryMetric[] {
@@ -169,11 +232,22 @@ function summarizeCategories(metrics: ToolMetric[]): CategoryMetric[] {
         tools: 0,
         args: 0,
         missingArgDescriptions: 0,
+        toolNameTokens: 0,
+        toolDescriptionTokens: 0,
+        argumentNameTokens: 0,
+        argumentDescriptionTokens: 0,
+        schemaStructureTokens: 0,
         totalTokens: 0,
       };
     current.tools += 1;
     current.args += metric.args;
     current.missingArgDescriptions += metric.missingArgDescriptions;
+    current.toolNameTokens += metric.toolNameTokens;
+    current.toolDescriptionTokens += metric.toolDescriptionTokens;
+    current.argumentNameTokens += metric.argumentNameTokens;
+    current.argumentDescriptionTokens += metric.argumentDescriptionTokens;
+    current.schemaStructureTokens +=
+      metric.inputSchemaStructureTokens + metric.outputSchemaStructureTokens;
     current.totalTokens += metric.totalTokens;
     byCategory.set(metric.category, current);
   }
@@ -184,7 +258,56 @@ function formatCategories(categories: CategoryMetric[]): string {
   return categories
     .map(
       (category) =>
-        `${category.category}:tokens=${category.totalTokens},tools=${category.tools},args=${category.args},missingArgDescriptions=${category.missingArgDescriptions}`
+        `${category.category}:total=${category.totalTokens},initial=${category.toolNameTokens + category.toolDescriptionTokens},argNames=${category.argumentNameTokens},argDesc=${category.argumentDescriptionTokens},schema=${category.schemaStructureTokens},tools=${category.tools},args=${category.args},missingArgDescriptions=${category.missingArgDescriptions}`
+    )
+    .join(' | ');
+}
+
+function formatTopTools(metrics: ToolMetric[]): string {
+  return metrics
+    .map(
+      (metric) =>
+        `${metric.name}:${metric.totalTokens}(name=${metric.toolNameTokens},desc=${metric.toolDescriptionTokens},argNames=${metric.argumentNameTokens},argDesc=${metric.argumentDescriptionTokens},schema=${metric.inputSchemaStructureTokens + metric.outputSchemaStructureTokens})`
+    )
+    .join(', ');
+}
+
+function topDuplicateDescriptions(args: ArgumentEntry[]): DuplicateDescriptionMetric[] {
+  const counts = new Map<string, { description: string; count: number }>();
+  for (const arg of args) {
+    const description = normalizeDescription(arg.description);
+    if (!description) continue;
+    const key = description.replace(/\s+/g, ' ').trim().toLowerCase();
+    const current = counts.get(key) ?? { description, count: 0 };
+    current.count += 1;
+    counts.set(key, current);
+  }
+
+  return [...counts.values()]
+    .filter((entry) => entry.count > 1)
+    .map((entry) => {
+      const tokens = estimateTokens(entry.description) * entry.count;
+      return {
+        description: entry.description,
+        count: entry.count,
+        tokens,
+        repeatedTokens: tokens - estimateTokens(entry.description),
+      };
+    })
+    .sort((a, b) => b.repeatedTokens - a.repeatedTokens)
+    .slice(0, TOP_COUNT);
+}
+
+function shortText(value: string): string {
+  return value.length <= 64 ? value : `${value.slice(0, 61).trimEnd()}...`;
+}
+
+function formatDuplicateDescriptions(duplicates: DuplicateDescriptionMetric[]): string {
+  if (!duplicates.length) return '(none)';
+  return duplicates
+    .map(
+      (entry) =>
+        `"${shortText(entry.description)}":count=${entry.count},tokens=${entry.tokens},repeated=${entry.repeatedTokens}`
     )
     .join(' | ');
 }
@@ -214,9 +337,22 @@ async function main(): Promise<void> {
 
   const missingToolDescriptions = tools.filter((tool) => !normalizeDescription(tool.config.description));
   const missingArgumentDescriptions = allArgs.filter((arg) => !normalizeDescription(arg.description));
+  const toolNameTokens = metrics.reduce((total, metric) => total + metric.toolNameTokens, 0);
   const toolDescriptionTokens = metrics.reduce((total, metric) => total + metric.toolDescriptionTokens, 0);
-  const argumentTokens = metrics.reduce((total, metric) => total + metric.argumentTokens, 0);
-  const totalTokens = toolDescriptionTokens + argumentTokens;
+  const argumentNameTokens = metrics.reduce((total, metric) => total + metric.argumentNameTokens, 0);
+  const argumentDescriptionTokens = metrics.reduce(
+    (total, metric) => total + metric.argumentDescriptionTokens,
+    0
+  );
+  const inputSchemaStructureTokens = metrics.reduce(
+    (total, metric) => total + metric.inputSchemaStructureTokens,
+    0
+  );
+  const outputSchemaStructureTokens = metrics.reduce(
+    (total, metric) => total + metric.outputSchemaStructureTokens,
+    0
+  );
+  const totalTokens = metrics.reduce((total, metric) => total + metric.totalTokens, 0);
   const maxTokens = asNumber(process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOKENS, DEFAULT_MAX_ESTIMATED_TOKENS);
   const maxToolDescriptionTokens = asNumber(
     process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOOL_DESCRIPTION_TOKENS,
@@ -228,12 +364,14 @@ async function main(): Promise<void> {
   );
 
   const topTools = topToolsByTokens(metrics);
+  const duplicates = topDuplicateDescriptions(allArgs);
   const summary = [
     `tool-budget: tools=${tools.length}, args=${allArgs.length}`,
-    `tool-budget: estimatedTokens total=${totalTokens}, toolNamesDescriptions=${toolDescriptionTokens}, argumentNamesDescriptions=${argumentTokens}`,
+    `tool-budget: estimatedTokens total=${totalTokens}, initialToolList=${toolNameTokens + toolDescriptionTokens}, toolNames=${toolNameTokens}, toolDescriptions=${toolDescriptionTokens}, argumentNames=${argumentNameTokens}, argumentDescriptions=${argumentDescriptionTokens}, inputSchemaStructure=${inputSchemaStructureTokens}, outputSchemaStructure=${outputSchemaStructureTokens}`,
     `tool-budget: categories=${formatCategories(categories)}`,
     `tool-budget: missingDescriptions tools=${missingToolDescriptions.length}, args=${missingArgumentDescriptions.length}`,
-    `tool-budget: topTools=${topTools.map((tool) => `${tool.name}:${tool.tokens}`).join(', ')}`,
+    `tool-budget: duplicateArgDescriptions=${formatDuplicateDescriptions(duplicates)}`,
+    `tool-budget: topTools=${formatTopTools(topTools)}`,
   ];
 
   process.stderr.write(`${summary.join('\n')}\n`);
