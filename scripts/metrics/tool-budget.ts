@@ -230,6 +230,7 @@ function collectArguments(
 function categorizeTool(name: string): string {
   if (name === 'vrchat_read') return 'generated-read';
   if (name === 'vrchat_write') return 'generated-write';
+  if (name === 'vrchat_delete') return 'generated-delete';
   if (name === 'vrchat_call') return 'raw';
   if (name.startsWith('vrchat_auth_') || name.startsWith('vrchat_cache_')) return 'support';
   if (name === 'vrchat_operations' || name === 'vrchat_operation_details') return 'support';

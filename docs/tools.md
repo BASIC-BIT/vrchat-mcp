@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-28T08:31:24.501Z
+Generated: 2026-05-28T13:44:06.641Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -15797,7 +15797,7 @@ Output schema:
 ```
 
 ### vrchat_operations
-List VRChat OpenAPI operationIds and generated-tool availability for vrchat_read/vrchat_write. (read-only)
+List VRChat OpenAPI operationIds and generated-tool availability for vrchat_read/vrchat_write/vrchat_delete. (read-only)
 
 Input schema:
 
@@ -15810,7 +15810,8 @@ Input schema:
       "type": "string",
       "enum": [
         "read",
-        "write"
+        "write",
+        "delete"
       ],
       "description": "Operation kind."
     },
@@ -15864,7 +15865,8 @@ Output schema:
             "type": "string",
             "enum": [
               "read",
-              "write"
+              "write",
+              "delete"
             ]
           },
           "method": {
@@ -16404,7 +16406,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `verifyAuthToken` via `vrchat_read` (GET /auth) - Read VRChat API: Verify Auth Token.
 - `verifyLoginPlace` via `vrchat_read` (GET /auth/verifyLoginPlace) - Read VRChat API: Verify Login Place.
 
-## Auto-generated write router (non-GET operations)
+## Auto-generated write router (POST/PUT/PATCH operations)
 Use `vrchat_write` with `operationId`, OpenAPI path/query/header/cookie values under `params`, and JSON payloads under `body`. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.
 Generated write input schema:
 
@@ -16478,13 +16480,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `addTags` via `vrchat_write` (POST /users/{userId}/addTags) - Write VRChat API: Add User Tags.
 - `banGroupMember` via `vrchat_write` (POST /groups/{groupId}/bans) - Write VRChat API: Ban Group Member.
 - `blockGroup` via `vrchat_write` (POST /groups/{groupId}/block) - Write VRChat API: Block Group.
-- `cancelGroupRequest` via `vrchat_write` (DELETE /groups/{groupId}/requests) - Write VRChat API: Cancel Group Join Request.
-- `cancelGroupTransfer` via `vrchat_write` (DELETE /groups/{groupId}/transfer) - Write VRChat API: Cancel Group Transfer.
-- `cancelPending2FA` via `vrchat_write` (DELETE /auth/twofactorauth/totp/pending) - Write VRChat API: Cancel pending enabling of time-based 2FA codes.
-- `clearAllPlayerModerations` via `vrchat_write` (DELETE /auth/user/playermoderations) - Write VRChat API: Clear All Player Moderations.
-- `clearFavoriteGroup` via `vrchat_write` (DELETE /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Write VRChat API: Clear Favorite Group.
 - `clearNotifications` via `vrchat_write` (PUT /auth/user/notifications/clear) - Write VRChat API: Clear All Notifications.
-- `closeInstance` via `vrchat_write` (DELETE /instances/{worldId}:{instanceId}) - Write VRChat API: Close Instance.
 - `consumeOwnInventoryItem` via `vrchat_write` (PUT /inventory/{inventoryItemId}/consume) - Write VRChat API: Consume Own Inventory Item.
 - `createFile` via `vrchat_write` (POST /file) - Write VRChat API: Create File.
 - `createFileVersion` via `vrchat_write` (POST /file/{fileId}) - Write VRChat API: Create File Version.
@@ -16493,27 +16489,8 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `createGroupGallery` via `vrchat_write` (POST /groups/{groupId}/galleries) - Write VRChat API: Create Group Gallery.
 - `createProp` via `vrchat_write` (POST /props) - Write VRChat API: Create Prop.
 - `declineGroupInvite` via `vrchat_write` (PUT /groups/{groupId}/invites) - Write VRChat API: Decline Invite from Group.
-- `deleteAllNotificationV2s` via `vrchat_write` (DELETE /notifications) - Write VRChat API: Delete All NotificationV2s.
-- `deleteAllUserPersistenceData` via `vrchat_write` (DELETE /users/{userId}/persist) - Write VRChat API: Delete All User Persistence Data.
-- `deleteFile` via `vrchat_write` (DELETE /file/{fileId}) - Write VRChat API: Delete File.
-- `deleteFileVersion` via `vrchat_write` (DELETE /file/{fileId}/{versionId}) - Write VRChat API: Delete File Version.
-- `deleteFriendRequest` via `vrchat_write` (DELETE /user/{userId}/friendRequest) - Write VRChat API: Delete Friend Request.
-- `deleteGlobalAvatarModeration` via `vrchat_write` (DELETE /auth/user/avatarmoderations) - Write VRChat API: Delete Global Avatar Moderation.
-- `deleteGroup` via `vrchat_write` (DELETE /groups/{groupId}) - Write VRChat API: Delete Group.
-- `deleteGroupGallery` via `vrchat_write` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Write VRChat API: Delete Group Gallery.
-- `deleteGroupGalleryImage` via `vrchat_write` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Write VRChat API: Delete Group Gallery Image.
-- `deleteGroupInvite` via `vrchat_write` (DELETE /groups/{groupId}/invites/{userId}) - Write VRChat API: Delete User Invite.
-- `deleteGroupPost` via `vrchat_write` (DELETE /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Delete a Group post.
-- `deleteImpostor` via `vrchat_write` (DELETE /avatars/{avatarId}/impostor) - Write VRChat API: Delete generated Impostor.
-- `deleteModerationReport` via `vrchat_write` (DELETE /moderationReports/{moderationReportId}) - Write VRChat API: Delete Moderation Report.
 - `deleteNotification` via `vrchat_write` (PUT /auth/user/notifications/{notificationId}/hide) - Write VRChat API: Delete Notification.
-- `deleteNotificationV2` via `vrchat_write` (DELETE /notifications/{notificationId}) - Write VRChat API: Delete NotificationV2.
-- `deleteOwnInventoryItem` via `vrchat_write` (DELETE /inventory/{inventoryItemId}) - Write VRChat API: Delete Own Inventory Item.
-- `deletePrint` via `vrchat_write` (DELETE /prints/{printId}) - Write VRChat API: Delete Print.
-- `deleteProp` via `vrchat_write` (DELETE /props/{propId}) - Write VRChat API: Delete Prop.
 - `deleteUser` via `vrchat_write` (PUT /users/{userId}/delete) - Write VRChat API: Delete User.
-- `deleteUserPersistence` via `vrchat_write` (DELETE /users/{userId}/{worldId}/persist) - Write VRChat API: Delete User Persistence.
-- `disable2FA` via `vrchat_write` (DELETE /auth/twofactorauth) - Write VRChat API: Disable 2FA.
 - `editPrint` via `vrchat_write` (POST /prints/{printId}) - Write VRChat API: Edit Print.
 - `enable2FA` via `vrchat_write` (POST /auth/twofactorauth/totp/pending) - Write VRChat API: Enable time-based 2FA codes.
 - `enqueueImpostor` via `vrchat_write` (POST /avatars/{avatarId}/impostor/enqueue) - Write VRChat API: Enqueue Impostor generation.
@@ -16521,7 +16498,6 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `finishFileDataUpload` via `vrchat_write` (PUT /file/{fileId}/{versionId}/{fileType}/finish) - Write VRChat API: Finish FileData Upload.
 - `initiateOrAcceptGroupTransfer` via `vrchat_write` (POST /groups/{groupId}/transfer) - Write VRChat API: Initiate or Accept Group Transfer.
 - `joinGroup` via `vrchat_write` (POST /groups/{groupId}/join) - Write VRChat API: Join Group.
-- `kickGroupMember` via `vrchat_write` (DELETE /groups/{groupId}/members/{userId}) - Write VRChat API: Kick Group Member.
 - `leaveGroup` via `vrchat_write` (POST /groups/{groupId}/leave) - Write VRChat API: Leave Group.
 - `markNotificationAsRead` via `vrchat_write` (PUT /auth/user/notifications/{notificationId}/see) - Write VRChat API: Mark Notification As Read.
 - `moderateUser` via `vrchat_write` (POST /auth/user/playermoderations) - Write VRChat API: Moderate User.
@@ -16532,7 +16508,6 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `replyNotificationV2` via `vrchat_write` (POST /notifications/{notificationId}/reply) - Write VRChat API: Reply NotificationV2.
 - `requestInvite` via `vrchat_write` (POST /requestInvite/{userId}) - Write VRChat API: Request Invite.
 - `resendEmailConfirmation` via `vrchat_write` (POST /auth/user/resendEmail) - Write VRChat API: Resend Email Confirmation.
-- `resetInviteMessage` via `vrchat_write` (DELETE /message/{userId}/{messageType}/{slot}) - Write VRChat API: Reset Invite Message.
 - `respondGroupJoinRequest` via `vrchat_write` (PUT /groups/{groupId}/requests/{userId}) - Write VRChat API: Respond Group Join request.
 - `respondInvite` via `vrchat_write` (POST /invite/{notificationId}/response) - Write VRChat API: Respond Invite.
 - `respondInviteWithPhoto` via `vrchat_write` (POST /invite/{notificationId}/response/photo) - Write VRChat API: Respond Invite with photo.
@@ -16544,11 +16519,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `startFileDataUpload` via `vrchat_write` (PUT /file/{fileId}/{versionId}/{fileType}/start) - Write VRChat API: Start FileData Upload.
 - `submitContentAgreement` via `vrchat_write` (POST /agreement) - Write VRChat API: Submit Content Agreement.
 - `submitModerationReport` via `vrchat_write` (POST /moderationReports) - Write VRChat API: Submit Moderation Report.
-- `unbanGroupMember` via `vrchat_write` (DELETE /groups/{groupId}/bans/{userId}) - Write VRChat API: Unban Group Member.
-- `unequipOwnInventorySlot` via `vrchat_write` (DELETE /inventory/{inventoryItemId}/equip) - Write VRChat API: Unequip Own Inventory Slot.
-- `unfriend` via `vrchat_write` (DELETE /auth/user/friends/{userId}) - Write VRChat API: Unfriend.
 - `unmoderateUser` via `vrchat_write` (PUT /auth/user/unplayermoderate) - Write VRChat API: Unmoderate User.
-- `unpublishProp` via `vrchat_write` (DELETE /props/{propId}/publish) - Write VRChat API: Unpublish Prop.
 - `updateAssetReviewNotes` via `vrchat_write` (PUT /assetReview/{assetReviewId}/notes) - Write VRChat API: Update Asset Review Notes.
 - `updateBadge` via `vrchat_write` (PUT /users/{userId}/badges/{badgeId}) - Write VRChat API: Update User Badge.
 - `updateFavoriteGroup` via `vrchat_write` (PUT /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Write VRChat API: Update Favorite Group.
@@ -16570,3 +16541,102 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `verify2FAEmailCode` via `vrchat_write` (POST /auth/twofactorauth/emailotp/verify) - Write VRChat API: Verify 2FA email code.
 - `verifyPending2FA` via `vrchat_write` (POST /auth/twofactorauth/totp/pending/verify) - Write VRChat API: Verify Pending 2FA code.
 - `verifyRecoveryCode` via `vrchat_write` (POST /auth/twofactorauth/otp/verify) - Write VRChat API: Verify 2FA code with Recovery code.
+
+## Auto-generated delete router (DELETE operations)
+Use `vrchat_delete` with `operationId`, OpenAPI path/query/header/cookie values under `params`, and optional JSON payloads under `body`. This router is annotated destructive. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation schemas.
+Generated delete input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "operationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OpenAPI operationId."
+    },
+    "params": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {},
+      "description": "OpenAPI params."
+    },
+    "body": {
+      "description": "OpenAPI request body."
+    },
+    "includeMeta": {
+      "type": "boolean",
+      "description": "Include URL/status/headers."
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "boolean",
+          "description": "Preview request."
+        },
+        "rawResponse": {
+          "type": "boolean",
+          "description": "Return raw metadata."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Write options."
+    }
+  },
+  "required": [
+    "operationId"
+  ],
+  "additionalProperties": {}
+}
+```
+
+Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "data": {
+      "description": "VRChat API response data."
+    }
+  },
+  "additionalProperties": {}
+}
+```
+
+- `cancelGroupRequest` via `vrchat_delete` (DELETE /groups/{groupId}/requests) - Write VRChat API: Cancel Group Join Request.
+- `cancelGroupTransfer` via `vrchat_delete` (DELETE /groups/{groupId}/transfer) - Write VRChat API: Cancel Group Transfer.
+- `cancelPending2FA` via `vrchat_delete` (DELETE /auth/twofactorauth/totp/pending) - Write VRChat API: Cancel pending enabling of time-based 2FA codes.
+- `clearAllPlayerModerations` via `vrchat_delete` (DELETE /auth/user/playermoderations) - Write VRChat API: Clear All Player Moderations.
+- `clearFavoriteGroup` via `vrchat_delete` (DELETE /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Write VRChat API: Clear Favorite Group.
+- `closeInstance` via `vrchat_delete` (DELETE /instances/{worldId}:{instanceId}) - Write VRChat API: Close Instance.
+- `deleteAllNotificationV2s` via `vrchat_delete` (DELETE /notifications) - Write VRChat API: Delete All NotificationV2s.
+- `deleteAllUserPersistenceData` via `vrchat_delete` (DELETE /users/{userId}/persist) - Write VRChat API: Delete All User Persistence Data.
+- `deleteFile` via `vrchat_delete` (DELETE /file/{fileId}) - Write VRChat API: Delete File.
+- `deleteFileVersion` via `vrchat_delete` (DELETE /file/{fileId}/{versionId}) - Write VRChat API: Delete File Version.
+- `deleteFriendRequest` via `vrchat_delete` (DELETE /user/{userId}/friendRequest) - Write VRChat API: Delete Friend Request.
+- `deleteGlobalAvatarModeration` via `vrchat_delete` (DELETE /auth/user/avatarmoderations) - Write VRChat API: Delete Global Avatar Moderation.
+- `deleteGroup` via `vrchat_delete` (DELETE /groups/{groupId}) - Write VRChat API: Delete Group.
+- `deleteGroupGallery` via `vrchat_delete` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Write VRChat API: Delete Group Gallery.
+- `deleteGroupGalleryImage` via `vrchat_delete` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Write VRChat API: Delete Group Gallery Image.
+- `deleteGroupInvite` via `vrchat_delete` (DELETE /groups/{groupId}/invites/{userId}) - Write VRChat API: Delete User Invite.
+- `deleteGroupPost` via `vrchat_delete` (DELETE /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Delete a Group post.
+- `deleteImpostor` via `vrchat_delete` (DELETE /avatars/{avatarId}/impostor) - Write VRChat API: Delete generated Impostor.
+- `deleteModerationReport` via `vrchat_delete` (DELETE /moderationReports/{moderationReportId}) - Write VRChat API: Delete Moderation Report.
+- `deleteNotificationV2` via `vrchat_delete` (DELETE /notifications/{notificationId}) - Write VRChat API: Delete NotificationV2.
+- `deleteOwnInventoryItem` via `vrchat_delete` (DELETE /inventory/{inventoryItemId}) - Write VRChat API: Delete Own Inventory Item.
+- `deletePrint` via `vrchat_delete` (DELETE /prints/{printId}) - Write VRChat API: Delete Print.
+- `deleteProp` via `vrchat_delete` (DELETE /props/{propId}) - Write VRChat API: Delete Prop.
+- `deleteUserPersistence` via `vrchat_delete` (DELETE /users/{userId}/{worldId}/persist) - Write VRChat API: Delete User Persistence.
+- `disable2FA` via `vrchat_delete` (DELETE /auth/twofactorauth) - Write VRChat API: Disable 2FA.
+- `kickGroupMember` via `vrchat_delete` (DELETE /groups/{groupId}/members/{userId}) - Write VRChat API: Kick Group Member.
+- `resetInviteMessage` via `vrchat_delete` (DELETE /message/{userId}/{messageType}/{slot}) - Write VRChat API: Reset Invite Message.
+- `unbanGroupMember` via `vrchat_delete` (DELETE /groups/{groupId}/bans/{userId}) - Write VRChat API: Unban Group Member.
+- `unequipOwnInventorySlot` via `vrchat_delete` (DELETE /inventory/{inventoryItemId}/equip) - Write VRChat API: Unequip Own Inventory Slot.
+- `unfriend` via `vrchat_delete` (DELETE /auth/user/friends/{userId}) - Write VRChat API: Unfriend.
+- `unpublishProp` via `vrchat_delete` (DELETE /props/{propId}/publish) - Write VRChat API: Unpublish Prop.

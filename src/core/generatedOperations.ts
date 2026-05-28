@@ -5,15 +5,18 @@ import { GENERATED_READ_SKIP_IDS, GENERATED_WRITE_SKIP_IDS } from './generatedTo
 import { getBlockedOperationReason } from './operationPolicy.js';
 import { getSpecIndex, type OperationDef } from './spec.js';
 
-export type GeneratedOperationKind = 'read' | 'write';
+export type GeneratedOperationKind = 'read' | 'write' | 'delete';
 
-export type GeneratedToolStatus =
-  | 'available'
-  | 'blocked_by_policy'
-  | 'curated_replacement'
-  | 'hard_skipped'
-  | 'disabled_by_config'
-  | 'not_allowlisted';
+export const generatedToolStatusValues = [
+  'available',
+  'blocked_by_policy',
+  'curated_replacement',
+  'hard_skipped',
+  'disabled_by_config',
+  'not_allowlisted',
+] as const;
+
+export type GeneratedToolStatus = (typeof generatedToolStatusValues)[number];
 
 export interface GeneratedOperationInfo {
   generatedToolStatus: GeneratedToolStatus;
@@ -55,11 +58,15 @@ function getText(value: unknown): string | undefined {
 }
 
 export function generatedOperationKind(op: OperationDef): GeneratedOperationKind {
-  return op.method === 'GET' ? 'read' : 'write';
+  if (op.method === 'GET') return 'read';
+  if (op.method === 'DELETE') return 'delete';
+  return 'write';
 }
 
 export function generatedToolName(kind: GeneratedOperationKind): string {
-  return toolName(kind === 'read' ? 'vrchat.read' : 'vrchat.write');
+  if (kind === 'read') return toolName('vrchat.read');
+  if (kind === 'delete') return toolName('vrchat.delete');
+  return toolName('vrchat.write');
 }
 
 function rawOperation(raw: unknown, op: OperationDef): Record<string, unknown> | undefined {

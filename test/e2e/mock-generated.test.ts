@@ -185,6 +185,7 @@ describe('mcp e2e (mock generated tools)', () => {
     const skipped = new Set(GENERATED_WRITE_SKIP_IDS);
     const operations: {
       operationId: string;
+      method: string;
       params?: SpecParameter[];
       requestBody?: SpecOperation['requestBody'];
     }[] = [];
@@ -194,6 +195,7 @@ describe('mcp e2e (mock generated tools)', () => {
         if (!op.operationId) continue;
         operations.push({
           operationId: op.operationId,
+          method,
           params: op.parameters,
           requestBody: op.requestBody,
         });
@@ -209,8 +211,10 @@ describe('mcp e2e (mock generated tools)', () => {
         ...(Object.keys(params).length ? { params } : {}),
         ...(body !== undefined ? { body } : {}),
       };
+      const toolName = op.method.toLowerCase() === 'delete' ? 'vrchat_delete' : 'vrchat_write';
+      expect(available.has(toolName)).toBe(true);
       try {
-        const result = await harness!.client.callTool({ name: 'vrchat_write', arguments: args });
+        const result = await harness!.client.callTool({ name: toolName, arguments: args });
         const structured = result as {
           isError?: boolean;
           structuredContent?: { data?: unknown; error?: string };

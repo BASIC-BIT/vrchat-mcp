@@ -1,6 +1,9 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { listGeneratedOperations } from '../../core/generatedOperations.js';
+import {
+  generatedToolStatusValues,
+  listGeneratedOperations,
+} from '../../core/generatedOperations.js';
 import { getOperationDetails } from '../../core/operationDetails.js';
 import { ReadOptionsSchema } from '../../schemas/read.js';
 import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
@@ -13,7 +16,7 @@ const OperationDetailsInputSchema = z.object({
 });
 
 const OperationsInputSchema = z.object({
-  kind: z.enum(['read', 'write']).describe('Operation kind.').optional(),
+  kind: z.enum(['read', 'write', 'delete']).describe('Operation kind.').optional(),
   view: z.enum(['available', 'all']).describe('Show available generated ops or all ops.').optional(),
   query: z.string().describe('Filter operationId, path, summary, or description.').optional(),
   limit: z.number().int().min(1).max(500).describe('Max operations.').optional(),
@@ -21,19 +24,12 @@ const OperationsInputSchema = z.object({
 
 const OperationSummarySchema = z.object({
   operationId: z.string(),
-  kind: z.enum(['read', 'write']),
+  kind: z.enum(['read', 'write', 'delete']),
   method: z.string(),
   path: z.string(),
   summary: z.string().optional(),
   description: z.string().optional(),
-  generatedToolStatus: z.enum([
-    'available',
-    'blocked_by_policy',
-    'curated_replacement',
-    'hard_skipped',
-    'disabled_by_config',
-    'not_allowlisted',
-  ]),
+  generatedToolStatus: z.enum(generatedToolStatusValues),
   generatedToolName: z.string().optional(),
   curatedToolName: z.string().optional(),
   blockedReason: z.string().optional(),
@@ -51,14 +47,7 @@ const OperationDetailsOutputSchema = z.object({
   path: z.string(),
   summary: z.string().optional(),
   description: z.string().optional(),
-  generatedToolStatus: z.enum([
-    'available',
-    'blocked_by_policy',
-    'curated_replacement',
-    'hard_skipped',
-    'disabled_by_config',
-    'not_allowlisted',
-  ]),
+  generatedToolStatus: z.enum(generatedToolStatusValues),
   generatedToolName: z.string().optional(),
   curatedToolName: z.string().optional(),
   blockedReason: z.string().optional(),
@@ -104,7 +93,7 @@ export function registerSystemReadTools(server: McpServer): void {
     toolName('vrchat.operations'),
     {
       description:
-        'List VRChat OpenAPI operationIds and generated-tool availability for vrchat_read/vrchat_write.',
+        'List VRChat OpenAPI operationIds and generated-tool availability for vrchat_read/vrchat_write/vrchat_delete.',
       inputSchema: OperationsInputSchema,
       outputSchema: OperationsOutputSchema,
       annotations: readOnlyToolAnnotations,

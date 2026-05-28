@@ -12,7 +12,7 @@ This server is organized by responsibility so each file stays small and focused.
 - `client.ts` executes API operations with auth + headers and enforces write gating.
 - `readTools.ts` provides read-only helpers (pagination, field selection, shaping).
 - `readToolRegistry.ts` registers auto-generated GET tools from the spec.
-- `writeToolRegistry.ts` registers auto-generated non-GET tools from the spec.
+- `writeToolRegistry.ts` registers auto-generated POST/PUT/PATCH and DELETE routers from the spec.
 
 ## Tool registration (`src/tools/`)
 

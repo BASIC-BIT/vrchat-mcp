@@ -150,7 +150,7 @@ Show recent worlds from my local VRCX history.
 
 ## Tools
 
-VRChat MCP exposes curated tools plus generated read/write tools by default. Curated tools cover common tasks with compact, agent-friendly inputs and outputs.
+VRChat MCP exposes curated tools plus generated read/write/delete routers by default. Curated tools cover common tasks with compact, agent-friendly inputs and outputs.
 
 Common curated tools include:
 
@@ -168,10 +168,11 @@ Common curated tools include:
 - `vrchat_boop`
 - `vrcx_instances_recent`
 
-Generated OpenAPI API-gap coverage uses two router tools:
+Generated OpenAPI API-gap coverage uses three router tools:
 
 - `vrchat_read` for available GET operations; pass `operationId` plus path/query/header/cookie values under `params`.
-- `vrchat_write` for available non-GET operations; pass `operationId`, `params`, and JSON payloads under `body`.
+- `vrchat_write` for available POST/PUT/PATCH operations; pass `operationId`, `params`, and JSON payloads under `body`.
+- `vrchat_delete` for available DELETE operations; pass `operationId`, `params`, and optional JSON payloads under `body`.
 
 Use `vrchat_operations` to list available generated operation IDs and `vrchat_operation_details` for exact per-operation params/body schemas.
 

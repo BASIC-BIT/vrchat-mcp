@@ -26,6 +26,9 @@ vi.mock('../../src/core/spec.js', () => {
             '/widgets': {
               post: { operationId: 'createWidget', summary: 'Create Widget' },
             },
+            '/widgets/{widgetId}': {
+              delete: { operationId: 'deleteWidget', summary: 'Delete Widget' },
+            },
             '/invite/{userId}': {
               post: { operationId: 'inviteUser', summary: 'Invite User' },
             },
@@ -59,6 +62,16 @@ vi.mock('../../src/core/spec.js', () => {
                 required: ['name'],
               },
               requestBodyRequired: true,
+            },
+          ],
+          [
+            'deleteWidget',
+            {
+              operationId: 'deleteWidget',
+              method: 'DELETE',
+              path: '/widgets/{widgetId}',
+              parameters: [],
+              hasRequestBody: false,
             },
           ],
           [
@@ -124,8 +137,8 @@ describe('write tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_write']);
+    expect(count).toBe(2);
+    expect(registered).toEqual(['vrchat_write', 'vrchat_delete']);
   });
 
   it('skips tools in skip list and only registers non-GET operations', async () => {

@@ -125,6 +125,13 @@ function buildGeneratedList(spec: any) {
     description: string;
     toolName: string;
   }[] = [];
+  const deleteOps: {
+    operationId: string;
+    method: string;
+    path: string;
+    description: string;
+    toolName: string;
+  }[] = [];
 
   for (const [pathKey, pathItem] of Object.entries(spec.paths ?? {})) {
     for (const [method, op] of Object.entries<any>(pathItem ?? {})) {
@@ -139,6 +146,15 @@ function buildGeneratedList(spec: any) {
           path: String(pathKey),
           description: toAscii(buildGeneratedToolDescription('read', operationId, op)),
           toolName: toolName('vrchat.read'),
+        });
+      } else if (method.toLowerCase() === 'delete') {
+        if (writeSkip.has(operationId) || getCuratedWriteToolName(operationId)) continue;
+        deleteOps.push({
+          operationId,
+          method: method.toUpperCase(),
+          path: String(pathKey),
+          description: toAscii(buildGeneratedToolDescription('write', operationId, op)),
+          toolName: toolName('vrchat.delete'),
         });
       } else {
         if (writeSkip.has(operationId) || getCuratedWriteToolName(operationId)) continue;
@@ -155,7 +171,8 @@ function buildGeneratedList(spec: any) {
 
   readOps.sort((a, b) => a.operationId.localeCompare(b.operationId));
   writeOps.sort((a, b) => a.operationId.localeCompare(b.operationId));
-  return { readOps, writeOps };
+  deleteOps.sort((a, b) => a.operationId.localeCompare(b.operationId));
+  return { readOps, writeOps, deleteOps };
 }
 
 function renderToolList(entries: ToolEntry[]) {
@@ -209,7 +226,7 @@ async function main() {
   const auth = collector.tools.filter((tool) => tool.category === 'auth');
   const raw = collector.tools.filter((tool) => tool.category === 'raw');
 
-  const { readOps, writeOps } = buildGeneratedList(spec);
+  const { readOps, writeOps, deleteOps } = buildGeneratedList(spec);
 
   const now = new Date().toISOString();
   const specTitle = typeof info.title === 'string' ? toAscii(info.title) : 'VRChat API';
@@ -254,7 +271,7 @@ async function main() {
   }
   md += '\n';
 
-  md += '## Auto-generated write router (non-GET operations)\n';
+  md += '## Auto-generated write router (POST/PUT/PATCH operations)\n';
   md +=
     'Use `vrchat_write` with `operationId`, OpenAPI path/query/header/cookie values under `params`, and JSON payloads under `body`. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.\n';
   md += 'Generated write input schema:\n\n';
@@ -263,6 +280,19 @@ async function main() {
     'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of writeOps) {
+    md += `- \`${op.operationId}\` via \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
+  }
+  md += '\n';
+
+  md += '## Auto-generated delete router (DELETE operations)\n';
+  md +=
+    'Use `vrchat_delete` with `operationId`, OpenAPI path/query/header/cookie values under `params`, and optional JSON payloads under `body`. This router is annotated destructive. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation schemas.\n';
+  md += 'Generated delete input schema:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolInputSchema), null, 2)}\n\`\`\`\n\n`;
+  md +=
+    'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
+  for (const op of deleteOps) {
     md += `- \`${op.operationId}\` via \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
 
