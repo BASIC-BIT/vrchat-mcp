@@ -199,7 +199,7 @@ function validateRequiredInputs(
     throw new CallError(`Missing required ${missingParam.in} param: ${missingParam.name}`);
   }
 
-  if (op.requestBodyRequired && body === undefined) {
+  if (op.requestBodyRequired && (body === undefined || body === null)) {
     throw new CallError(`Missing required request body for ${op.operationId}`);
   }
 }
@@ -349,8 +349,8 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
   const index = await getSpecIndex();
   const op = getOperationOrThrow(index, operationId);
   validateOperationParams(op, params);
-  validateRequiredInputs(op, params, body);
   enforceOperationPolicy(op, params, body);
+  validateRequiredInputs(op, params, body);
 
   const url = buildUrl(op, params);
   if (options?.dryRun) {

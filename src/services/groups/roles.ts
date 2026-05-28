@@ -73,13 +73,18 @@ export async function manageGroupRole(
     };
   }
 
-  const result = await callWriteOperationParsed('deleteGroupRole', {
-    groupId,
-    groupRoleId: input.groupRoleId,
-  });
-  return {
-    roles: result.data
-      .map(toGroupRoleSummary)
-      .filter((role): role is GroupRoleSummary => Boolean(role)),
-  };
+  if (input.action === 'delete_role') {
+    const result = await callWriteOperationParsed('deleteGroupRole', {
+      groupId,
+      groupRoleId: input.groupRoleId,
+    });
+    return {
+      roles: result.data
+        .map(toGroupRoleSummary)
+        .filter((role): role is GroupRoleSummary => Boolean(role)),
+    };
+  }
+
+  const exhaustive: never = input;
+  throw new Error(`Unsupported group role action: ${JSON.stringify(exhaustive)}`);
 }

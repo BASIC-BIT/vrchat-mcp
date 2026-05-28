@@ -155,6 +155,9 @@ describe('callOperation behavior', () => {
   it('blocks policy-disabled avatar/world content-management operations before fetch', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const callOperation = await loadCallOperation();
+    await expect(callOperation({ operationId: 'createWorld' })).rejects.toThrow(
+      'avatar/world content-management endpoints are disabled by policy'
+    );
     await expect(
       callOperation({ operationId: 'createWorld', body: { name: 'World' } })
     ).rejects.toThrow('avatar/world content-management endpoints are disabled by policy');
@@ -214,6 +217,9 @@ describe('callOperation behavior', () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const callOperation = await loadCallOperation();
     await expect(callOperation({ operationId: 'createThing' })).rejects.toThrow(
+      'Missing required request body for createThing'
+    );
+    await expect(callOperation({ operationId: 'createThing', body: null })).rejects.toThrow(
       'Missing required request body for createThing'
     );
     expect(undiciFetch).not.toHaveBeenCalled();
