@@ -26,7 +26,6 @@ import { authManager } from '../../src/auth/index.js';
 import { checkGroupAllowed } from '../../src/services/groups/index.js';
 
 const fixtureSpecPath = path.join(process.cwd(), 'test', 'fixtures', 'spec.yaml');
-const fullSpecPath = path.join(process.cwd(), 'specs', 'vrchat-openapi.yaml');
 
 const getCookieHeaderSpy = vi.spyOn(authManager, 'getCookieHeader');
 const setCookiesFromResponseSpy = vi.spyOn(authManager, 'setCookiesFromResponse');
@@ -155,7 +154,6 @@ describe('callOperation behavior', () => {
 
   it('blocks policy-disabled avatar/world content-management operations before fetch', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
-    process.env.VRCHAT_MCP_SPEC_URL = fullSpecPath;
     const callOperation = await loadCallOperation();
     await expect(
       callOperation({ operationId: 'createWorld', body: { name: 'World' } })
