@@ -17,10 +17,13 @@ describe('write schemas', () => {
 
   it('validates generated write input', () => {
     const parsed = GeneratedWriteToolInputSchema.parse({
+      operationId: 'createGroupRole',
       params: { groupId: 'grp_1' },
       body: { name: 'Role' },
     });
+    expect(parsed.operationId).toBe('createGroupRole');
     expect(parsed.params?.groupId).toBe('grp_1');
+    expect(GeneratedWriteToolInputSchema.safeParse({}).success).toBe(false);
   });
 
   it('validates generated write output with optional metadata passthrough', () => {

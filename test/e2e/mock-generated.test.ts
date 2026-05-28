@@ -2,8 +2,11 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { getCuratedWriteToolName } from '../../src/core/generatedToolOverrides.js';
-import { readToolName, writeToolName } from '../../src/utils/toolNames.js';
+import {
+  getCuratedReadToolName,
+  getCuratedWriteToolName,
+} from '../../src/core/generatedToolOverrides.js';
+import { GENERATED_READ_SKIP_IDS, GENERATED_WRITE_SKIP_IDS } from '../../src/core/generatedToolSkips.js';
 import { createMockServer, type MockServer } from '../helpers/mock-server.js';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
 
@@ -140,6 +143,8 @@ describe('mcp e2e (mock generated tools)', () => {
   it('invokes every generated read tool for GET operations', async () => {
     const listed = await harness!.client.listTools();
     const available = new Set((listed.tools ?? []).map((tool) => tool.name));
+    expect(available.has('vrchat_read')).toBe(true);
+    const skipped = new Set(GENERATED_READ_SKIP_IDS);
     const operations: { operationId: string; params?: SpecParameter[] }[] = [];
     for (const pathItem of Object.values(spec!.paths)) {
       for (const [method, op] of Object.entries(pathItem)) {
@@ -150,12 +155,14 @@ describe('mcp e2e (mock generated tools)', () => {
     }
 
     for (const op of operations) {
-      const tool = readToolName(op.operationId);
-      if (!available.has(tool)) continue;
+      if (getCuratedReadToolName(op.operationId) || skipped.has(op.operationId)) continue;
       const params = buildParams(op.params, op.operationId);
-      const args = Object.keys(params).length ? { params } : {};
+      const args = {
+        operationId: op.operationId,
+        ...(Object.keys(params).length ? { params } : {}),
+      };
       try {
-        const result = await harness!.client.callTool({ name: tool, arguments: args });
+        const result = await harness!.client.callTool({ name: 'vrchat_read', arguments: args });
         const structured = result as {
           isError?: boolean;
           structuredContent?: { data?: unknown; error?: string };
@@ -166,7 +173,7 @@ describe('mcp e2e (mock generated tools)', () => {
         expect(structured.structuredContent?.data).toBeDefined();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        throw new Error(`Generated tool ${tool} failed: ${message}`);
+        throw new Error(`Generated read operation ${op.operationId} failed: ${message}`);
       }
     }
   });
@@ -174,6 +181,8 @@ describe('mcp e2e (mock generated tools)', () => {
   it('invokes every generated write tool for non-GET operations', async () => {
     const listed = await harness!.client.listTools();
     const available = new Set((listed.tools ?? []).map((tool) => tool.name));
+    expect(available.has('vrchat_write')).toBe(true);
+    const skipped = new Set(GENERATED_WRITE_SKIP_IDS);
     const operations: {
       operationId: string;
       params?: SpecParameter[];
@@ -192,20 +201,16 @@ describe('mcp e2e (mock generated tools)', () => {
     }
 
     for (const op of operations) {
-      const tool = writeToolName(op.operationId);
-      if (getCuratedWriteToolName(op.operationId)) {
-        expect(available.has(tool)).toBe(false);
-        continue;
-      }
-      if (!available.has(tool)) continue;
+      if (getCuratedWriteToolName(op.operationId) || skipped.has(op.operationId)) continue;
       const params = buildParams(op.params, op.operationId);
       const body = buildWriteBody(op.requestBody);
       const args = {
+        operationId: op.operationId,
         ...(Object.keys(params).length ? { params } : {}),
         ...(body !== undefined ? { body } : {}),
       };
       try {
-        const result = await harness!.client.callTool({ name: tool, arguments: args });
+        const result = await harness!.client.callTool({ name: 'vrchat_write', arguments: args });
         const structured = result as {
           isError?: boolean;
           structuredContent?: { data?: unknown; error?: string };
@@ -216,7 +221,7 @@ describe('mcp e2e (mock generated tools)', () => {
         expect(structured.structuredContent?.data).toBeDefined();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        throw new Error(`Generated tool ${tool} failed: ${message}`);
+        throw new Error(`Generated write operation ${op.operationId} failed: ${message}`);
       }
     }
   });

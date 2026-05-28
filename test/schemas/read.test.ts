@@ -32,10 +32,13 @@ describe('read schemas', () => {
 
   it('validates generated read input', () => {
     const parsed = GeneratedReadToolInputSchema.parse({
+      operationId: 'searchUsers',
       params: { search: 'hello' },
       page: { enabled: true, size: 10 },
     });
+    expect(parsed.operationId).toBe('searchUsers');
     expect(parsed.params?.search).toBe('hello');
+    expect(GeneratedReadToolInputSchema.safeParse({}).success).toBe(false);
   });
 
   it('validates generated read output with optional metadata passthrough', () => {

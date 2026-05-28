@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toolName, readToolName, writeToolName } from '../../src/utils/toolNames.js';
+import { toolName } from '../../src/utils/toolNames.js';
 
 describe('tool names', () => {
   it('converts dots to underscores', () => {
@@ -10,11 +10,8 @@ describe('tool names', () => {
     expect(toolName('vrchat.call+test')).toBe('vrchat_call_test');
   });
 
-  it('prefixes read tools', () => {
-    expect(readToolName('getConfig')).toBe('vrchat_read_getConfig');
-  });
-
-  it('prefixes write tools', () => {
-    expect(writeToolName('updateUser')).toBe('vrchat_write_updateUser');
+  it('formats generated router tool names', () => {
+    expect(toolName('vrchat.read')).toBe('vrchat_read');
+    expect(toolName('vrchat.write')).toBe('vrchat_write');
   });
 });

@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 
 const mockConfig = {
+  generatedReadTools: { enabled: true, operationIds: [] as string[] },
   generatedWriteTools: { enabled: true, operationIds: [] as string[] },
   logging: { level: 'info' },
 };
 
 vi.mock('../../src/core/generatedToolSkips.js', () => ({
+  GENERATED_READ_SKIP_IDS: [],
   GENERATED_WRITE_SKIP_IDS: ['updateUser'],
 }));
 
@@ -96,11 +98,13 @@ vi.mock('../../src/core/client.js', () => {
 
 describe('write tool registry', () => {
   beforeEach(() => {
+    mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
     mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
     vi.resetModules();
   });
 
   afterEach(() => {
+    mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
     mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
   });
 
@@ -121,7 +125,7 @@ describe('write tool registry', () => {
     });
 
     expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_write_createWidget']);
+    expect(registered).toEqual(['vrchat_write']);
   });
 
   it('skips tools in skip list and only registers non-GET operations', async () => {
@@ -145,7 +149,7 @@ describe('write tool registry', () => {
     });
 
     expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_write_createWidget']);
+    expect(registered).toEqual(['vrchat_write']);
   });
 
   it('can be disabled entirely', async () => {
@@ -181,7 +185,7 @@ describe('write tool registry', () => {
     });
 
     expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_write_createWidget']);
+    expect(registered).toEqual(['vrchat_write']);
   });
 
   it('skips operations that have curated replacements even when allowlisted', async () => {
@@ -228,7 +232,7 @@ describe('write tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    const response = await handlers.vrchat_write_createWidget?.({ body: {} });
+    const response = await handlers.vrchat_write?.({ operationId: 'createWidget', body: {} });
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'createWidget',
       params: {},
@@ -261,11 +265,14 @@ describe('write tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    const schema = metas.vrchat_write_createWidget?.inputSchema;
+    const schema = metas.vrchat_write?.inputSchema;
     expect(schema).toBeDefined();
-    expect(schema?.safeParse({}).success).toBe(true);
-    expect(schema?.safeParse({ body: { name: 'Widget' } }).success).toBe(true);
-    expect(schema?.safeParse({ body: 'raw' }).success).toBe(true);
+    expect(schema?.safeParse({}).success).toBe(false);
+    expect(schema?.safeParse({ operationId: 'createWidget' }).success).toBe(true);
+    expect(schema?.safeParse({ operationId: 'createWidget', body: { name: 'Widget' } }).success).toBe(
+      true
+    );
+    expect(schema?.safeParse({ operationId: 'createWidget', body: 'raw' }).success).toBe(true);
     expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);
   });
 });

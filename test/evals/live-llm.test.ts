@@ -139,13 +139,13 @@ describeLive('llm evals (live)', () => {
         const avatarNameContains = expectations.avatarName?.trim();
         cases.push({
           name: 'avatar get returns expected avatar',
-          tool: 'vrchat_read_getAvatar',
+          tool: 'vrchat_avatar_profile',
           args: { avatarId: expectations.avatarId },
           expectedFacts: avatarNameExact
-            ? [`data.name is "${avatarNameExact}".`]
+            ? [`avatar.name is "${avatarNameExact}".`]
             : avatarNameContains
-              ? [`data.name contains "${avatarNameContains}".`]
-              : [`data.id is "${expectations.avatarId}".`],
+              ? [`avatar.name contains "${avatarNameContains}".`]
+              : [`avatar.id is "${expectations.avatarId}".`],
           expectPass: true,
         });
       }

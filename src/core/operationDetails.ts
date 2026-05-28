@@ -1,17 +1,8 @@
 import { getSpecIndex, type OperationDef, type OperationParam } from './spec.js';
-import { readToolName, writeToolName } from '../utils/toolNames.js';
-import { getConfig } from '../config/index.js';
-import { getCuratedReadToolName, getCuratedWriteToolName } from './generatedToolOverrides.js';
-import { GENERATED_READ_SKIP_IDS, GENERATED_WRITE_SKIP_IDS } from './generatedToolSkips.js';
-import { getBlockedOperationReason } from './operationPolicy.js';
-
-type GeneratedToolStatus =
-  | 'available'
-  | 'blocked_by_policy'
-  | 'curated_replacement'
-  | 'hard_skipped'
-  | 'disabled_by_config'
-  | 'not_allowlisted';
+import {
+  getGeneratedOperationInfo,
+  type GeneratedToolStatus,
+} from './generatedOperations.js';
 
 interface SchemaDetails {
   schema?: unknown;
@@ -122,49 +113,12 @@ function buildRequestBodyDetails(input: {
   };
 }
 
-function getGeneratedToolInfo(op: OperationDef): {
-  generatedToolStatus: GeneratedToolStatus;
-  generatedToolName?: string;
-  curatedToolName?: string;
-  blockedReason?: string;
-} {
-  const isRead = op.method === 'GET';
-  const blockedReason = getBlockedOperationReason(op.operationId);
-  const curatedToolName = isRead
-    ? getCuratedReadToolName(op.operationId)
-    : getCuratedWriteToolName(op.operationId);
-  const skipIds = isRead ? GENERATED_READ_SKIP_IDS : GENERATED_WRITE_SKIP_IDS;
-  const generatedConfig = isRead ? getConfig().generatedReadTools : getConfig().generatedWriteTools;
-  const allowedIds = new Set(generatedConfig.operationIds);
-
-  if (blockedReason) {
-    return { generatedToolStatus: 'blocked_by_policy', curatedToolName, blockedReason };
-  }
-  if (curatedToolName) {
-    return { generatedToolStatus: 'curated_replacement', curatedToolName };
-  }
-  if (skipIds.includes(op.operationId)) {
-    return { generatedToolStatus: 'hard_skipped' };
-  }
-  if (!generatedConfig.enabled) {
-    return { generatedToolStatus: 'disabled_by_config' };
-  }
-  if (allowedIds.size > 0 && !allowedIds.has(op.operationId)) {
-    return { generatedToolStatus: 'not_allowlisted' };
-  }
-
-  return {
-    generatedToolStatus: 'available',
-    generatedToolName: isRead ? readToolName(op.operationId) : writeToolName(op.operationId),
-  };
-}
-
 export async function getOperationDetails(operationId: string): Promise<OperationDetails> {
   const index = await getSpecIndex();
   const op = index.operations.get(operationId);
   if (!op) throw new Error(`Unknown operationId: ${operationId}`);
   const rawOp = rawOperation(index.raw, op);
-  const generatedToolInfo = getGeneratedToolInfo(op);
+  const generatedToolInfo = getGeneratedOperationInfo(op);
 
   return {
     operationId,

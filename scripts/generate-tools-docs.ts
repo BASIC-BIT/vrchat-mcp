@@ -29,7 +29,7 @@ import { registerCuratedVrcxTools } from '../src/tools/curated/vrcx/index.js';
 import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
 import { registerSystemReadTools } from '../src/tools/read/system.js';
-import { readToolName, writeToolName } from '../src/utils/toolNames.js';
+import { toolName } from '../src/utils/toolNames.js';
 import {
   GeneratedReadToolInputSchema,
   GeneratedReadToolOutputSchema,
@@ -138,7 +138,7 @@ function buildGeneratedList(spec: any) {
           method: method.toUpperCase(),
           path: String(pathKey),
           description: toAscii(buildGeneratedToolDescription('read', operationId, op)),
-          toolName: readToolName(operationId),
+          toolName: toolName('vrchat.read'),
         });
       } else {
         if (writeSkip.has(operationId) || getCuratedWriteToolName(operationId)) continue;
@@ -147,7 +147,7 @@ function buildGeneratedList(spec: any) {
           method: method.toUpperCase(),
           path: String(pathKey),
           description: toAscii(buildGeneratedToolDescription('write', operationId, op)),
-          toolName: writeToolName(operationId),
+          toolName: toolName('vrchat.write'),
         });
       }
     }
@@ -241,29 +241,29 @@ async function main() {
   md += renderToolList(raw) || '- (none)\n';
   md += '\n';
 
-  md += '## Auto-generated read tools (GET operations)\n';
+  md += '## Auto-generated read router (GET operations)\n';
   md +=
-    'Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params`. Use `vrchat_operation_details` for exact per-operation parameter schemas.\n';
+    'Use `vrchat_read` with `operationId` plus OpenAPI path/query/header/cookie values under `params`. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation parameter schemas.\n';
   md += 'Generated read input schema:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedReadToolInputSchema), null, 2)}\n\`\`\`\n\n`;
   md +=
     'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of readOps) {
-    md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
+    md += `- \`${op.operationId}\` via \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
   md += '\n';
 
-  md += '## Auto-generated write tools (non-GET operations)\n';
+  md += '## Auto-generated write router (non-GET operations)\n';
   md +=
-    'Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params` and JSON payloads under `body`. Use `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.\n';
+    'Use `vrchat_write` with `operationId`, OpenAPI path/query/header/cookie values under `params`, and JSON payloads under `body`. Use `vrchat_operations` to discover operationIds and `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.\n';
   md += 'Generated write input schema:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolInputSchema), null, 2)}\n\`\`\`\n\n`;
   md +=
     'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
   md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of writeOps) {
-    md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
+    md += `- \`${op.operationId}\` via \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });

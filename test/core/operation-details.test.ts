@@ -59,7 +59,7 @@ describe('operation details', () => {
   it('reports generated availability and policy blocks', async () => {
     await expect(getOperationDetails('searchUsers')).resolves.toMatchObject({
       generatedToolStatus: 'available',
-      generatedToolName: 'vrchat_read_searchUsers',
+      generatedToolName: 'vrchat_read',
     });
 
     const blocked = await getOperationDetails('getGroupAnnouncements');

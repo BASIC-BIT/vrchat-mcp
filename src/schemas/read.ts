@@ -19,6 +19,7 @@ export const ReadOptionsSchema = z.object({
 
 export const GeneratedReadToolInputSchema = z
   .object({
+    operationId: z.string().min(1).describe('OpenAPI operationId.'),
     params: z.record(z.string(), z.unknown()).describe('OpenAPI params.').optional(),
   })
   .merge(ReadOptionsSchema)

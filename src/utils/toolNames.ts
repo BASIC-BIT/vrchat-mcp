@@ -5,11 +5,3 @@ function sanitize(name: string): string {
 export function toolName(name: string): string {
   return sanitize(name.replace(/\./g, '_'));
 }
-
-export function readToolName(operationId: string): string {
-  return sanitize(`vrchat_read_${operationId}`);
-}
-
-export function writeToolName(operationId: string): string {
-  return sanitize(`vrchat_write_${operationId}`);
-}

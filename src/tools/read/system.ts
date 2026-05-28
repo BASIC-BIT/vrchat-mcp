@@ -1,5 +1,6 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { listGeneratedOperations } from '../../core/generatedOperations.js';
 import { getOperationDetails } from '../../core/operationDetails.js';
 import { ReadOptionsSchema } from '../../schemas/read.js';
 import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
@@ -9,6 +10,39 @@ import { registerReadTool } from './common.js';
 
 const OperationDetailsInputSchema = z.object({
   operationId: z.string().describe('VRChat OpenAPI operationId.'),
+});
+
+const OperationsInputSchema = z.object({
+  kind: z.enum(['read', 'write']).describe('Operation kind.').optional(),
+  view: z.enum(['available', 'all']).describe('Show available generated ops or all ops.').optional(),
+  query: z.string().describe('Filter operationId, path, summary, or description.').optional(),
+  limit: z.number().int().min(1).max(500).describe('Max operations.').optional(),
+});
+
+const OperationSummarySchema = z.object({
+  operationId: z.string(),
+  kind: z.enum(['read', 'write']),
+  method: z.string(),
+  path: z.string(),
+  summary: z.string().optional(),
+  description: z.string().optional(),
+  generatedToolStatus: z.enum([
+    'available',
+    'blocked_by_policy',
+    'curated_replacement',
+    'hard_skipped',
+    'disabled_by_config',
+    'not_allowlisted',
+  ]),
+  generatedToolName: z.string().optional(),
+  curatedToolName: z.string().optional(),
+  blockedReason: z.string().optional(),
+});
+
+const OperationsOutputSchema = z.object({
+  total: z.number().int().min(0),
+  truncated: z.boolean(),
+  operations: z.array(OperationSummarySchema),
 });
 
 const OperationDetailsOutputSchema = z.object({
@@ -65,6 +99,30 @@ export function registerSystemReadTools(server: McpServer): void {
     operationId: 'getSystemTime',
     inputSchema: ReadOptionsSchema,
   });
+
+  server.registerTool(
+    toolName('vrchat.operations'),
+    {
+      description:
+        'List VRChat OpenAPI operationIds and generated-tool availability for vrchat_read/vrchat_write.',
+      inputSchema: OperationsInputSchema,
+      outputSchema: OperationsOutputSchema,
+      annotations: readOnlyToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = OperationsInputSchema.parse(args ?? {});
+        const result = await listGeneratedOperations(input);
+        return {
+          content: textContent(JSON.stringify(result, null, 2)),
+          structuredContent: result as unknown as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
 
   server.registerTool(
     toolName('vrchat.operation_details'),

@@ -65,6 +65,7 @@ describe('registerAllTools', () => {
       'vrchat_cache_invalidate',
       'vrchat_me',
       'vrchat_config_get',
+      'vrchat_operations',
       'vrchat_operation_details',
       'vrchat_system_time',
       'vrchat_auth_begin',
