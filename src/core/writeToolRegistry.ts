@@ -1,15 +1,15 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { getConfig } from '../config/index.js';
 import { getSpecIndex } from './spec.js';
 import { callOperation, CallError } from './client.js';
-import { buildParamsSchema, buildRequestBodySchema } from './operationSchemas.js';
 import { writeToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 import { annotationsForWriteMethod } from '../utils/toolAnnotations.js';
 import { getCuratedWriteToolName } from './generatedToolOverrides.js';
 import { buildGeneratedToolDescription } from './generatedToolDescriptions.js';
 import { GENERATED_WRITE_SKIP_IDS } from './generatedToolSkips.js';
+import { GeneratedWriteToolInputSchema } from '../schemas/write.js';
 
 export type WriteToolResponder = (
   result: {
@@ -45,28 +45,6 @@ function getWriteOperationInfo(
   return { operationId, op };
 }
 
-function buildGeneratedWriteToolInputSchema(input: {
-  operationId: string;
-  index: Awaited<ReturnType<typeof getSpecIndex>>;
-  componentsSchemas: Record<string, unknown> | undefined;
-  writeOptionsSchema: z.ZodObject<any>;
-}): z.ZodTypeAny {
-  const opDef = input.index.operations.get(input.operationId);
-  const paramsInfo = buildParamsSchema(opDef?.parameters ?? [], input.componentsSchemas);
-  const bodyInfo = buildRequestBodySchema(opDef, input.componentsSchemas);
-
-  const shape: Record<string, z.ZodTypeAny> = {};
-  if (paramsInfo.schema) {
-    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
-    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
-  }
-  if (bodyInfo.schema) {
-    const bodySchema = bodyInfo.schema.describe('OpenAPI request body.');
-    shape.body = bodyInfo.required ? bodySchema : bodySchema.optional();
-  }
-  return z.object(shape).merge(input.writeOptionsSchema).passthrough();
-}
-
 export async function registerGeneratedWriteTools(
   server: McpServer,
   options: {
@@ -84,10 +62,9 @@ export async function registerGeneratedWriteTools(
   const index = await getSpecIndex();
   const spec = index.raw as {
     paths?: Record<string, Record<string, unknown>>;
-    components?: { schemas?: Record<string, unknown> };
   } | null;
   const paths = spec?.paths ?? {};
-  const componentsSchemas = spec?.components?.schemas;
+  const inputSchema = GeneratedWriteToolInputSchema;
   let count = 0;
 
   for (const pathItem of Object.values(paths)) {
@@ -100,12 +77,6 @@ export async function registerGeneratedWriteTools(
       if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = writeToolName(operationId);
       const description = buildGeneratedToolDescription('write', operationId, op);
-      const inputSchema = buildGeneratedWriteToolInputSchema({
-        operationId,
-        index,
-        componentsSchemas,
-        writeOptionsSchema: options.writeOptionsSchema,
-      });
 
       server.registerTool(
         toolName,

@@ -12,8 +12,8 @@ vi.mock('../../src/core/writeToolRegistry.js', () => ({
 import { registerGeneratedTools } from '../../src/tools/generated.js';
 import { registerGeneratedReadTools } from '../../src/core/readToolRegistry.js';
 import { registerGeneratedWriteTools } from '../../src/core/writeToolRegistry.js';
-import { ReadOptionsSchema, ReadToolOutputSchema } from '../../src/schemas/read.js';
-import { WriteOptionsSchema, WriteToolOutputSchema } from '../../src/schemas/write.js';
+import { GeneratedReadToolOutputSchema, ReadOptionsSchema } from '../../src/schemas/read.js';
+import { GeneratedWriteToolOutputSchema, WriteOptionsSchema } from '../../src/schemas/write.js';
 import { readToolResponse } from '../../src/tools/read/common.js';
 import { writeToolResponse } from '../../src/tools/write/common.js';
 
@@ -25,13 +25,13 @@ describe('generated tools registration', () => {
     expect(registerGeneratedReadTools).toHaveBeenCalledTimes(1);
     const args = vi.mocked(registerGeneratedReadTools).mock.calls[0][1];
     expect(args.readOptionsSchema).toBe(ReadOptionsSchema);
-    expect(args.readOutputSchema).toBe(ReadToolOutputSchema);
+    expect(args.readOutputSchema).toBe(GeneratedReadToolOutputSchema);
     expect(args.respond).toBe(readToolResponse);
 
     expect(registerGeneratedWriteTools).toHaveBeenCalledTimes(1);
     const writeArgs = vi.mocked(registerGeneratedWriteTools).mock.calls[0][1];
     expect(writeArgs.writeOptionsSchema).toBe(WriteOptionsSchema);
-    expect(writeArgs.writeOutputSchema).toBe(WriteToolOutputSchema);
+    expect(writeArgs.writeOutputSchema).toBe(GeneratedWriteToolOutputSchema);
     expect(writeArgs.respond).toBe(writeToolResponse);
   });
 });

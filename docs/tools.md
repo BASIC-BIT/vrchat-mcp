@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-26T00:54:55.005Z
+Generated: 2026-05-27T23:04:03.757Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -3163,6 +3163,555 @@ Output schema:
     "truncated",
     "segments",
     "events"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_favorite_add
+Add a user, avatar, or world to a favorite group. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "avatar",
+        "friend",
+        "world"
+      ]
+    },
+    "targetId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "User/avatar/world ID to favorite."
+    },
+    "tags": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Favorite group tags, e.g. worlds1, avatars1, group_0."
+    }
+  },
+  "required": [
+    "type",
+    "targetId",
+    "tags"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string"
+    },
+    "favorite": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "favoriteRecordId": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "targetId": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "favoriteRecordId",
+            "type",
+            "targetId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {}
+  },
+  "required": [
+    "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_favorite_remove
+Remove a favorite by favorite record ID. Use vrchat_favorites to look up favoriteRecordId first. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "favoriteRecordId": {
+      "type": "string",
+      "description": "Favorite record ID, not the target user/avatar/world ID."
+    }
+  },
+  "required": [
+    "favoriteRecordId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string"
+    },
+    "favorite": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "favoriteRecordId": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "targetId": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "favoriteRecordId",
+            "type",
+            "targetId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {}
+  },
+  "required": [
+    "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_favorites
+Read favorites, favorite groups, limits, or favorited avatars with compact outputs (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "view": {
+      "default": "favorites",
+      "type": "string",
+      "enum": [
+        "favorites",
+        "groups",
+        "group",
+        "limits",
+        "avatars"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "avatar",
+        "friend",
+        "world"
+      ]
+    },
+    "tag": {
+      "type": "string"
+    },
+    "favoriteGroupType": {
+      "type": "string",
+      "enum": [
+        "avatar",
+        "friend",
+        "world"
+      ]
+    },
+    "favoriteGroupName": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string"
+    },
+    "featured": {
+      "type": "boolean"
+    },
+    "sort": {
+      "type": "string"
+    },
+    "order": {
+      "type": "string"
+    },
+    "notag": {
+      "type": "string"
+    },
+    "releaseStatus": {
+      "type": "string"
+    },
+    "maxUnityVersion": {
+      "type": "string"
+    },
+    "minUnityVersion": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "maxPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "view"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "view": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "page": {
+      "type": "object",
+      "properties": {
+        "pages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "offsetStart": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pages",
+        "items",
+        "pageSize",
+        "offsetStart",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "favorites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "favoriteRecordId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "favoriteRecordId",
+          "type",
+          "targetId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "favoriteGroupId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "favoriteGroupId",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "group": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "favoriteGroupId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "ownerId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "favoriteGroupId",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "limits": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "defaultMaxFavoriteGroups": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "defaultMaxFavoritesPerGroup": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "maxFavoriteGroups": {
+              "type": "object",
+              "properties": {
+                "avatar": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "friend": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "vrcPlusWorld": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "world": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "avatar",
+                "friend",
+                "vrcPlusWorld",
+                "world"
+              ],
+              "additionalProperties": {}
+            },
+            "maxFavoritesPerGroup": {
+              "type": "object",
+              "properties": {
+                "avatar": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "friend": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "vrcPlusWorld": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "world": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "avatar",
+                "friend",
+                "vrcPlusWorld",
+                "world"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "avatars": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "avatarId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "releaseStatus": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "avatarId",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "view"
   ],
   "additionalProperties": false
 }
@@ -9102,6 +9651,628 @@ Output schema:
 }
 ```
 
+### vrchat_group_roles
+List group roles or role templates with compact fields (read-only). (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "view": {
+      "default": "roles",
+      "type": "string",
+      "enum": [
+        "roles",
+        "templates"
+      ]
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "shortCode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "view"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "view": {
+      "type": "string"
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "totalRoles": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "*",
+                "group-announcement-manage",
+                "group-audit-view",
+                "group-bans-manage",
+                "group-calendar-manage",
+                "group-data-manage",
+                "group-default-role-manage",
+                "group-galleries-manage",
+                "group-instance-age-gated-create",
+                "group-instance-calendar-link",
+                "group-instance-join",
+                "group-instance-manage",
+                "group-instance-moderate",
+                "group-instance-open-create",
+                "group-instance-plus-create",
+                "group-instance-plus-portal",
+                "group-instance-plus-portal-unlocked",
+                "group-instance-public-create",
+                "group-instance-queue-priority",
+                "group-instance-restricted-create",
+                "group-invites-manage",
+                "group-members-manage",
+                "group-members-remove",
+                "group-members-viewall",
+                "group-roles-assign",
+                "group-roles-manage"
+              ]
+            }
+          },
+          "isManagementRole": {
+            "type": "boolean"
+          },
+          "isSelfAssignable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "roleId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "templates": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "basePermissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "*",
+                "group-announcement-manage",
+                "group-audit-view",
+                "group-bans-manage",
+                "group-calendar-manage",
+                "group-data-manage",
+                "group-default-role-manage",
+                "group-galleries-manage",
+                "group-instance-age-gated-create",
+                "group-instance-calendar-link",
+                "group-instance-join",
+                "group-instance-manage",
+                "group-instance-moderate",
+                "group-instance-open-create",
+                "group-instance-plus-create",
+                "group-instance-plus-portal",
+                "group-instance-plus-portal-unlocked",
+                "group-instance-public-create",
+                "group-instance-queue-priority",
+                "group-instance-restricted-create",
+                "group-invites-manage",
+                "group-members-manage",
+                "group-members-remove",
+                "group-members-viewall",
+                "group-roles-assign",
+                "group-roles-manage"
+              ]
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "basePermissions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "*",
+                    "group-announcement-manage",
+                    "group-audit-view",
+                    "group-bans-manage",
+                    "group-calendar-manage",
+                    "group-data-manage",
+                    "group-default-role-manage",
+                    "group-galleries-manage",
+                    "group-instance-age-gated-create",
+                    "group-instance-calendar-link",
+                    "group-instance-join",
+                    "group-instance-manage",
+                    "group-instance-moderate",
+                    "group-instance-open-create",
+                    "group-instance-plus-create",
+                    "group-instance-plus-portal",
+                    "group-instance-plus-portal-unlocked",
+                    "group-instance-public-create",
+                    "group-instance-queue-priority",
+                    "group-instance-restricted-create",
+                    "group-invites-manage",
+                    "group-members-manage",
+                    "group-members-remove",
+                    "group-members-viewall",
+                    "group-roles-assign",
+                    "group-roles-manage"
+                  ]
+                }
+              },
+              "isAddedOnJoin": {
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "view"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_roles_manage
+Assign/remove member roles or create/update/delete group role definitions. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "assign_member_role"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "shortCode": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "groupRoleId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "userId",
+        "groupRoleId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "remove_member_role"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "shortCode": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "groupRoleId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "userId",
+        "groupRoleId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "*",
+              "group-announcement-manage",
+              "group-audit-view",
+              "group-bans-manage",
+              "group-calendar-manage",
+              "group-data-manage",
+              "group-default-role-manage",
+              "group-galleries-manage",
+              "group-instance-age-gated-create",
+              "group-instance-calendar-link",
+              "group-instance-join",
+              "group-instance-manage",
+              "group-instance-moderate",
+              "group-instance-open-create",
+              "group-instance-plus-create",
+              "group-instance-plus-portal",
+              "group-instance-plus-portal-unlocked",
+              "group-instance-public-create",
+              "group-instance-queue-priority",
+              "group-instance-restricted-create",
+              "group-invites-manage",
+              "group-members-manage",
+              "group-members-remove",
+              "group-members-viewall",
+              "group-roles-assign",
+              "group-roles-manage"
+            ]
+          }
+        },
+        "isSelfAssignable": {
+          "type": "boolean"
+        },
+        "action": {
+          "type": "string",
+          "const": "create_role"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "shortCode": {
+          "type": "string"
+        },
+        "roleId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "*",
+              "group-announcement-manage",
+              "group-audit-view",
+              "group-bans-manage",
+              "group-calendar-manage",
+              "group-data-manage",
+              "group-default-role-manage",
+              "group-galleries-manage",
+              "group-instance-age-gated-create",
+              "group-instance-calendar-link",
+              "group-instance-join",
+              "group-instance-manage",
+              "group-instance-moderate",
+              "group-instance-open-create",
+              "group-instance-plus-create",
+              "group-instance-plus-portal",
+              "group-instance-plus-portal-unlocked",
+              "group-instance-public-create",
+              "group-instance-queue-priority",
+              "group-instance-restricted-create",
+              "group-invites-manage",
+              "group-members-manage",
+              "group-members-remove",
+              "group-members-viewall",
+              "group-roles-assign",
+              "group-roles-manage"
+            ]
+          }
+        },
+        "isSelfAssignable": {
+          "type": "boolean"
+        },
+        "action": {
+          "type": "string",
+          "const": "update_role"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "shortCode": {
+          "type": "string"
+        },
+        "groupRoleId": {
+          "type": "string"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "action",
+        "groupRoleId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "delete_role"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "shortCode": {
+          "type": "string"
+        },
+        "groupRoleId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "groupRoleId"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string"
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "groupRoleId": {
+      "type": "string"
+    },
+    "roleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "role": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "roleId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "permissions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "*",
+                  "group-announcement-manage",
+                  "group-audit-view",
+                  "group-bans-manage",
+                  "group-calendar-manage",
+                  "group-data-manage",
+                  "group-default-role-manage",
+                  "group-galleries-manage",
+                  "group-instance-age-gated-create",
+                  "group-instance-calendar-link",
+                  "group-instance-join",
+                  "group-instance-manage",
+                  "group-instance-moderate",
+                  "group-instance-open-create",
+                  "group-instance-plus-create",
+                  "group-instance-plus-portal",
+                  "group-instance-plus-portal-unlocked",
+                  "group-instance-public-create",
+                  "group-instance-queue-priority",
+                  "group-instance-restricted-create",
+                  "group-invites-manage",
+                  "group-members-manage",
+                  "group-members-remove",
+                  "group-members-viewall",
+                  "group-roles-assign",
+                  "group-roles-manage"
+                ]
+              }
+            },
+            "isManagementRole": {
+              "type": "boolean"
+            },
+            "isSelfAssignable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "roleId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "*",
+                "group-announcement-manage",
+                "group-audit-view",
+                "group-bans-manage",
+                "group-calendar-manage",
+                "group-data-manage",
+                "group-default-role-manage",
+                "group-galleries-manage",
+                "group-instance-age-gated-create",
+                "group-instance-calendar-link",
+                "group-instance-join",
+                "group-instance-manage",
+                "group-instance-moderate",
+                "group-instance-open-create",
+                "group-instance-plus-create",
+                "group-instance-plus-portal",
+                "group-instance-plus-portal-unlocked",
+                "group-instance-public-create",
+                "group-instance-queue-priority",
+                "group-instance-restricted-create",
+                "group-invites-manage",
+                "group-members-manage",
+                "group-members-remove",
+                "group-members-viewall",
+                "group-roles-assign",
+                "group-roles-manage"
+              ]
+            }
+          },
+          "isManagementRole": {
+            "type": "boolean"
+          },
+          "isSelfAssignable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "roleId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "action",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_groups_search
 Search groups by name or shortCode (read-only). (read-only)
 
@@ -14377,56 +15548,56 @@ Input schema:
       "items": {
         "type": "string"
       },
-      "description": "Optional response fields to keep."
+      "description": "Fields to keep."
     },
     "compact": {
       "type": "boolean",
-      "description": "Return a smaller response shape when supported."
+      "description": "Compact response."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991,
-      "description": "Maximum array items to return."
+      "description": "Max array items."
     },
     "includeMeta": {
       "type": "boolean",
-      "description": "Include request URL and pagination metadata."
+      "description": "Include URL/page metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable internal pagination."
+          "description": "Enable paging."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Items per page."
+          "description": "Items/page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum pages to fetch."
+          "description": "Max pages."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum total items to return."
+          "description": "Max items."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
           "maximum": 9007199254740991,
-          "description": "Starting item offset."
+          "description": "Start offset."
         }
       },
       "additionalProperties": false,
-      "description": "Pagination controls for generated read tools."
+      "description": "Paging controls."
     }
   },
   "additionalProperties": false
@@ -14488,6 +15659,143 @@ Output schema:
 }
 ```
 
+### vrchat_operation_details
+Look up exact OpenAPI params and request body schema for a VRChat operationId. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "operationId": {
+      "type": "string",
+      "description": "VRChat OpenAPI operationId."
+    }
+  },
+  "required": [
+    "operationId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "operationId": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "generatedToolStatus": {
+      "type": "string",
+      "enum": [
+        "available",
+        "blocked_by_policy",
+        "curated_replacement",
+        "hard_skipped",
+        "disabled_by_config",
+        "not_allowlisted"
+      ]
+    },
+    "generatedToolName": {
+      "type": "string"
+    },
+    "curatedToolName": {
+      "type": "string"
+    },
+    "blockedReason": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "in": {
+            "type": "string",
+            "enum": [
+              "path",
+              "query",
+              "header",
+              "cookie"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "schemaRef": {
+            "type": "string"
+          },
+          "schema": {}
+        },
+        "required": [
+          "name",
+          "in",
+          "required"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "requestBody": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "contentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "schemaRef": {
+          "type": "string"
+        },
+        "schema": {}
+      },
+      "required": [
+        "required"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "operationId",
+    "method",
+    "path",
+    "generatedToolStatus",
+    "parameters"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_system_time
 Get current system time (read-only). (read-only)
 
@@ -14503,56 +15811,56 @@ Input schema:
       "items": {
         "type": "string"
       },
-      "description": "Optional response fields to keep."
+      "description": "Fields to keep."
     },
     "compact": {
       "type": "boolean",
-      "description": "Return a smaller response shape when supported."
+      "description": "Compact response."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991,
-      "description": "Maximum array items to return."
+      "description": "Max array items."
     },
     "includeMeta": {
       "type": "boolean",
-      "description": "Include request URL and pagination metadata."
+      "description": "Include URL/page metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable internal pagination."
+          "description": "Enable paging."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Items per page."
+          "description": "Items/page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum pages to fetch."
+          "description": "Max pages."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum total items to return."
+          "description": "Max items."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
           "maximum": 9007199254740991,
-          "description": "Starting item offset."
+          "description": "Start offset."
         }
       },
       "additionalProperties": false,
-      "description": "Pagination controls for generated read tools."
+      "description": "Paging controls."
     }
   },
   "additionalProperties": false
@@ -14758,127 +16066,98 @@ Output schema:
 
 
 ## Auto-generated read tools (GET operations)
-Input schemas are derived per operation from OpenAPI parameters (path/query/header/cookie).
-Read options are shared across read tools:
+Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params`. Use `vrchat_operation_details` for exact per-operation parameter schemas.
+Generated read input schema:
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
+    "params": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {},
+      "description": "OpenAPI params."
+    },
     "fields": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Optional response fields to keep."
+      "description": "Fields to keep."
     },
     "compact": {
       "type": "boolean",
-      "description": "Return a smaller response shape when supported."
+      "description": "Compact response."
     },
     "maxArrayLength": {
       "type": "integer",
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991,
-      "description": "Maximum array items to return."
+      "description": "Max array items."
     },
     "includeMeta": {
       "type": "boolean",
-      "description": "Include request URL and pagination metadata."
+      "description": "Include URL/page metadata."
     },
     "page": {
       "type": "object",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable internal pagination."
+          "description": "Enable paging."
         },
         "size": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Items per page."
+          "description": "Items/page."
         },
         "maxPages": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum pages to fetch."
+          "description": "Max pages."
         },
         "maxItems": {
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991,
-          "description": "Maximum total items to return."
+          "description": "Max items."
         },
         "offset": {
           "type": "integer",
           "minimum": 0,
           "maximum": 9007199254740991,
-          "description": "Starting item offset."
+          "description": "Start offset."
         }
       },
       "additionalProperties": false,
-      "description": "Pagination controls for generated read tools."
+      "description": "Paging controls."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
-Output schema:
+Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "data": {},
-    "url": {
-      "type": "string"
-    },
-    "page": {
-      "type": "object",
-      "properties": {
-        "pages": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "items": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "pageSize": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "offsetStart": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "truncated": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "pages",
-        "items",
-        "pageSize",
-        "offsetStart",
-        "truncated"
-      ],
-      "additionalProperties": false
+    "data": {
+      "description": "VRChat API response data."
     }
   },
   "required": [
     "data"
   ],
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
@@ -14900,11 +16179,6 @@ Output schema:
 - `vrchat_read_getCurrentOnlineUsers` (GET /visits) - Read VRChat API: Current Online Users.
 - `vrchat_read_getCurrentSubscriptions` (GET /auth/user/subscription) - Read VRChat API: Get Current Subscriptions.
 - `vrchat_read_getEconomyAccount` (GET /user/{userId}/economy/account) - Read VRChat API: Get Economy Account.
-- `vrchat_read_getFavoritedAvatars` (GET /avatars/favorites) - Read VRChat API: List Favorited Avatars.
-- `vrchat_read_getFavoriteGroup` (GET /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Read VRChat API: Show Favorite Group.
-- `vrchat_read_getFavoriteGroups` (GET /favorite/groups) - Read VRChat API: List Favorite Groups.
-- `vrchat_read_getFavoriteLimits` (GET /auth/user/favoritelimits) - Read VRChat API: Get Favorite Limits.
-- `vrchat_read_getFavorites` (GET /favorites) - Read VRChat API: List Favorites.
 - `vrchat_read_getFeaturedCalendarEvents` (GET /calendar/featured) - Read VRChat API: List featured calendar events.
 - `vrchat_read_getFile` (GET /file/{fileId}) - Read VRChat API: Show File.
 - `vrchat_read_getFileAnalysis` (GET /analysis/{fileId}/{versionId}) - Read VRChat API: Get File Version Analysis.
@@ -14924,8 +16198,6 @@ Output schema:
 - `vrchat_read_getGroupMember` (GET /groups/{groupId}/members/{userId}) - Read VRChat API: Get Group Member.
 - `vrchat_read_getGroupPermissions` (GET /groups/{groupId}/permissions) - Read VRChat API: List Group Permissions.
 - `vrchat_read_getGroupRequests` (GET /groups/{groupId}/requests) - Read VRChat API: Get Group Join Requests.
-- `vrchat_read_getGroupRoles` (GET /groups/{groupId}/roles) - Read VRChat API: Get Group Roles.
-- `vrchat_read_getGroupRoleTemplates` (GET /groups/roleTemplates) - Read VRChat API: Get Group Role Templates.
 - `vrchat_read_getGroupTransferability` (GET /groups/{groupId}/transfer) - Read VRChat API: Get Group Transferability.
 - `vrchat_read_getHealth` (GET /health) - Read VRChat API: Check API Health.
 - `vrchat_read_getImpostorQueueStats` (GET /avatars/impostor/queue/stats) - Read VRChat API: Get Impostor Queue Stats.
@@ -15001,74 +16273,67 @@ Output schema:
 - `vrchat_read_verifyLoginPlace` (GET /auth/verifyLoginPlace) - Read VRChat API: Verify Login Place.
 
 ## Auto-generated write tools (non-GET operations)
-Input schemas are derived per operation from OpenAPI parameters and request bodies (set `writes.allow = false` for read-only mode).
-Write options are shared across write tools:
+Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params` and JSON payloads under `body`. Use `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.
+Generated write input schema:
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
+    "params": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {},
+      "description": "OpenAPI params."
+    },
+    "body": {
+      "description": "OpenAPI request body."
+    },
     "includeMeta": {
       "type": "boolean",
-      "description": "Include URL, status, and response headers."
+      "description": "Include URL/status/headers."
     },
     "options": {
       "type": "object",
       "properties": {
         "dryRun": {
           "type": "boolean",
-          "description": "Build the request without sending it."
+          "description": "Preview request."
         },
         "rawResponse": {
           "type": "boolean",
-          "description": "Return the raw response metadata when supported."
+          "description": "Return raw metadata."
         }
       },
       "additionalProperties": false,
-      "description": "Generated write call options."
+      "description": "Write options."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
-Output schema:
+Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "data": {},
-    "url": {
-      "type": "string"
-    },
-    "status": {
-      "type": "number"
-    },
-    "headers": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
-    "dryRun": {
-      "type": "boolean"
+    "data": {
+      "description": "VRChat API response data."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }
 ```
 
 - `vrchat_write_acceptFriendRequest` (PUT /auth/user/notifications/{notificationId}/accept) - Write VRChat API: Accept Friend Request.
 - `vrchat_write_acknowledgeNotificationV2` (POST /notifications/{notificationId}/see) - Write VRChat API: Acknowledge NotificationV2.
-- `vrchat_write_addFavorite` (POST /favorites) - Write VRChat API: Add Favorite.
 - `vrchat_write_addGroupGalleryImage` (POST /groups/{groupId}/galleries/{groupGalleryId}/images) - Write VRChat API: Add Group Gallery Image.
-- `vrchat_write_addGroupMemberRole` (PUT /groups/{groupId}/members/{userId}/roles/{groupRoleId}) - Write VRChat API: Add Role to GroupMember.
 - `vrchat_write_addGroupPost` (POST /groups/{groupId}/posts) - Write VRChat API: Create a post in a Group.
 - `vrchat_write_addTags` (POST /users/{userId}/addTags) - Write VRChat API: Add User Tags.
 - `vrchat_write_banGroupMember` (POST /groups/{groupId}/bans) - Write VRChat API: Ban Group Member.
@@ -15081,19 +16346,15 @@ Output schema:
 - `vrchat_write_clearNotifications` (PUT /auth/user/notifications/clear) - Write VRChat API: Clear All Notifications.
 - `vrchat_write_closeInstance` (DELETE /instances/{worldId}:{instanceId}) - Write VRChat API: Close Instance.
 - `vrchat_write_consumeOwnInventoryItem` (PUT /inventory/{inventoryItemId}/consume) - Write VRChat API: Consume Own Inventory Item.
-- `vrchat_write_createAvatar` (POST /avatars) - Write VRChat API: Create Avatar.
 - `vrchat_write_createFile` (POST /file) - Write VRChat API: Create File.
 - `vrchat_write_createFileVersion` (POST /file/{fileId}) - Write VRChat API: Create File Version.
 - `vrchat_write_createGlobalAvatarModeration` (POST /auth/user/avatarmoderations) - Write VRChat API: Create Global Avatar Moderation.
 - `vrchat_write_createGroup` (POST /groups) - Write VRChat API: Create Group.
 - `vrchat_write_createGroupGallery` (POST /groups/{groupId}/galleries) - Write VRChat API: Create Group Gallery.
-- `vrchat_write_createGroupRole` (POST /groups/{groupId}/roles) - Write VRChat API: Create GroupRole.
 - `vrchat_write_createProp` (POST /props) - Write VRChat API: Create Prop.
-- `vrchat_write_createWorld` (POST /worlds) - Write VRChat API: Create World.
 - `vrchat_write_declineGroupInvite` (PUT /groups/{groupId}/invites) - Write VRChat API: Decline Invite from Group.
 - `vrchat_write_deleteAllNotificationV2s` (DELETE /notifications) - Write VRChat API: Delete All NotificationV2s.
 - `vrchat_write_deleteAllUserPersistenceData` (DELETE /users/{userId}/persist) - Write VRChat API: Delete All User Persistence Data.
-- `vrchat_write_deleteAvatar` (DELETE /avatars/{avatarId}) - Write VRChat API: Delete Avatar.
 - `vrchat_write_deleteFile` (DELETE /file/{fileId}) - Write VRChat API: Delete File.
 - `vrchat_write_deleteFileVersion` (DELETE /file/{fileId}/{versionId}) - Write VRChat API: Delete File Version.
 - `vrchat_write_deleteFriendRequest` (DELETE /user/{userId}/friendRequest) - Write VRChat API: Delete Friend Request.
@@ -15103,7 +16364,6 @@ Output schema:
 - `vrchat_write_deleteGroupGalleryImage` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Write VRChat API: Delete Group Gallery Image.
 - `vrchat_write_deleteGroupInvite` (DELETE /groups/{groupId}/invites/{userId}) - Write VRChat API: Delete User Invite.
 - `vrchat_write_deleteGroupPost` (DELETE /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Delete a Group post.
-- `vrchat_write_deleteGroupRole` (DELETE /groups/{groupId}/roles/{groupRoleId}) - Write VRChat API: Delete Group Role.
 - `vrchat_write_deleteImpostor` (DELETE /avatars/{avatarId}/impostor) - Write VRChat API: Delete generated Impostor.
 - `vrchat_write_deleteModerationReport` (DELETE /moderationReports/{moderationReportId}) - Write VRChat API: Delete Moderation Report.
 - `vrchat_write_deleteNotification` (PUT /auth/user/notifications/{notificationId}/hide) - Write VRChat API: Delete Notification.
@@ -15113,7 +16373,6 @@ Output schema:
 - `vrchat_write_deleteProp` (DELETE /props/{propId}) - Write VRChat API: Delete Prop.
 - `vrchat_write_deleteUser` (PUT /users/{userId}/delete) - Write VRChat API: Delete User.
 - `vrchat_write_deleteUserPersistence` (DELETE /users/{userId}/{worldId}/persist) - Write VRChat API: Delete User Persistence.
-- `vrchat_write_deleteWorld` (DELETE /worlds/{worldId}) - Write VRChat API: Delete World.
 - `vrchat_write_disable2FA` (DELETE /auth/twofactorauth) - Write VRChat API: Disable 2FA.
 - `vrchat_write_editPrint` (POST /prints/{printId}) - Write VRChat API: Edit Print.
 - `vrchat_write_enable2FA` (POST /auth/twofactorauth/totp/pending) - Write VRChat API: Enable time-based 2FA codes.
@@ -15127,11 +16386,8 @@ Output schema:
 - `vrchat_write_markNotificationAsRead` (PUT /auth/user/notifications/{notificationId}/see) - Write VRChat API: Mark Notification As Read.
 - `vrchat_write_moderateUser` (POST /auth/user/playermoderations) - Write VRChat API: Moderate User.
 - `vrchat_write_publishProp` (PUT /props/{propId}/publish) - Write VRChat API: Publish Prop.
-- `vrchat_write_publishWorld` (PUT /worlds/{worldId}/publish) - Write VRChat API: Publish World.
 - `vrchat_write_purchaseProductListing` (POST /economy/purchase/listing) - Write VRChat API: Purchase Product Listing.
 - `vrchat_write_registerUserAccount` (POST /auth/register) - Write VRChat API: Register User Account.
-- `vrchat_write_removeFavorite` (DELETE /favorites/{favoriteId}) - Write VRChat API: Remove Favorite.
-- `vrchat_write_removeGroupMemberRole` (DELETE /groups/{groupId}/members/{userId}/roles/{groupRoleId}) - Write VRChat API: Remove Role from GroupMember.
 - `vrchat_write_removeTags` (POST /users/{userId}/removeTags) - Write VRChat API: Remove User Tags.
 - `vrchat_write_replyNotificationV2` (POST /notifications/{notificationId}/reply) - Write VRChat API: Reply NotificationV2.
 - `vrchat_write_requestInvite` (POST /requestInvite/{userId}) - Write VRChat API: Request Invite.
@@ -15153,9 +16409,7 @@ Output schema:
 - `vrchat_write_unfriend` (DELETE /auth/user/friends/{userId}) - Write VRChat API: Unfriend.
 - `vrchat_write_unmoderateUser` (PUT /auth/user/unplayermoderate) - Write VRChat API: Unmoderate User.
 - `vrchat_write_unpublishProp` (DELETE /props/{propId}/publish) - Write VRChat API: Unpublish Prop.
-- `vrchat_write_unpublishWorld` (DELETE /worlds/{worldId}/publish) - Write VRChat API: Unpublish World.
 - `vrchat_write_updateAssetReviewNotes` (PUT /assetReview/{assetReviewId}/notes) - Write VRChat API: Update Asset Review Notes.
-- `vrchat_write_updateAvatar` (PUT /avatars/{avatarId}) - Write VRChat API: Update Avatar.
 - `vrchat_write_updateBadge` (PUT /users/{userId}/badges/{badgeId}) - Write VRChat API: Update User Badge.
 - `vrchat_write_updateFavoriteGroup` (PUT /favorite/group/{favoriteGroupType}/{favoriteGroupName}/{userId}) - Write VRChat API: Update Favorite Group.
 - `vrchat_write_updateGroup` (PUT /groups/{groupId}) - Write VRChat API: Update Group.
@@ -15163,13 +16417,11 @@ Output schema:
 - `vrchat_write_updateGroupMember` (PUT /groups/{groupId}/members/{userId}) - Write VRChat API: Update Group Member.
 - `vrchat_write_updateGroupPost` (PUT /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Edits a Group post.
 - `vrchat_write_updateGroupRepresentation` (PUT /groups/{groupId}/representation) - Write VRChat API: Update Group Representation.
-- `vrchat_write_updateGroupRole` (PUT /groups/{groupId}/roles/{groupRoleId}) - Write VRChat API: Update Group Role.
 - `vrchat_write_updateInviteMessage` (PUT /message/{userId}/{messageType}/{slot}) - Write VRChat API: Update Invite Message.
 - `vrchat_write_updateOwnInventoryItem` (PUT /inventory/{inventoryItemId}) - Write VRChat API: Update Own Inventory Item.
 - `vrchat_write_updateProp` (PUT /props/{propId}) - Write VRChat API: Update Prop.
 - `vrchat_write_updateTiliaTos` (PUT /user/{userId}/tilia/tos) - Write VRChat API: Update Tilia TOS Agreement Status.
 - `vrchat_write_updateUserNote` (POST /userNotes) - Write VRChat API: Update User Note.
-- `vrchat_write_updateWorld` (PUT /worlds/{worldId}) - Write VRChat API: Update World.
 - `vrchat_write_uploadGalleryImage` (POST /gallery) - Write VRChat API: Upload gallery image.
 - `vrchat_write_uploadIcon` (POST /icon) - Write VRChat API: Upload icon.
 - `vrchat_write_uploadImage` (POST /file/image) - Write VRChat API: Upload gallery image, icon, emoji or sticker.

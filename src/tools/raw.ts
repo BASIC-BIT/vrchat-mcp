@@ -1,16 +1,11 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { callOperation, CallError, type CallInput } from '../core/client.js';
+import { getBlockedOperationReason } from '../core/operationPolicy.js';
 import { CallInputSchema } from '../schemas/call.js';
 import { writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
-
-const RAW_BLOCKED_OPERATION_IDS = new Set([
-  'getGroupAnnouncements',
-  'createGroupAnnouncement',
-  'deleteGroupAnnouncement',
-]);
 
 export function registerRawTools(server: McpServer): void {
   server.registerTool(
@@ -28,9 +23,10 @@ export function registerRawTools(server: McpServer): void {
       annotations: writeToolAnnotations,
     },
     async (args: CallInput) => {
-      if (RAW_BLOCKED_OPERATION_IDS.has(args.operationId)) {
+      const blockedReason = getBlockedOperationReason(args.operationId);
+      if (blockedReason) {
         return toolError(
-          `Operation ${args.operationId} is disabled: group announcement endpoints are deprecated and unsafe.`
+          `Operation ${args.operationId} is disabled: ${blockedReason}`
         );
       }
 

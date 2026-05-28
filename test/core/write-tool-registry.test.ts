@@ -239,7 +239,7 @@ describe('write tool registry', () => {
     expect(response?.content[0]?.text).toBe('boom');
   });
 
-  it('marks required body as required in the schema', async () => {
+  it('uses compact body schema and leaves required bodies to runtime validation', async () => {
     mockConfig.generatedWriteTools = { enabled: true, operationIds: ['createWidget'] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
     const metas: Record<
@@ -263,7 +263,9 @@ describe('write tool registry', () => {
 
     const schema = metas.vrchat_write_createWidget?.inputSchema;
     expect(schema).toBeDefined();
-    expect(schema?.safeParse({}).success).toBe(false);
+    expect(schema?.safeParse({}).success).toBe(true);
     expect(schema?.safeParse({ body: { name: 'Widget' } }).success).toBe(true);
+    expect(schema?.safeParse({ body: 'raw' }).success).toBe(true);
+    expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);
   });
 });

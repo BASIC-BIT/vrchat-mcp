@@ -37,7 +37,7 @@ describe('raw tool', () => {
     expect(result).toMatchObject({ isError: true });
   });
 
-  it('blocks deprecated group announcement operationIds', async () => {
+  it('blocks policy-disabled operationIds before raw calls', async () => {
     const server = new FakeServer();
     registerRawTools(server as unknown as McpServer);
     const tool = server.tools.find((entry) => entry.name === 'vrchat_call');
@@ -47,6 +47,8 @@ describe('raw tool', () => {
       'getGroupAnnouncements',
       'createGroupAnnouncement',
       'deleteGroupAnnouncement',
+      'createAvatar',
+      'updateWorld',
     ];
     for (const operationId of blockedOperationIds) {
       const result = await Promise.resolve(tool!.handler({ operationId }));

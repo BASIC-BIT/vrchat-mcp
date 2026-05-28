@@ -5,6 +5,8 @@ import path from 'node:path';
 const CCN_THRESHOLD = 20;
 const LENGTH_THRESHOLD = 200;
 const PARAM_THRESHOLD = 8;
+const BUILD_COMMAND = process.platform === 'win32' ? 'cmd.exe' : 'npm';
+const BUILD_ARGS = process.platform === 'win32' ? ['/d', '/s', '/c', 'npm run build'] : ['run', 'build'];
 
 function runOrThrow(command: string, args: string[], cwd?: string): void {
   const result = spawnSync(command, args, {
@@ -28,7 +30,7 @@ function runOrThrow(command: string, args: string[], cwd?: string): void {
 function ensureDistBuilt(): void {
   const distMarker = path.join('dist', 'src', 'index.js');
   if (existsSync(distMarker)) return;
-  runOrThrow('npm', ['run', 'build']);
+  runOrThrow(BUILD_COMMAND, BUILD_ARGS);
 }
 
 function main(): void {

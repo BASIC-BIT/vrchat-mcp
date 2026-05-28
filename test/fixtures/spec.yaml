@@ -583,6 +583,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/World'
+    post:
+      operationId: createWorld
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/World'
   /worlds/active:
     get:
       operationId: getActiveWorlds

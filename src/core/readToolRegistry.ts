@@ -1,16 +1,16 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { getConfig } from '../config/index.js';
 import { getSpecIndex } from './spec.js';
 import { callReadOperation } from './readTools.js';
 import { CallError } from './client.js';
-import { buildParamsSchema } from './operationSchemas.js';
 import { readToolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
 import { readOnlyToolAnnotations } from '../utils/toolAnnotations.js';
 import { getCuratedReadToolName } from './generatedToolOverrides.js';
 import { buildGeneratedToolDescription } from './generatedToolDescriptions.js';
 import { GENERATED_READ_SKIP_IDS } from './generatedToolSkips.js';
+import { GeneratedReadToolInputSchema } from '../schemas/read.js';
 
 export type ReadToolResponder = (
   result: { data: unknown; url?: string },
@@ -19,26 +19,6 @@ export type ReadToolResponder = (
   content: { type: 'text'; text: string }[];
   structuredContent: Record<string, unknown>;
 };
-
-function buildGeneratedReadToolInputSchema(input: {
-  operationId: string;
-  index: Awaited<ReturnType<typeof getSpecIndex>>;
-  componentsSchemas: Record<string, unknown> | undefined;
-  readOptionsSchema: z.ZodObject<any>;
-}): z.ZodTypeAny {
-  const opDef = input.index.operations.get(input.operationId);
-  const paramsInfo = buildParamsSchema(opDef?.parameters ?? [], input.componentsSchemas, {
-    aliasNumberForN: true,
-  });
-
-  const shape: Record<string, z.ZodTypeAny> = {};
-  if (paramsInfo.schema) {
-    const paramsSchema = paramsInfo.schema.describe('OpenAPI path/query/header/cookie parameters.');
-    shape.params = paramsInfo.required ? paramsSchema : paramsSchema.optional();
-  }
-
-  return z.object(shape).merge(input.readOptionsSchema).passthrough();
-}
 
 export async function registerGeneratedReadTools(
   server: McpServer,
@@ -57,7 +37,7 @@ export async function registerGeneratedReadTools(
   const index = await getSpecIndex();
   const spec = index.raw ?? {};
   const paths = spec.paths ?? {};
-  const componentsSchemas = spec?.components?.schemas;
+  const inputSchema = GeneratedReadToolInputSchema;
   let count = 0;
 
   for (const pathItem of Object.values(paths)) {
@@ -70,12 +50,6 @@ export async function registerGeneratedReadTools(
       if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
       const toolName = readToolName(operationId);
       const description = buildGeneratedToolDescription('read', operationId, op);
-      const inputSchema = buildGeneratedReadToolInputSchema({
-        operationId,
-        index,
-        componentsSchemas,
-        readOptionsSchema: options.readOptionsSchema,
-      });
 
       server.registerTool(
         toolName,
