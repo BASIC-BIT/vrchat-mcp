@@ -13,6 +13,7 @@ export const WriteOptionsSchema = z.object({
 
 export const GeneratedWriteToolInputSchema = z
   .object({
+    operationId: z.string().min(1).describe('OpenAPI operationId.'),
     params: z.record(z.string(), z.unknown()).describe('OpenAPI params.').optional(),
     body: z.unknown().describe('OpenAPI request body.').optional(),
   })

@@ -5,7 +5,7 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 ## How to use tools
 
 - Prefer **curated tools** first. They include search and summary flows for common VRChat tasks.
-- Auto-generated read tools (`vrchat_read_<operationId>`) and write tools (`vrchat_write_<operationId>`) are enabled by default for API coverage. Generated tools omit hard-skipped operations and operations already covered by curated tools, so the default surface stays focused on usable API gaps. Use `generatedReadTools.operationIds` or `generatedWriteTools.operationIds` only when you want to narrow the remaining generated surface.
+- Auto-generated API-gap coverage is exposed through `vrchat_read`, `vrchat_write`, and `vrchat_delete`. Pass an OpenAPI `operationId`; use `vrchat_operations` to list available operation IDs and `vrchat_operation_details` for exact params/body schemas. Generated routers omit hard-skipped operations and operations already covered by curated tools. Use `generatedReadTools.operationIds` or `generatedWriteTools.operationIds` only when you want to narrow the remaining generated surface.
 - Curated write tools are enabled by default for local full-capability use. Set `writes.allow = false` (or `VRCHAT_MCP_ALLOW_WRITES=false`) for read-only mode.
 - The MCP client or agent harness is expected to control approval/denial for account-changing tool calls.
 - Group write actions are restricted by `groups.allowlist` when set.

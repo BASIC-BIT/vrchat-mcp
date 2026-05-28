@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { z } from 'zod';
 const mockConfig = {
   generatedReadTools: { enabled: true, operationIds: [] as string[] },
+  generatedWriteTools: { enabled: true, operationIds: [] as string[] },
   logging: { level: 'info' },
 };
 
 vi.mock('../../src/core/generatedToolSkips.js', () => ({
   GENERATED_READ_SKIP_IDS: ['getHardSkipped'],
+  GENERATED_WRITE_SKIP_IDS: [],
 }));
 
 vi.mock('../../src/config/index.js', () => ({
@@ -114,11 +116,13 @@ vi.mock('../../src/core/readTools.js', () => ({
 describe('read tool registry', () => {
   beforeEach(() => {
     mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
     vi.resetModules();
   });
 
   afterEach(() => {
     mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
   });
 
   it('skips tools in skip list and only registers GET', async () => {
@@ -137,8 +141,8 @@ describe('read tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    expect(count).toBe(2);
-    expect(registered).toEqual(['vrchat_read_getWidget', 'vrchat_read_getWidgetUser']);
+    expect(count).toBe(1);
+    expect(registered).toEqual(['vrchat_read']);
   });
 
   it('uses compact params schema and leaves required params to runtime validation', async () => {
@@ -162,11 +166,16 @@ describe('read tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    const schema = metas.vrchat_read_getWidgetUser?.inputSchema;
+    const schema = metas.vrchat_read?.inputSchema;
     expect(schema).toBeDefined();
-    expect(schema?.safeParse({}).success).toBe(true);
-    expect(schema?.safeParse({ params: { userId: 'usr_123' } }).success).toBe(true);
-    expect(schema?.safeParse({ params: { unknown: 1 } }).success).toBe(true);
+    expect(schema?.safeParse({}).success).toBe(false);
+    expect(schema?.safeParse({ operationId: 'getWidgetUser' }).success).toBe(true);
+    expect(
+      schema?.safeParse({ operationId: 'getWidgetUser', params: { userId: 'usr_123' } }).success
+    ).toBe(true);
+    expect(
+      schema?.safeParse({ operationId: 'getWidgetUser', params: { unknown: 1 } }).success
+    ).toBe(true);
     expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);
   });
 
@@ -203,7 +212,7 @@ describe('read tool registry', () => {
     });
 
     expect(count).toBe(1);
-    expect(registered).toEqual(['vrchat_read_getWidgetUser']);
+    expect(registered).toEqual(['vrchat_read']);
   });
 
   it('skips operations that have curated replacements even when allowlisted', async () => {
@@ -244,7 +253,7 @@ describe('read tool registry', () => {
       respond: () => ({ content: [], structuredContent: {} }),
     });
 
-    const response = await handlers.vrchat_read_getWidget?.({ params: {} });
+    const response = await handlers.vrchat_read?.({ operationId: 'getWidget', params: {} });
     expect(callReadOperation).toHaveBeenCalledWith(
       'getWidget',
       {},

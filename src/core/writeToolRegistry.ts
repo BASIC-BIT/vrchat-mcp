@@ -1,14 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { z } from 'zod';
 import { getConfig } from '../config/index.js';
-import { getSpecIndex } from './spec.js';
 import { callOperation, CallError } from './client.js';
-import { writeToolName } from '../utils/toolNames.js';
+import { toolName } from '../utils/toolNames.js';
 import { toolError } from '../utils/toolResponses.js';
-import { annotationsForWriteMethod } from '../utils/toolAnnotations.js';
-import { getCuratedWriteToolName } from './generatedToolOverrides.js';
-import { buildGeneratedToolDescription } from './generatedToolDescriptions.js';
-import { GENERATED_WRITE_SKIP_IDS } from './generatedToolSkips.js';
+import { destructiveToolAnnotations, writeToolAnnotations } from '../utils/toolAnnotations.js';
+import { getAvailableGeneratedOperationIds } from './generatedOperations.js';
 import { GeneratedWriteToolInputSchema } from '../schemas/write.js';
 
 export type WriteToolResponder = (
@@ -25,24 +22,54 @@ export type WriteToolResponder = (
   structuredContent: Record<string, unknown>;
 };
 
-const WRITE_METHODS = new Set(['post', 'put', 'patch', 'delete']);
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function getWriteOperationInfo(
-  method: string,
-  opValue: unknown,
-  skipOperationIds: Set<string>
-): { operationId: string; op: { summary?: unknown; description?: unknown } } | null {
-  if (!WRITE_METHODS.has(method)) return null;
-  if (!isPlainObject(opValue)) return null;
-  const op = opValue as { operationId?: unknown; summary?: unknown; description?: unknown };
-  const operationId = typeof op.operationId === 'string' ? op.operationId : undefined;
-  if (!operationId) return null;
-  if (skipOperationIds.has(operationId)) return null;
-  return { operationId, op };
+function registerGeneratedWriteRouter(input: {
+  server: McpServer;
+  toolNameValue: string;
+  description: string;
+  availableOperationIds: Set<string>;
+  outputSchema: z.ZodTypeAny;
+  respond: WriteToolResponder;
+  destructive: boolean;
+}): void {
+  const inputSchema = GeneratedWriteToolInputSchema;
+  input.server.registerTool(
+    input.toolNameValue,
+    {
+      description: input.description,
+      inputSchema,
+      outputSchema: input.outputSchema,
+      annotations: input.destructive ? destructiveToolAnnotations : writeToolAnnotations,
+    },
+    async (args: unknown) => {
+      try {
+        const {
+          operationId,
+          params = {},
+          body,
+          options: callOptions,
+          includeMeta,
+        } = inputSchema.parse(args ?? {});
+        if (!input.availableOperationIds.has(operationId)) {
+          return toolError(
+            `Generated operation ${operationId} is not available through ${input.toolNameValue}. Use vrchat_operation_details for status.`
+          );
+        }
+        const result = await callOperation({
+          operationId,
+          params,
+          body,
+          options: callOptions,
+        });
+        return input.respond(result, includeMeta);
+      } catch (err) {
+        if (err instanceof CallError && err.payload) {
+          return toolError(err.message, err.payload);
+        }
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
 }
 
 export async function registerGeneratedWriteTools(
@@ -55,64 +82,36 @@ export async function registerGeneratedWriteTools(
 ): Promise<number> {
   const config = getConfig();
   if (!config.generatedWriteTools.enabled) return 0;
-  const skipOperationIds = new Set(GENERATED_WRITE_SKIP_IDS);
-  const allowedOperationIds = new Set(config.generatedWriteTools.operationIds);
-  const hasAllowlist = allowedOperationIds.size > 0;
-
-  const index = await getSpecIndex();
-  const spec = index.raw as {
-    paths?: Record<string, Record<string, unknown>>;
-  } | null;
-  const paths = spec?.paths ?? {};
-  const inputSchema = GeneratedWriteToolInputSchema;
+  const availableWriteOperationIds = await getAvailableGeneratedOperationIds('write');
+  const availableDeleteOperationIds = await getAvailableGeneratedOperationIds('delete');
   let count = 0;
 
-  for (const pathItem of Object.values(paths)) {
-    if (!isPlainObject(pathItem)) continue;
-    for (const [method, opValue] of Object.entries(pathItem)) {
-      const info = getWriteOperationInfo(method, opValue, skipOperationIds);
-      if (!info) continue;
-      const { operationId, op } = info;
-      if (getCuratedWriteToolName(operationId)) continue;
-      if (hasAllowlist && !allowedOperationIds.has(operationId)) continue;
-      const toolName = writeToolName(operationId);
-      const description = buildGeneratedToolDescription('write', operationId, op);
+  if (availableWriteOperationIds.size > 0) {
+    registerGeneratedWriteRouter({
+      server,
+      toolNameValue: toolName('vrchat.write'),
+      description:
+        'Call an available generated VRChat POST/PUT/PATCH operation by operationId. Use vrchat_operations and vrchat_operation_details to discover params/body.',
+      availableOperationIds: availableWriteOperationIds,
+      outputSchema: options.writeOutputSchema,
+      respond: options.respond,
+      destructive: false,
+    });
+    count += 1;
+  }
 
-      server.registerTool(
-        toolName,
-        {
-          description,
-          inputSchema,
-          outputSchema: options.writeOutputSchema,
-          annotations: annotationsForWriteMethod(method),
-        },
-        async (args: unknown) => {
-          try {
-            const input = (args ?? {}) as {
-              params?: Record<string, unknown>;
-              body?: unknown;
-              options?: { dryRun?: boolean; rawResponse?: boolean };
-              includeMeta?: boolean;
-            };
-            const { params = {}, body, options: callOptions, includeMeta } = input;
-            const result = await callOperation({
-              operationId,
-              params,
-              body,
-              options: callOptions,
-            });
-            return options.respond(result, includeMeta);
-          } catch (err) {
-            if (err instanceof CallError && err.payload) {
-              return toolError(err.message, err.payload);
-            }
-            const message = err instanceof Error ? err.message : 'Unknown error';
-            return toolError(message);
-          }
-        }
-      );
-      count += 1;
-    }
+  if (availableDeleteOperationIds.size > 0) {
+    registerGeneratedWriteRouter({
+      server,
+      toolNameValue: toolName('vrchat.delete'),
+      description:
+        'Call an available generated VRChat DELETE operation by operationId. Use vrchat_operations and vrchat_operation_details to discover params/body.',
+      availableOperationIds: availableDeleteOperationIds,
+      outputSchema: options.writeOutputSchema,
+      respond: options.respond,
+      destructive: true,
+    });
+    count += 1;
   }
 
   return count;

@@ -31,7 +31,12 @@ describe('read tool registration modules', () => {
     registerSystemReadTools(cast);
 
     const names = server.tools.map((tool) => tool.name);
-    const required = ['vrchat_config_get', 'vrchat_operation_details', 'vrchat_system_time'];
+    const required = [
+      'vrchat_config_get',
+      'vrchat_operations',
+      'vrchat_operation_details',
+      'vrchat_system_time',
+    ];
 
     for (const name of required) {
       expect(names).toContain(name);
@@ -54,5 +59,22 @@ describe('read tool registration modules', () => {
     expect(response.structuredContent?.parameters).toEqual([
       expect.objectContaining({ name: 'userId', in: 'path', required: true }),
     ]);
+  });
+
+  it('lists generated operation availability from the support tool', async () => {
+    const server = new FakeServer();
+    registerSystemReadTools(server as unknown as McpServer);
+
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_operations');
+    expect(tool).toBeDefined();
+
+    const response = (await Promise.resolve(
+      tool!.handler({ kind: 'read', query: 'searchUsers' })
+    )) as {
+      structuredContent?: { total?: number; operations?: { operationId?: string }[] };
+    };
+
+    expect(response.structuredContent?.total).toBe(1);
+    expect(response.structuredContent?.operations?.[0]?.operationId).toBe('searchUsers');
   });
 });
