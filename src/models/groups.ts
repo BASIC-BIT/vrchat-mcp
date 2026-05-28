@@ -94,6 +94,83 @@ export const GroupMembersOutputSchema = z.object({
   members: z.array(GroupMemberSchema).optional(),
 });
 
+export const GroupRoleSummarySchema = z.object({
+  roleId: schemas.GroupRoleID,
+  name: z.string().optional(),
+  description: z.string().optional(),
+  order: z.number().int().optional(),
+  permissions: z.array(schemas.GroupPermissions).optional(),
+  isManagementRole: z.boolean().optional(),
+  isSelfAssignable: z.boolean().optional(),
+});
+
+export const GroupRolesInputSchema = z.object({
+  view: z.enum(['roles', 'templates']).default('roles'),
+  groupId: schemas.GroupID.optional(),
+  shortCode: z.string().optional(),
+});
+
+export const GroupRolesOutputSchema = z.object({
+  view: z.string(),
+  groupId: schemas.GroupID.optional(),
+  totalRoles: z.number().int().min(0).optional(),
+  roles: z.array(GroupRoleSummarySchema).optional(),
+  templates: z.record(z.string(), schemas.GroupRoleTemplateValues.partial()).optional(),
+});
+
+const GroupRoleBodySchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  permissions: z.array(schemas.GroupPermissions).optional(),
+  isSelfAssignable: z.boolean().optional(),
+});
+
+export const GroupRolesManageInputSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('assign_member_role'),
+    groupId: schemas.GroupID.optional(),
+    shortCode: z.string().optional(),
+    userId: schemas.UserID,
+    groupRoleId: schemas.GroupRoleID,
+  }),
+  z.object({
+    action: z.literal('remove_member_role'),
+    groupId: schemas.GroupID.optional(),
+    shortCode: z.string().optional(),
+    userId: schemas.UserID,
+    groupRoleId: schemas.GroupRoleID,
+  }),
+  GroupRoleBodySchema.extend({
+    action: z.literal('create_role'),
+    groupId: schemas.GroupID.optional(),
+    shortCode: z.string().optional(),
+    roleId: schemas.GroupRoleID.optional(),
+  }),
+  GroupRoleBodySchema.extend({
+    action: z.literal('update_role'),
+    groupId: schemas.GroupID.optional(),
+    shortCode: z.string().optional(),
+    groupRoleId: schemas.GroupRoleID,
+    order: z.number().int().optional(),
+  }),
+  z.object({
+    action: z.literal('delete_role'),
+    groupId: schemas.GroupID.optional(),
+    shortCode: z.string().optional(),
+    groupRoleId: schemas.GroupRoleID,
+  }),
+]);
+
+export const GroupRolesManageOutputSchema = z.object({
+  action: z.string(),
+  groupId: schemas.GroupID,
+  userId: schemas.UserID.optional(),
+  groupRoleId: schemas.GroupRoleID.optional(),
+  roleIds: z.array(schemas.GroupRoleID).optional(),
+  role: GroupRoleSummarySchema.nullable().optional(),
+  roles: z.array(GroupRoleSummarySchema).optional(),
+});
+
 export const GroupPostsRecentInputSchema = z.object({
   groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
@@ -212,6 +289,9 @@ export type GroupSearchInput = z.infer<typeof GroupSearchInputSchema>;
 export type GroupSearchOutput = z.infer<typeof GroupSearchOutputSchema>;
 export type GroupProfileInput = z.infer<typeof GroupProfileInputSchema>;
 export type GroupMembersInput = z.infer<typeof GroupMembersInputSchema>;
+export type GroupRolesInput = z.infer<typeof GroupRolesInputSchema>;
+export type GroupRolesManageInput = z.infer<typeof GroupRolesManageInputSchema>;
+export type GroupRoleSummary = z.infer<typeof GroupRoleSummarySchema>;
 export type GroupPostsRecentInput = z.infer<typeof GroupPostsRecentInputSchema>;
 export type GroupEventsListInput = z.infer<typeof GroupEventsListInputSchema>;
 export type GroupEventGetInput = z.infer<typeof GroupEventGetInputSchema>;
@@ -226,6 +306,7 @@ export type GroupResolution =
 type LimitedGroupRecord = Partial<z.infer<typeof schemas.LimitedGroup>>;
 type GroupPostRecord = Partial<z.infer<typeof schemas.GroupPost>>;
 type GroupMemberRecord = Partial<z.infer<typeof schemas.GroupMember>>;
+type GroupRoleRecord = Partial<z.infer<typeof schemas.GroupRole>>;
 type GroupInstanceRecord = Partial<
   Omit<z.infer<typeof schemas.GroupInstance>, 'world'> & {
     world?: Partial<z.infer<typeof schemas.World>>;
@@ -284,5 +365,19 @@ export function toGroupMemberSummary(member: GroupMemberRecord): GroupMemberSumm
   return {
     userId,
     displayName: member.user?.displayName ?? undefined,
+  };
+}
+
+export function toGroupRoleSummary(role: GroupRoleRecord): GroupRoleSummary | null {
+  const roleId = role.id ?? undefined;
+  if (!roleId) return null;
+  return {
+    roleId,
+    name: role.name ?? undefined,
+    description: role.description ?? undefined,
+    order: typeof role.order === 'number' ? role.order : undefined,
+    permissions: Array.isArray(role.permissions) ? role.permissions : undefined,
+    isManagementRole: role.isManagementRole ?? undefined,
+    isSelfAssignable: role.isSelfAssignable ?? undefined,
   };
 }

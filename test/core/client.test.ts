@@ -26,6 +26,7 @@ import { authManager } from '../../src/auth/index.js';
 import { checkGroupAllowed } from '../../src/services/groups/index.js';
 
 const fixtureSpecPath = path.join(process.cwd(), 'test', 'fixtures', 'spec.yaml');
+const fullSpecPath = path.join(process.cwd(), 'specs', 'vrchat-openapi.yaml');
 
 const getCookieHeaderSpy = vi.spyOn(authManager, 'getCookieHeader');
 const setCookiesFromResponseSpy = vi.spyOn(authManager, 'setCookiesFromResponse');
@@ -102,9 +103,9 @@ describe('callOperation behavior', () => {
     } as Response);
 
     const callOperation = await loadCallOperation();
-    await expect(
-      callOperation({ operationId: 'getConfig' }),
-    ).rejects.toThrow('VRChat API returned 500');
+    await expect(callOperation({ operationId: 'getConfig' })).rejects.toThrow(
+      'VRChat API returned 500'
+    );
   });
 
   it('includes error details for 4xx responses', async () => {
@@ -132,9 +133,7 @@ describe('callOperation behavior', () => {
     }
 
     expect(captured).toBeInstanceOf(Error);
-    expect((captured as Error).message).toBe(
-      'VRChat API returned 400: Current Password required',
-    );
+    expect((captured as Error).message).toBe('VRChat API returned 400: Current Password required');
     expect(captured && typeof captured === 'object').toBe(true);
     const payload = (captured as { payload?: unknown }).payload as
       | { status?: number; error?: unknown; headers?: unknown }
@@ -149,8 +148,18 @@ describe('callOperation behavior', () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'false';
     const callOperation = await loadCallOperation();
     await expect(
-      callOperation({ operationId: 'createInstance', body: { worldId: 'wrld_1' } }),
+      callOperation({ operationId: 'createInstance', body: { worldId: 'wrld_1' } })
     ).rejects.toThrow('Write operations are disabled');
+    expect(undiciFetch).not.toHaveBeenCalled();
+  });
+
+  it('blocks policy-disabled avatar/world content-management operations before fetch', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    process.env.VRCHAT_MCP_SPEC_URL = fullSpecPath;
+    const callOperation = await loadCallOperation();
+    await expect(
+      callOperation({ operationId: 'createWorld', body: { name: 'World' } })
+    ).rejects.toThrow('avatar/world content-management endpoints are disabled by policy');
     expect(undiciFetch).not.toHaveBeenCalled();
   });
 
@@ -182,7 +191,7 @@ describe('callOperation behavior', () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const callOperation = await loadCallOperation();
     await expect(callOperation({ operationId: 'nope' })).rejects.toThrow(
-      'Unknown operationId: nope',
+      'Unknown operationId: nope'
     );
   });
 
@@ -190,8 +199,26 @@ describe('callOperation behavior', () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const callOperation = await loadCallOperation();
     await expect(callOperation({ operationId: 'getUser' })).rejects.toThrow(
-      'Missing required path param: userId',
+      'Missing required path param: userId'
     );
+  });
+
+  it('throws when required query params are missing', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const callOperation = await loadCallOperation();
+    await expect(callOperation({ operationId: 'searchCalendarEvents' })).rejects.toThrow(
+      'Missing required query param: searchTerm'
+    );
+    expect(undiciFetch).not.toHaveBeenCalled();
+  });
+
+  it('throws when a required request body is missing', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const callOperation = await loadCallOperation();
+    await expect(callOperation({ operationId: 'createThing' })).rejects.toThrow(
+      'Missing required request body for createThing'
+    );
+    expect(undiciFetch).not.toHaveBeenCalled();
   });
 
   it('throws when params are not declared by the operation', async () => {
@@ -201,7 +228,7 @@ describe('callOperation behavior', () => {
       callOperation({
         operationId: 'getGroupCalendarEvents',
         params: { groupId: 'grp_1', monthDate: '2025-12-01' },
-      }),
+      })
     ).rejects.toThrow('Unknown parameter(s) for getGroupCalendarEvents: monthDate');
     expect(undiciFetch).not.toHaveBeenCalled();
   });
@@ -232,7 +259,7 @@ describe('callOperation behavior', () => {
         operationId: 'createGroupCalendarEvent',
         params: { groupId: 'grp_blocked' },
         body: { title: 'Test' },
-      }),
+      })
     ).rejects.toThrow('blocked');
     expect(undiciFetch).not.toHaveBeenCalled();
   });
@@ -244,9 +271,9 @@ describe('callOperation behavior', () => {
 
     await expect(
       callOperation({
-        operationId: 'createGroupCalendarEvent',
-        body: { groupId: 'grp_body', title: 'Test' },
-      }),
+        operationId: 'createInstance',
+        body: { type: 'group', groupId: 'grp_body', worldId: 'wrld_1' },
+      })
     ).rejects.toThrow('blocked');
     expect(undiciFetch).not.toHaveBeenCalled();
   });
@@ -256,7 +283,7 @@ describe('callOperation behavior', () => {
     vi.mocked(undiciFetch).mockRejectedValueOnce(new Error('boom'));
     const callOperation = await loadCallOperation();
     await expect(callOperation({ operationId: 'getConfig' })).rejects.toThrow(
-      'Network or fetch error',
+      'Network or fetch error'
     );
   });
 });

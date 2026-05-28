@@ -141,7 +141,7 @@ describe('read tool registry', () => {
     expect(registered).toEqual(['vrchat_read_getWidget', 'vrchat_read_getWidgetUser']);
   });
 
-  it('marks required params as required in the schema', async () => {
+  it('uses compact params schema and leaves required params to runtime validation', async () => {
     const { registerGeneratedReadTools } = await import('../../src/core/readToolRegistry.js');
     const metas: Record<
       string,
@@ -164,8 +164,10 @@ describe('read tool registry', () => {
 
     const schema = metas.vrchat_read_getWidgetUser?.inputSchema;
     expect(schema).toBeDefined();
-    expect(schema?.safeParse({}).success).toBe(false);
+    expect(schema?.safeParse({}).success).toBe(true);
     expect(schema?.safeParse({ params: { userId: 'usr_123' } }).success).toBe(true);
+    expect(schema?.safeParse({ params: { unknown: 1 } }).success).toBe(true);
+    expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);
   });
 
   it('can be disabled entirely', async () => {

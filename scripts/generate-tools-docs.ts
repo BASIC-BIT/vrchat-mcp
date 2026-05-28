@@ -17,6 +17,7 @@ import { registerAuthTools } from '../src/tools/auth.js';
 import { registerCacheTools } from '../src/tools/cache.js';
 import { registerCuratedAvatarTools } from '../src/tools/curated/avatars.js';
 import { registerCuratedEventTools } from '../src/tools/curated/events.js';
+import { registerCuratedFavoriteTools } from '../src/tools/curated/favorites.js';
 import { registerCuratedFriendTools } from '../src/tools/curated/friends.js';
 import { registerCuratedGroupTools } from '../src/tools/curated/groups.js';
 import { registerCuratedInstanceTools } from '../src/tools/curated/instances.js';
@@ -29,8 +30,14 @@ import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
 import { registerSystemReadTools } from '../src/tools/read/system.js';
 import { readToolName, writeToolName } from '../src/utils/toolNames.js';
-import { ReadOptionsSchema, ReadToolOutputSchema } from '../src/schemas/read.js';
-import { WriteOptionsSchema, WriteToolOutputSchema } from '../src/schemas/write.js';
+import {
+  GeneratedReadToolInputSchema,
+  GeneratedReadToolOutputSchema,
+} from '../src/schemas/read.js';
+import {
+  GeneratedWriteToolInputSchema,
+  GeneratedWriteToolOutputSchema,
+} from '../src/schemas/write.js';
 
 const SPEC_PATH = process.env.VRCHAT_MCP_SPEC_PATH ?? 'specs/vrchat-openapi.yaml';
 const SPEC_URL = process.env.VRCHAT_MCP_SPEC_URL ?? 'https://vrchat.community/openapi.yaml';
@@ -182,6 +189,7 @@ async function main() {
   registerCuratedAvatarTools(collector.createServer('curated'));
   registerCuratedFriendTools(collector.createServer('curated'));
   registerCuratedEventTools(collector.createServer('curated'));
+  registerCuratedFavoriteTools(collector.createServer('curated'));
   registerCuratedGroupTools(collector.createServer('curated'));
   registerCuratedInstanceTools(collector.createServer('curated'));
   registerCuratedInviteTools(collector.createServer('curated'));
@@ -235,10 +243,12 @@ async function main() {
 
   md += '## Auto-generated read tools (GET operations)\n';
   md +=
-    'Input schemas are derived per operation from OpenAPI parameters (path/query/header/cookie).\n';
-  md += 'Read options are shared across read tools:\n\n';
-  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(ReadOptionsSchema), null, 2)}\n\`\`\`\n\n`;
-  md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(ReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
+    'Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params`. Use `vrchat_operation_details` for exact per-operation parameter schemas.\n';
+  md += 'Generated read input schema:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedReadToolInputSchema), null, 2)}\n\`\`\`\n\n`;
+  md +=
+    'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedReadToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of readOps) {
     md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }
@@ -246,10 +256,12 @@ async function main() {
 
   md += '## Auto-generated write tools (non-GET operations)\n';
   md +=
-    'Input schemas are derived per operation from OpenAPI parameters and request bodies (set `writes.allow = false` for read-only mode).\n';
-  md += 'Write options are shared across write tools:\n\n';
-  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(WriteOptionsSchema), null, 2)}\n\`\`\`\n\n`;
-  md += `Output schema:\n\n\`\`\`json\n${JSON.stringify(toJSONSchema(WriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
+    'Input schemas are compact: pass OpenAPI path/query/header/cookie values under `params` and JSON payloads under `body`. Use `vrchat_operation_details` for exact per-operation parameter and body schemas. Set `writes.allow = false` for read-only mode.\n';
+  md += 'Generated write input schema:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolInputSchema), null, 2)}\n\`\`\`\n\n`;
+  md +=
+    'Generated output uses a compact envelope; exact API response content is under `data` and optional metadata may be present when requested:\n\n';
+  md += `\`\`\`json\n${JSON.stringify(toJSONSchema(GeneratedWriteToolOutputSchema), null, 2)}\n\`\`\`\n\n`;
   for (const op of writeOps) {
     md += `- \`${op.toolName}\` (${op.method} ${op.path}) - ${op.description}\n`;
   }

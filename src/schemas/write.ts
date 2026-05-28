@@ -1,15 +1,23 @@
 import { z } from 'zod';
 
 export const WriteOptionsSchema = z.object({
-  includeMeta: z.boolean().describe('Include URL, status, and response headers.').optional(),
+  includeMeta: z.boolean().describe('Include URL/status/headers.').optional(),
   options: z
     .object({
-      dryRun: z.boolean().describe('Build the request without sending it.').optional(),
-      rawResponse: z.boolean().describe('Return the raw response metadata when supported.').optional(),
+      dryRun: z.boolean().describe('Preview request.').optional(),
+      rawResponse: z.boolean().describe('Return raw metadata.').optional(),
     })
-    .describe('Generated write call options.')
+    .describe('Write options.')
     .optional(),
 });
+
+export const GeneratedWriteToolInputSchema = z
+  .object({
+    params: z.record(z.string(), z.unknown()).describe('OpenAPI params.').optional(),
+    body: z.unknown().describe('OpenAPI request body.').optional(),
+  })
+  .merge(WriteOptionsSchema)
+  .passthrough();
 
 export const WriteToolOutputSchema = z.object({
   data: z.any().optional(),
@@ -18,3 +26,9 @@ export const WriteToolOutputSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   dryRun: z.boolean().optional(),
 });
+
+export const GeneratedWriteToolOutputSchema = z
+  .object({
+    data: z.unknown().describe('VRChat API response data.').optional(),
+  })
+  .passthrough();

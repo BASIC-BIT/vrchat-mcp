@@ -1,21 +1,28 @@
 import { z } from 'zod';
 
 export const ReadOptionsSchema = z.object({
-  fields: z.array(z.string()).describe('Optional response fields to keep.').optional(),
-  compact: z.boolean().describe('Return a smaller response shape when supported.').optional(),
-  maxArrayLength: z.number().int().positive().describe('Maximum array items to return.').optional(),
-  includeMeta: z.boolean().describe('Include request URL and pagination metadata.').optional(),
+  fields: z.array(z.string()).describe('Fields to keep.').optional(),
+  compact: z.boolean().describe('Compact response.').optional(),
+  maxArrayLength: z.number().int().positive().describe('Max array items.').optional(),
+  includeMeta: z.boolean().describe('Include URL/page metadata.').optional(),
   page: z
     .object({
-      enabled: z.boolean().describe('Enable internal pagination.').optional(),
-      size: z.number().int().min(1).describe('Items per page.').optional(),
-      maxPages: z.number().int().min(1).describe('Maximum pages to fetch.').optional(),
-      maxItems: z.number().int().min(1).describe('Maximum total items to return.').optional(),
-      offset: z.number().int().min(0).describe('Starting item offset.').optional(),
+      enabled: z.boolean().describe('Enable paging.').optional(),
+      size: z.number().int().min(1).describe('Items/page.').optional(),
+      maxPages: z.number().int().min(1).describe('Max pages.').optional(),
+      maxItems: z.number().int().min(1).describe('Max items.').optional(),
+      offset: z.number().int().min(0).describe('Start offset.').optional(),
     })
-    .describe('Pagination controls for generated read tools.')
+    .describe('Paging controls.')
     .optional(),
 });
+
+export const GeneratedReadToolInputSchema = z
+  .object({
+    params: z.record(z.string(), z.unknown()).describe('OpenAPI params.').optional(),
+  })
+  .merge(ReadOptionsSchema)
+  .passthrough();
 
 export const ReadToolOutputSchema = z.object({
   data: z.any(),
@@ -30,6 +37,12 @@ export const ReadToolOutputSchema = z.object({
     })
     .optional(),
 });
+
+export const GeneratedReadToolOutputSchema = z
+  .object({
+    data: z.unknown().describe('VRChat API response data.'),
+  })
+  .passthrough();
 
 export const PagingSchema = {
   offset: z.number().int().min(0).optional(),

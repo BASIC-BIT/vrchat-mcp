@@ -4,6 +4,7 @@ import { getSpecIndex, type OperationDef } from './spec.js';
 import { getConfig } from '../config/index.js';
 import { logger } from '../infra/logger.js';
 import { checkGroupAllowed } from '../services/groups/index.js';
+import { getBlockedOperationReason } from './operationPolicy.js';
 
 const config = getConfig();
 const DEFAULT_BASE_URL = config.api.baseUrl;
@@ -37,7 +38,7 @@ export class CallError extends Error {
     message: string,
     status?: number,
     payload?: Record<string, unknown>,
-    retryAfter?: string,
+    retryAfter?: string
   ) {
     super(message);
     this.name = 'CallError';
@@ -183,9 +184,24 @@ function validateOperationParams(op: OperationDef, params: Record<string, unknow
     .map(([key]) => key)
     .filter((key) => !allowed.has(key));
   if (unknown.length === 0) return;
-  throw new CallError(
-    `Unknown parameter(s) for ${op.operationId}: ${unknown.join(', ')}`,
+  throw new CallError(`Unknown parameter(s) for ${op.operationId}: ${unknown.join(', ')}`);
+}
+
+function validateRequiredInputs(
+  op: OperationDef,
+  params: Record<string, unknown>,
+  body: unknown
+): void {
+  const missingParam = op.parameters.find(
+    (param) => param.required && (params[param.name] === undefined || params[param.name] === null)
   );
+  if (missingParam) {
+    throw new CallError(`Missing required ${missingParam.in} param: ${missingParam.name}`);
+  }
+
+  if (op.requestBodyRequired && body === undefined) {
+    throw new CallError(`Missing required request body for ${op.operationId}`);
+  }
 }
 
 function enforceOperationPolicy(
@@ -193,6 +209,11 @@ function enforceOperationPolicy(
   params: Record<string, unknown>,
   body: unknown
 ): void {
+  const blockedReason = getBlockedOperationReason(op.operationId);
+  if (blockedReason) {
+    throw new CallError(`Operation ${op.operationId} is disabled: ${blockedReason}`);
+  }
+
   if (!ALLOW_WRITES && op.method !== 'GET') {
     throw new CallError(
       `Write operations are disabled (blocked ${op.method}). Enable writes in config (writes.allow).`
@@ -270,14 +291,19 @@ function buildNonOkCallError(params: {
     ? `VRChat API returned ${params.status}: ${errorMessage}`
     : `VRChat API returned ${params.status}`;
   const payload = isClientError
-      ? buildErrorPayload({
-          status: params.status,
-          url: params.url,
-          data: params.data,
-          message: errorMessage,
-        })
+    ? buildErrorPayload({
+        status: params.status,
+        url: params.url,
+        data: params.data,
+        message: errorMessage,
+      })
     : undefined;
-  return new CallError(message, params.status, payload, params.retryAfter ?? params.headers?.['retry-after']);
+  return new CallError(
+    message,
+    params.status,
+    payload,
+    params.retryAfter ?? params.headers?.['retry-after']
+  );
 }
 
 async function executeRequestWithHandling(input: {
@@ -323,6 +349,7 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
   const index = await getSpecIndex();
   const op = getOperationOrThrow(index, operationId);
   validateOperationParams(op, params);
+  validateRequiredInputs(op, params, body);
   enforceOperationPolicy(op, params, body);
 
   const url = buildUrl(op, params);

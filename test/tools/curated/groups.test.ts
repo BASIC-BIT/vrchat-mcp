@@ -3,16 +3,20 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FakeServer } from '../../helpers/fake-server.js';
 
 vi.mock('../../../src/services/groups/index.js', () => ({
+  checkGroupAllowed: vi.fn(() => ({ ok: true })),
   searchGroups: vi.fn(),
   resolveGroupId: vi.fn(),
   getGroupProfile: vi.fn(),
+  getGroupRoleTemplates: vi.fn(),
   listGroupMembers: vi.fn(),
+  listGroupRoles: vi.fn(),
   listGroupPosts: vi.fn(),
   listGroupEvents: vi.fn(),
   getGroupEvent: vi.fn(),
   getGroupNextEvent: vi.fn(),
   listGroupEventsUpcoming: vi.fn(),
   getGroupInstancesOverview: vi.fn(),
+  manageGroupRole: vi.fn(),
 }));
 
 vi.mock('../../../src/core/readTools.js', () => ({
@@ -21,14 +25,18 @@ vi.mock('../../../src/core/readTools.js', () => ({
 
 import { registerCuratedGroupTools } from '../../../src/tools/curated/groups.js';
 import {
+  checkGroupAllowed,
   getGroupEvent,
   getGroupInstancesOverview,
   getGroupNextEvent,
   getGroupProfile,
+  getGroupRoleTemplates,
   listGroupEvents,
   listGroupEventsUpcoming,
   listGroupMembers,
   listGroupPosts,
+  listGroupRoles,
+  manageGroupRole,
   resolveGroupId,
   searchGroups,
 } from '../../../src/services/groups/index.js';
@@ -267,5 +275,74 @@ describe('curated group tools', () => {
         members: [{ userId: 'usr_1' }, { userId: 'usr_2' }],
       },
     });
+  });
+
+  it('lists group roles and role templates', async () => {
+    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
+    vi.mocked(listGroupRoles).mockResolvedValue({
+      roles: [{ roleId: 'role_1', name: 'Moderator', permissions: ['group-roles-assign'] }],
+    });
+    vi.mocked(getGroupRoleTemplates).mockResolvedValue({
+      templates: { default: { name: 'Default' } },
+    });
+
+    const server = new FakeServer();
+    registerCuratedGroupTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_roles');
+
+    await expect(tool!.handler({ groupId: 'grp_1' })).resolves.toMatchObject({
+      structuredContent: { totalRoles: 1, roles: [{ roleId: 'role_1' }] },
+    });
+    await expect(tool!.handler({ view: 'templates' })).resolves.toMatchObject({
+      structuredContent: { templates: { default: { name: 'Default' } } },
+    });
+  });
+
+  it('manages group roles with allowlist enforcement', async () => {
+    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
+    vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
+    vi.mocked(manageGroupRole).mockResolvedValue({ roleIds: ['role_1'] });
+
+    const server = new FakeServer();
+    registerCuratedGroupTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_roles_manage');
+    const result = await tool!.handler({
+      action: 'assign_member_role',
+      groupId: 'grp_1',
+      userId: 'usr_1',
+      groupRoleId: 'role_1',
+    });
+
+    expect(tool?.config.annotations).toMatchObject({ destructiveHint: true });
+    expect(checkGroupAllowed).toHaveBeenCalledWith('grp_1');
+    expect(manageGroupRole).toHaveBeenCalledWith(
+      'grp_1',
+      expect.objectContaining({ action: 'assign_member_role' })
+    );
+    expect(result).toMatchObject({
+      structuredContent: {
+        action: 'assign_member_role',
+        groupId: 'grp_1',
+        roleIds: ['role_1'],
+      },
+    });
+  });
+
+  it('blocks group role management when group allowlist denies it', async () => {
+    vi.mocked(manageGroupRole).mockClear();
+    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
+    vi.mocked(checkGroupAllowed).mockReturnValue({ ok: false, reason: 'not allowed' });
+
+    const server = new FakeServer();
+    registerCuratedGroupTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_roles_manage');
+    const result = await tool!.handler({
+      action: 'delete_role',
+      groupId: 'grp_1',
+      groupRoleId: 'role_1',
+    });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(manageGroupRole).not.toHaveBeenCalled();
   });
 });

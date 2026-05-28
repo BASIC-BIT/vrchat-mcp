@@ -17,22 +17,30 @@ import {
   GroupPostsRecentOutputSchema,
   GroupProfileInputSchema,
   GroupProfileOutputSchema,
+  GroupRolesInputSchema,
+  GroupRolesManageInputSchema,
+  GroupRolesManageOutputSchema,
+  GroupRolesOutputSchema,
   GroupSearchInputSchema,
   GroupSearchOutputSchema,
 } from '../../models/groups.js';
 import {
+  checkGroupAllowed,
   getGroupEvent,
   getGroupInstancesOverview,
   getGroupNextEvent,
   getGroupProfile,
+  getGroupRoleTemplates,
   listGroupEvents,
   listGroupEventsUpcoming,
   listGroupMembers,
   listGroupPosts,
+  listGroupRoles,
+  manageGroupRole,
   resolveGroupId,
   searchGroups,
 } from '../../services/groups/index.js';
-import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
+import { destructiveToolAnnotations, readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -149,6 +157,100 @@ export function registerCuratedGroupTools(server: McpServer): void {
           stale: result.stale,
           page: result.page,
           members: result.members,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.group.roles'),
+    {
+      description: 'List group roles or role templates with compact fields (read-only).',
+      inputSchema: GroupRolesInputSchema,
+      outputSchema: GroupRolesOutputSchema,
+      annotations: readOnlyToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = GroupRolesInputSchema.parse(args ?? {});
+        if (input.view === 'templates') {
+          const result = await getGroupRoleTemplates();
+          const payload = { view: input.view, templates: result.templates };
+          return {
+            content: textContent(JSON.stringify(payload, null, 2)),
+            structuredContent: payload as Record<string, unknown>,
+          };
+        }
+
+        const resolved = await resolveGroupId({
+          groupId: input.groupId,
+          shortCode: input.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+        const result = await listGroupRoles(resolved.groupId);
+        const payload = {
+          view: input.view,
+          groupId: resolved.groupId,
+          totalRoles: result.roles.length,
+          roles: result.roles,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.group.roles.manage'),
+    {
+      description: 'Assign/remove member roles or create/update/delete group role definitions.',
+      inputSchema: GroupRolesManageInputSchema,
+      outputSchema: GroupRolesManageOutputSchema,
+      annotations: destructiveToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = GroupRolesManageInputSchema.parse(args);
+        const resolved = await resolveGroupId({
+          groupId: input.groupId,
+          shortCode: input.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+        const allowed = checkGroupAllowed(resolved.groupId);
+        if (!allowed.ok) {
+          return toolError(allowed.reason);
+        }
+        const result = await manageGroupRole(resolved.groupId, input);
+        const payload = {
+          action: input.action,
+          groupId: resolved.groupId,
+          userId: 'userId' in input ? input.userId : undefined,
+          groupRoleId: 'groupRoleId' in input ? input.groupRoleId : undefined,
+          ...result,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),
