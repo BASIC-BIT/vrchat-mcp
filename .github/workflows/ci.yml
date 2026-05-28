@@ -26,6 +26,8 @@ jobs:
           go-version: '1.25.x'
       - run: npm ci
       - run: npm run check
+      - name: Tool metadata budget
+        run: npm run metrics:tool-budget
 
       # Metrics gates (redundant complexity heuristics).
       - name: Install lizard
@@ -34,4 +36,4 @@ jobs:
         run: |
           go install github.com/boyter/scc/v3@v3.6.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - run: npm run metrics
+      - run: npm run metrics:scc && npm run metrics:lizard

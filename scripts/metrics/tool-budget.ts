@@ -3,7 +3,13 @@ import path from 'node:path';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { toJSONSchema, type ZodTypeAny } from 'zod';
 
-const DEFAULT_MAX_ESTIMATED_TOKENS = 160_000;
+const DEFAULT_MAX_TOOLS = 75;
+const DEFAULT_MAX_ARGUMENTS = 500;
+const DEFAULT_MAX_ESTIMATED_TOKENS = 30_000;
+const DEFAULT_MAX_LLM_INPUT_TOKENS = 12_000;
+const DEFAULT_MAX_MCP_WIRE_TOKENS = 32_000;
+const DEFAULT_MAX_INPUT_SCHEMA_STRUCTURE_TOKENS = 9_000;
+const DEFAULT_MAX_OUTPUT_SCHEMA_STRUCTURE_TOKENS = 18_000;
 const DEFAULT_MAX_TOOL_DESCRIPTION_TOKENS = 8_000;
 const DEFAULT_MAX_MISSING_TOOL_DESCRIPTIONS = 0;
 const TOP_COUNT = 10;
@@ -467,6 +473,12 @@ function writeSummary(markdown: string): void {
   appendFileSync(summaryPath, markdown);
 }
 
+function failIfOver(label: string, value: number, max: number): void {
+  if (value <= max) return;
+  process.stderr.write(`tool-budget: ${label} over limit (${value} > ${max})\n`);
+  process.exitCode = 1;
+}
+
 async function main(): Promise<void> {
   const tools = await collectTools();
   const metrics = tools.map(metricForTool);
@@ -503,9 +515,27 @@ async function main(): Promise<void> {
   const llmInputTokens = metrics.reduce((total, metric) => total + metric.llmInputTokens, 0);
   const mcpWireTokens = metrics.reduce((total, metric) => total + metric.mcpWireTokens, 0);
   const totalTokens = metrics.reduce((total, metric) => total + metric.totalTokens, 0);
+  const maxTools = asNumber(process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOOLS, DEFAULT_MAX_TOOLS);
+  const maxArguments = asNumber(process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_ARGS, DEFAULT_MAX_ARGUMENTS);
   const maxTokens = asNumber(
     process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOKENS,
     DEFAULT_MAX_ESTIMATED_TOKENS
+  );
+  const maxLlmInputTokens = asNumber(
+    process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_LLM_INPUT_TOKENS,
+    DEFAULT_MAX_LLM_INPUT_TOKENS
+  );
+  const maxMcpWireTokens = asNumber(
+    process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_MCP_WIRE_TOKENS,
+    DEFAULT_MAX_MCP_WIRE_TOKENS
+  );
+  const maxInputSchemaStructureTokens = asNumber(
+    process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_INPUT_SCHEMA_STRUCTURE_TOKENS,
+    DEFAULT_MAX_INPUT_SCHEMA_STRUCTURE_TOKENS
+  );
+  const maxOutputSchemaStructureTokens = asNumber(
+    process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_OUTPUT_SCHEMA_STRUCTURE_TOKENS,
+    DEFAULT_MAX_OUTPUT_SCHEMA_STRUCTURE_TOKENS
   );
   const maxToolDescriptionTokens = asNumber(
     process.env.VRCHAT_MCP_TOOL_BUDGET_MAX_TOOL_DESCRIPTION_TOKENS,
@@ -539,18 +569,22 @@ async function main(): Promise<void> {
     );
     process.exitCode = 1;
   }
-  if (toolDescriptionTokens > maxToolDescriptionTokens) {
-    process.stderr.write(
-      `tool-budget: tool name/description tokens over limit (${toolDescriptionTokens} > ${maxToolDescriptionTokens})\n`
-    );
-    process.exitCode = 1;
-  }
-  if (totalTokens > maxTokens) {
-    process.stderr.write(
-      `tool-budget: total metadata tokens over limit (${totalTokens} > ${maxTokens})\n`
-    );
-    process.exitCode = 1;
-  }
+  failIfOver('tools', tools.length, maxTools);
+  failIfOver('arguments', allArgs.length, maxArguments);
+  failIfOver('tool name/description tokens', toolDescriptionTokens, maxToolDescriptionTokens);
+  failIfOver('total metadata tokens', totalTokens, maxTokens);
+  failIfOver('LLM input metadata tokens', llmInputTokens, maxLlmInputTokens);
+  failIfOver('MCP wire metadata tokens', mcpWireTokens, maxMcpWireTokens);
+  failIfOver(
+    'input schema structure tokens',
+    inputSchemaStructureTokens,
+    maxInputSchemaStructureTokens
+  );
+  failIfOver(
+    'output schema structure tokens',
+    outputSchemaStructureTokens,
+    maxOutputSchemaStructureTokens
+  );
 }
 
 main().catch((err) => {

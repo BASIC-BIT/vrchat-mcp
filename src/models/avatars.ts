@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const AvatarShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -14,7 +15,7 @@ export const AvatarProfileInputSchema = AvatarShapeSchema.extend({
 export const AvatarProfileOutputSchema = z.object({
   avatarId: schemas.AvatarID,
   stale: z.boolean(),
-  avatar: schemas.Avatar.partial(),
+  avatar: ApiObjectSchema,
   vrcxMemo: z
     .object({
       editedAt: z.string().nullable(),

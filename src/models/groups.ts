@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const GroupShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -71,7 +72,7 @@ export const GroupProfileInputSchema = GroupShapeSchema.extend({
 export const GroupProfileOutputSchema = z.object({
   groupId: schemas.GroupID,
   stale: z.boolean(),
-  group: schemas.Group.partial(),
+  group: ApiObjectSchema,
 });
 
 export const GroupMembersInputSchema = z.object({
@@ -210,7 +211,7 @@ export const GroupEventsListOutputSchema = z.object({
   truncated: z.boolean(),
   stale: z.boolean(),
   page: GroupPageSchema.optional(),
-  events: z.array(schemas.CalendarEvent.partial()),
+  events: z.array(ApiObjectSchema),
 });
 
 export const GroupEventGetInputSchema = GroupShapeSchema.extend({
@@ -223,7 +224,7 @@ export const GroupEventGetOutputSchema = z.object({
   groupId: schemas.GroupID,
   calendarId: schemas.CalendarID,
   stale: z.boolean(),
-  event: schemas.CalendarEvent.partial().nullable().optional(),
+  event: ApiObjectSchema.nullable().optional(),
 });
 
 export const GroupEventNextInputSchema = GroupShapeSchema.extend({
@@ -234,7 +235,7 @@ export const GroupEventNextInputSchema = GroupShapeSchema.extend({
 export const GroupEventNextOutputSchema = z.object({
   groupId: schemas.GroupID,
   stale: z.boolean(),
-  event: schemas.CalendarEvent.partial().nullable().optional(),
+  event: ApiObjectSchema.nullable().optional(),
 });
 
 export const GroupEventsUpcomingInputSchema = GroupShapeSchema.extend({
@@ -264,7 +265,7 @@ export const GroupEventsUpcomingOutputSchema = z.object({
       page: GroupPageSchema.optional(),
     }),
   ),
-  events: z.array(schemas.CalendarEvent.partial()),
+  events: z.array(ApiObjectSchema),
 });
 
 export const GroupInstancesOverviewInputSchema = z.object({

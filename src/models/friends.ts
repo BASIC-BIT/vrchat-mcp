@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 import { InstanceSummarySchema } from './instances.js';
 
 export const FriendListDetailLevelSchema = z.enum(['summary', 'full']);
@@ -75,7 +76,7 @@ const FriendsListBaseSchema = z.object({
 
 export const FriendsListOutputSchema = FriendsListBaseSchema.extend({
   detailLevel: FriendListDetailLevelSchema,
-  friends: z.array(schemas.LimitedUserFriend.partial()),
+  friends: z.array(ApiObjectSchema),
 });
 
 const FriendStatusFilterSchema = z.union([
@@ -104,7 +105,7 @@ export const FriendOverviewFriendSchema = z.object({
 
 export const FriendOverviewLocationSchema = FriendLocationInfoSchema.extend({   
   location: z.string(),
-  instance: z.union([InstanceSummarySchema, schemas.Instance]).optional(),
+  instance: z.union([InstanceSummarySchema, ApiObjectSchema]).optional(),
   friendCount: z.number().int().min(0),
   friends: z.array(FriendOverviewFriendSchema),
 });
@@ -158,12 +159,12 @@ export const FriendDetailsInputSchema = z.object({
 });
 
 export const FriendDetailsOutputSchema = z.object({
-  friend: schemas.LimitedUserFriend.partial(),
-  profile: schemas.User.partial(),
+  friend: ApiObjectSchema,
+  profile: ApiObjectSchema,
   location: FriendLocationInfoSchema,
   instance: InstanceSummarySchema.nullable(),
-  world: schemas.World.partial().nullable(),
-  group: schemas.Group.partial().nullable(),
+  world: ApiObjectSchema.nullable(),
+  group: ApiObjectSchema.nullable(),
 });
 
 export type FriendSearchInput = z.infer<typeof FriendSearchInputSchema>;
