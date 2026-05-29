@@ -284,7 +284,7 @@ function metricForTool(tool: RegisteredTool): ToolMetric {
 }
 
 function topToolsByTokens(metrics: ToolMetric[]): ToolMetric[] {
-  return metrics.sort((a, b) => b.totalTokens - a.totalTokens).slice(0, TOP_COUNT);
+  return [...metrics].sort((a, b) => b.totalTokens - a.totalTokens).slice(0, TOP_COUNT);
 }
 
 function summarizeCategories(metrics: ToolMetric[]): CategoryMetric[] {
