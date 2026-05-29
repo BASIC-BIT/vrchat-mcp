@@ -135,6 +135,10 @@ Automation hooks:
 The default toolset is curated plus generated read/write/delete routers for API gaps. `vrchat_read` handles available generated GET operations by `operationId`; `vrchat_write` handles available generated POST/PUT/PATCH operations by `operationId`; `vrchat_delete` handles available generated DELETE operations by `operationId`. Use `vrchat_operations` to list availability and `vrchat_operation_details` for exact params/body schemas. The generated routers can be narrowed with `generatedReadTools.operationIds` / `generatedWriteTools.operationIds` or disabled with `generatedReadTools.enabled = false` / `generatedWriteTools.enabled = false`. Generated routers do not expose hard-skipped operations or operations with curated replacements, even if those operation IDs appear in an `operationIds` narrowing list.
 The raw tool (`vrchat_call`) is disabled by default and can be enabled via config/environment flags.
 
+## Output schema budget
+
+Curated tool output schemas should document stable top-level fields and keep nested raw VRChat API objects opaque. This preserves useful MCP metadata without embedding large generated `User`, `Group`, `World`, `CalendarEvent`, or similar object schemas in every tool. If an agent needs specific nested fields before calling a tool, add a compact curated summary field rather than reintroducing a full generated API object schema.
+
 ## Consolidation candidates
 
 Prefer fewer, higher-confidence curated tools when multiple endpoint-shaped tools represent one user intent. A combined tool should keep the target and side effect explicit, expose IDs in outputs for follow-ups, and preserve confirmation/risk controls.

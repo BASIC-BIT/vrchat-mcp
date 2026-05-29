@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 import { GroupPageSchema, GroupSummarySchema } from './groups.js';
 
 export const UserShapeSchema = z.object({
@@ -91,7 +92,7 @@ export const VrcxMemoSchema = z.object({
 
 export const UserProfileOutputSchema = z.object({
   userId: schemas.UserID,
-  user: schemas.User.partial(),
+  user: ApiObjectSchema,
   groups: UserGroupsOutputSchema.optional(),
   vrcxMemo: VrcxMemoSchema.optional(),
 });
@@ -114,7 +115,7 @@ export const PROFILE_UPDATE_FIELDS = [
 
 export const ProfileUpdateOutputSchema = z.object({
   userId: schemas.UserID,
-  user: schemas.CurrentUser.partial(),
+  user: ApiObjectSchema,
 });
 
 export const UserGroupsInputSchema = z.object({

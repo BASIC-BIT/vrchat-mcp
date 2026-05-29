@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const WorldShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -107,7 +108,7 @@ export const WorldProfileOutputSchema = z.object({
   worldId: schemas.WorldID,
   resolvedBy: z.enum(['id', 'name']),
   stale: z.boolean(),
-  world: schemas.World.partial(),
+  world: ApiObjectSchema,
   vrcxMemo: z
     .object({
       editedAt: z.string().nullable(),

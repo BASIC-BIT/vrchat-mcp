@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const FavoritePageSchema = z.object({
   pages: z.number().int().min(0),
@@ -64,7 +65,7 @@ export const FavoritesReadOutputSchema = z.object({
   favorites: z.array(FavoriteSummarySchema).optional(),
   groups: z.array(FavoriteGroupSummarySchema).optional(),
   group: FavoriteGroupSummarySchema.nullable().optional(),
-  limits: schemas.FavoriteLimits.partial().nullable().optional(),
+  limits: ApiObjectSchema.nullable().optional(),
   avatars: z.array(FavoritedAvatarSummarySchema).optional(),
   notes: z.array(z.string()).optional(),
 });

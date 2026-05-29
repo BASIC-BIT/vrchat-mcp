@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const InviteSelfSchema = z.object({
   worldId: schemas.WorldID.optional(),
@@ -9,7 +10,7 @@ export const InviteSelfSchema = z.object({
 
 export const InviteSelfOutputSchema = z.object({
   status: z.literal('sent'),
-  notification: schemas.SentNotification.partial().optional(),
+  notification: ApiObjectSchema.optional(),
 });
 
 export const InviteUserSchema = z.object({
@@ -21,7 +22,7 @@ export const InviteUserSchema = z.object({
 
 export const InviteUserOutputSchema = z.object({
   status: z.literal('sent'),
-  notification: schemas.SentNotification.partial().optional(),
+  notification: ApiObjectSchema.optional(),
 });
 
 export const InviteUserToMeSchema = z.object({
@@ -35,7 +36,7 @@ export const InviteUserToMeOutputSchema = z.object({
   worldId: schemas.WorldID,
   instanceId: schemas.InstanceID,
   location: z.string(),
-  notification: schemas.SentNotification.partial().optional(),
+  notification: ApiObjectSchema.optional(),
 });
 
 export const BulkRetryInputSchema = z.object({
@@ -71,7 +72,7 @@ export const BulkTargetResultSchema = z.object({
   displayName: z.string().optional(),
   status: z.enum(['sent', 'failed', 'skipped', 'would_send']),
   attempts: z.number().int().min(0).optional(),
-  notification: schemas.SentNotification.partial().optional(),
+  notification: ApiObjectSchema.optional(),
   data: z.any().optional(),
   error: z.string().optional(),
 });

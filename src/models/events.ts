@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '../generated/vrchat-schemas.js';
+import { ApiObjectSchema } from './common.js';
 
 export const EventListShapeSchema = z.object({
   fields: z.array(z.string()).optional(),
@@ -38,7 +39,7 @@ export const EventsUpcomingOutputSchema = z.object({
       page: EventsPageSchema.optional(),
     }),
   ),
-  events: z.array(schemas.CalendarEvent.partial()),
+  events: z.array(ApiObjectSchema),
 });
 
 export const EventsSearchInputSchema = EventListShapeSchema.extend({
@@ -57,7 +58,7 @@ export const EventsSearchOutputSchema = z.object({
   totalEvents: z.number().int().min(0),
   truncated: z.boolean(),
   page: EventsPageSchema.optional(),
-  events: z.array(schemas.CalendarEvent.partial()),
+  events: z.array(ApiObjectSchema),
 });
 
 export const EventsDiscoverInputSchema = EventListShapeSchema.extend({
@@ -93,7 +94,7 @@ export const EventsDiscoverOutputSchema = z.object({
   truncated: z.boolean(),
   nextCursor: z.string().optional(),
   page: EventsCursorPageSchema,
-  events: z.array(schemas.CalendarEvent.partial()),
+  events: z.array(ApiObjectSchema),
 });
 
 export const CalendarEventCreateSchema = schemas.CreateCalendarEventRequest.extend({
@@ -127,7 +128,7 @@ export const CalendarEventFollowSchema = z.object({
 
 export const CalendarEventWriteOutputSchema = z.object({
   status: z.enum(['created', 'updated', 'deleted', 'followed', 'unfollowed']),
-  event: schemas.CalendarEvent.nullable().optional(),
+  event: ApiObjectSchema.nullable().optional(),
   result: schemas.Success.nullable().optional(),
 });
 
