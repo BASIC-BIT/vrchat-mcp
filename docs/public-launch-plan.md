@@ -24,16 +24,19 @@ This is the working checklist for taking VRChat MCP from private repo to public 
 
 ## Primary Discovery Surfaces
 
-| Surface                   | Why It Matters                                                                                        | Action                                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| GitHub repository         | Primary source of trust, docs, issues, stars, and topic discovery.                                    | Done: public repo, social preview, and GitHub releases are in place.                                   |
-| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Done: `@basicbit/vrchat-mcp` is published on npm.                                                      |
-| Official MCP Registry     | Upstream source of truth for MCP server discovery. Other registries may consume it.                   | Done: `io.github.BASIC-BIT/vrchat-mcp` is published and verified.                                      |
-| GitHub MCP Registry       | High-intent discovery inside GitHub's MCP ecosystem.                                                  | Verify listing after official MCP Registry submission and public repo indexing.                        |
-| Smithery                  | MCP marketplace with install/distribution workflow and usage visibility.                              | Submit after public repo and npm package are stable. Lead with concrete VRChat tasks.                  |
-| MCP.so                    | Third-party MCP marketplace with a visible Submit flow and GitHub issue submissions.                  | Submit via `https://mcp.so/submit` or `chatmcp/mcpso` issue after public release.                      |
-| Glama MCP Servers         | Large indexed MCP directory with quality and maintenance signals.                                     | Use Add Server flow after public release; verify how it classifies local-only/auth tools.              |
-| Awesome MCP Servers lists | High-reach GitHub discovery for builders browsing MCP servers.                                        | Submit PRs to `punkpeye/awesome-mcp-servers` and `appcypher/awesome-mcp-servers` after public release. |
+| Surface                   | Why It Matters                                                                                        | Action                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| GitHub repository         | Primary source of trust, docs, issues, stars, and topic discovery.                                    | Done: public repo, social preview, and GitHub releases are in place.                                       |
+| npm                       | Install path and prerequisite for official MCP Registry metadata when using npm package distribution. | Done: `@basicbit/vrchat-mcp` is published on npm.                                                          |
+| Official MCP Registry     | Upstream source of truth for MCP server discovery. Other registries may consume it.                   | Done: `io.github.BASIC-BIT/vrchat-mcp` is published and verified.                                          |
+| GitHub MCP Registry       | High-intent discovery inside GitHub's MCP ecosystem.                                                  | Verify listing after official MCP Registry submission and public repo indexing.                            |
+| MCPB / Claude Desktop     | One-click local bundle format for stdio MCP servers.                                                  | Add a bundled local artifact before broader non-developer promotion.                                       |
+| Smithery                  | MCP marketplace with install/distribution workflow and usage visibility.                              | Do not submit hosted personal auth. Submit only after a local MCPB artifact exists and passes smoke tests. |
+| Claude Code plugin        | Distributable Claude Code package with MCP config and workflow skills.                                | Evaluate after MCPB or in parallel; keep auth local through stdio.                                         |
+| Codex plugin              | Distributable Codex package with MCP config and workflow skills.                                      | Track as a near-term opportunity; public self-serve publishing is still coming soon.                       |
+| MCP.so                    | Third-party MCP marketplace with a visible Submit flow and GitHub issue submissions.                  | Submit via `https://mcp.so/submit` or `chatmcp/mcpso` issue after public release.                          |
+| Glama MCP Servers         | Large indexed MCP directory with quality and maintenance signals.                                     | Use Add Server flow after public release; verify how it classifies local-only/auth tools.                  |
+| Awesome MCP Servers lists | High-reach GitHub discovery for builders browsing MCP servers.                                        | Submit PRs to `punkpeye/awesome-mcp-servers` and `appcypher/awesome-mcp-servers` after public release.     |
 
 ## Official MCP Registry Steps
 
