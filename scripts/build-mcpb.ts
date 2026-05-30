@@ -16,7 +16,7 @@ type PackageJson = {
 
 type ZipEntry = {
   relativePath: string;
-  data: Buffer;
+  fullPath: string;
   mode: number;
 };
 
@@ -31,6 +31,8 @@ const mcpbRoot = path.join(repoRoot, 'mcpb');
 const buildRoot = path.join(mcpbRoot, 'build');
 const stageRoot = path.join(buildRoot, 'vrchat-mcp');
 const zipFileMode = 0o100644;
+const zip16Limit = 0xffff;
+const zip32Limit = 0xffffffff;
 
 const crcTable = new Uint32Array(256);
 for (let i = 0; i < 256; i += 1) {
@@ -75,6 +77,20 @@ async function copyDirectoryIfExists(source: string, target: string): Promise<vo
     await fs.cp(source, target, { recursive: true });
   } catch (err) {
     if ((err as { code?: string }).code !== 'ENOENT') throw err;
+  }
+}
+
+async function copyRequiredDirectory(source: string, target: string): Promise<void> {
+  try {
+    await fs.cp(source, target, { recursive: true });
+  } catch (err) {
+    if ((err as { code?: string }).code === 'ENOENT') {
+      const relativeSource = path.relative(repoRoot, source) || source;
+      throw new Error(
+        `Required directory ${relativeSource} is missing. Run npm run build before building the MCPB bundle.`
+      );
+    }
+    throw err;
   }
 }
 
@@ -133,7 +149,7 @@ async function listFiles(root: string, current = root): Promise<ZipEntry[]> {
     if (!dirent.isFile()) continue;
 
     const relativePath = path.relative(root, fullPath).split(path.sep).join('/');
-    entries.push({ relativePath, data: await fs.readFile(fullPath), mode: zipFileMode });
+    entries.push({ relativePath, fullPath, mode: zipFileMode });
   }
 
   return entries;
@@ -141,65 +157,97 @@ async function listFiles(root: string, current = root): Promise<ZipEntry[]> {
 
 async function writeZip(sourceDir: string, outputPath: string): Promise<void> {
   const entries = await listFiles(sourceDir);
-  const chunks: Buffer[] = [];
+  if (entries.length > zip16Limit) {
+    throw new Error(
+      `Archive contains ${entries.length} entries, which exceeds the ZIP32 limit of ${zip16Limit}. ZIP64 support is required.`
+    );
+  }
+
   const centralDirectory: Buffer[] = [];
   let offset = 0;
   const now = dosDateTime(new Date());
+  const output = await fs.open(outputPath, 'w');
+  let completed = false;
 
-  for (const entry of entries) {
-    const name = Buffer.from(entry.relativePath, 'utf8');
-    const crc = crc32(entry.data);
-    const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x04034b50, 0);
-    local.writeUInt16LE(20, 4);
-    local.writeUInt16LE(0, 6);
-    local.writeUInt16LE(0, 8);
-    local.writeUInt16LE(now.time, 10);
-    local.writeUInt16LE(now.date, 12);
-    local.writeUInt32LE(crc, 14);
-    local.writeUInt32LE(entry.data.length, 18);
-    local.writeUInt32LE(entry.data.length, 22);
-    local.writeUInt16LE(name.length, 26);
-    local.writeUInt16LE(0, 28);
+  try {
+    for (const entry of entries) {
+      const name = Buffer.from(entry.relativePath, 'utf8');
+      const data = await fs.readFile(entry.fullPath);
+      if (name.length > zip16Limit) {
+        throw new Error(`Archive entry path is too long for ZIP32: ${entry.relativePath}`);
+      }
+      if (data.length > zip32Limit || offset > zip32Limit) {
+        throw new Error('Archive exceeds ZIP32 size limits. ZIP64 support is required.');
+      }
 
-    chunks.push(local, name, entry.data);
+      const crc = crc32(data);
+      const local = Buffer.alloc(30);
+      local.writeUInt32LE(0x04034b50, 0);
+      local.writeUInt16LE(20, 4);
+      local.writeUInt16LE(0, 6);
+      local.writeUInt16LE(0, 8);
+      local.writeUInt16LE(now.time, 10);
+      local.writeUInt16LE(now.date, 12);
+      local.writeUInt32LE(crc, 14);
+      local.writeUInt32LE(data.length, 18);
+      local.writeUInt32LE(data.length, 22);
+      local.writeUInt16LE(name.length, 26);
+      local.writeUInt16LE(0, 28);
 
-    const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x02014b50, 0);
-    central.writeUInt16LE(20, 4);
-    central.writeUInt16LE(20, 6);
-    central.writeUInt16LE(0, 8);
-    central.writeUInt16LE(0, 10);
-    central.writeUInt16LE(now.time, 12);
-    central.writeUInt16LE(now.date, 14);
-    central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(entry.data.length, 20);
-    central.writeUInt32LE(entry.data.length, 24);
-    central.writeUInt16LE(name.length, 28);
-    central.writeUInt16LE(0, 30);
-    central.writeUInt16LE(0, 32);
-    central.writeUInt16LE(0, 34);
-    central.writeUInt16LE(0, 36);
-    central.writeUInt32LE(((entry.mode & 0xffff) << 16) >>> 0, 38);
-    central.writeUInt32LE(offset, 42);
-    centralDirectory.push(central, name);
+      await output.write(local);
+      await output.write(name);
+      await output.write(data);
 
-    offset += local.length + name.length + entry.data.length;
+      const central = Buffer.alloc(46);
+      central.writeUInt32LE(0x02014b50, 0);
+      central.writeUInt16LE(20, 4);
+      central.writeUInt16LE(20, 6);
+      central.writeUInt16LE(0, 8);
+      central.writeUInt16LE(0, 10);
+      central.writeUInt16LE(now.time, 12);
+      central.writeUInt16LE(now.date, 14);
+      central.writeUInt32LE(crc, 16);
+      central.writeUInt32LE(data.length, 20);
+      central.writeUInt32LE(data.length, 24);
+      central.writeUInt16LE(name.length, 28);
+      central.writeUInt16LE(0, 30);
+      central.writeUInt16LE(0, 32);
+      central.writeUInt16LE(0, 34);
+      central.writeUInt16LE(0, 36);
+      central.writeUInt32LE(((entry.mode & 0xffff) << 16) >>> 0, 38);
+      central.writeUInt32LE(offset, 42);
+      centralDirectory.push(central, name);
+
+      offset += local.length + name.length + data.length;
+    }
+
+    const centralOffset = offset;
+    const centralSize = centralDirectory.reduce((total, chunk) => total + chunk.length, 0);
+    if (centralOffset > zip32Limit || centralSize > zip32Limit) {
+      throw new Error('Archive exceeds ZIP32 central directory limits. ZIP64 support is required.');
+    }
+
+    const end = Buffer.alloc(22);
+    end.writeUInt32LE(0x06054b50, 0);
+    end.writeUInt16LE(0, 4);
+    end.writeUInt16LE(0, 6);
+    end.writeUInt16LE(entries.length, 8);
+    end.writeUInt16LE(entries.length, 10);
+    end.writeUInt32LE(centralSize, 12);
+    end.writeUInt32LE(centralOffset, 16);
+    end.writeUInt16LE(0, 20);
+
+    for (const chunk of centralDirectory) {
+      await output.write(chunk);
+    }
+    await output.write(end);
+    completed = true;
+  } finally {
+    await output.close();
+    if (!completed) {
+      await fs.rm(outputPath, { force: true });
+    }
   }
-
-  const centralOffset = offset;
-  const centralSize = centralDirectory.reduce((total, chunk) => total + chunk.length, 0);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0);
-  end.writeUInt16LE(0, 4);
-  end.writeUInt16LE(0, 6);
-  end.writeUInt16LE(entries.length, 8);
-  end.writeUInt16LE(entries.length, 10);
-  end.writeUInt32LE(centralSize, 12);
-  end.writeUInt32LE(centralOffset, 16);
-  end.writeUInt16LE(0, 20);
-
-  await fs.writeFile(outputPath, Buffer.concat([...chunks, ...centralDirectory, end]));
 }
 
 function repositoryUrl(pkg: PackageJson): string {
@@ -213,9 +261,7 @@ async function stageBundle(pkg: PackageJson): Promise<string> {
   await fs.rm(buildRoot, { recursive: true, force: true });
   await fs.mkdir(path.join(stageRoot, 'server'), { recursive: true });
 
-  await fs.cp(path.join(repoRoot, 'dist'), path.join(stageRoot, 'server', 'dist'), {
-    recursive: true,
-  });
+  await copyRequiredDirectory(path.join(repoRoot, 'dist'), path.join(stageRoot, 'server', 'dist'));
   await copyFileIfExists(path.join(repoRoot, 'package.json'), path.join(stageRoot, 'package.json'));
   await copyFileIfExists(
     path.join(repoRoot, 'package-lock.json'),
