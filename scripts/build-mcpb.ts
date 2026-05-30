@@ -30,6 +30,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const mcpbRoot = path.join(repoRoot, 'mcpb');
 const buildRoot = path.join(mcpbRoot, 'build');
 const stageRoot = path.join(buildRoot, 'vrchat-mcp');
+const zipFileMode = 0o100644;
 
 const crcTable = new Uint32Array(256);
 for (let i = 0; i < 256; i += 1) {
@@ -132,8 +133,7 @@ async function listFiles(root: string, current = root): Promise<ZipEntry[]> {
     if (!dirent.isFile()) continue;
 
     const relativePath = path.relative(root, fullPath).split(path.sep).join('/');
-    const stat = await fs.stat(fullPath);
-    entries.push({ relativePath, data: await fs.readFile(fullPath), mode: stat.mode });
+    entries.push({ relativePath, data: await fs.readFile(fullPath), mode: zipFileMode });
   }
 
   return entries;
