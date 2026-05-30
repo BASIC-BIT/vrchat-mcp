@@ -265,6 +265,7 @@ Useful scripts:
 - `npm run smoke:live`: run the opt-in live smoke check.
 - `npm run generate:tools-docs`: regenerate `docs/tools.md`.
 - `npm run generate:schemas`: regenerate OpenAPI schemas.
+- `npm run mcpb:build`: build a local MCPB bundle under `mcpb/`.
 
 Live E2E tests and LLM evals are opt-in. See `docs/evals.md` for details.
 

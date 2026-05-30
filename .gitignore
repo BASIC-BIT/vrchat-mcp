@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 *.tsbuildinfo
+mcpb/build/
+mcpb/*.mcpb
 
 # Test output
 coverage/
