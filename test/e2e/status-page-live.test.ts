@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createMcpHarness, type McpHarness } from '../helpers/mcp-harness.js';
+import { loadLiveConfig } from '../helpers/live-config.js';
 
 const E2E_TIMEOUT_MS = 60_000;
 const RETRY_COUNT = 3;
@@ -12,6 +13,8 @@ const COMPONENT_STATUSES = new Set([
   'partial_outage',
   'major_outage',
 ]);
+const liveConfig = loadLiveConfig();
+const describeLive = liveConfig ? describe : describe.skip;
 
 interface StatusPageGraph {
   key?: unknown;
@@ -108,7 +111,7 @@ async function retryTransientStatusPageFailure(check: () => Promise<void>): Prom
   throw lastError;
 }
 
-describe('mcp e2e (live status page)', () => {
+describeLive('mcp e2e (live status page)', () => {
   let harness: McpHarness | null = null;
 
   beforeAll(async () => {
