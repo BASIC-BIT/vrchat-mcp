@@ -122,6 +122,17 @@ describe('auth manager', () => {
     expect(res.body).toBe('Invalid host');
   });
 
+  it('accepts loopback alias host headers for local browser login requests', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    const res = await requestText(url, { headers: { host: `localhost:${parsed.port}` } });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('VRChat MCP Login');
+  });
+
   it('rejects login form posts from unexpected origins', async () => {
     const authManager = await loadAuthManager();
     const { url } = await authManager.startLoginServer();
@@ -137,5 +148,41 @@ describe('auth manager', () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.body).toBe('Invalid origin');
+  });
+
+  it('rejects login form posts from non-http origins', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    const res = await requestText(url.replace('/?', '/submit?'), {
+      method: 'POST',
+      headers: {
+        origin: `ftp://localhost:${parsed.port}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'username=test&password=test',
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toBe('Invalid origin');
+  });
+
+  it('accepts loopback alias origins for local browser login posts', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    const res = await requestText(url.replace('/?', '/submit?'), {
+      method: 'POST',
+      headers: {
+        origin: `http://localhost:${parsed.port}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'username=&password=',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('Username and password are required');
   });
 });
