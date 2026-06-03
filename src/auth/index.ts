@@ -76,6 +76,59 @@ function loginUserAgent(): string {
   return getConfig().api.userAgent;
 }
 
+function isAllowedLoopbackHost(host: string, expectedPort: number): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(`http://${host}`);
+  } catch {
+    return false;
+  }
+  if (
+    host.includes('@') ||
+    parsed.username.length > 0 ||
+    parsed.password.length > 0 ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const port = Number(parsed.port || '80');
+  return (
+    port === expectedPort &&
+    (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]')
+  );
+}
+
+function isAllowedLoopbackOrigin(origin: string, expectedPort: number): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (
+    origin.includes('@') ||
+    parsed.username.length > 0 ||
+    parsed.password.length > 0 ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const port = Number(parsed.port || '80');
+  return (
+    parsed.protocol === 'http:' &&
+    port === expectedPort &&
+    (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]')
+  );
+}
+
 class AuthManager {
   private jar = new CookieJar();
   private server: ReturnType<typeof createServer> | null = null;
@@ -324,15 +377,15 @@ class AuthManager {
       return null;
     }
 
-    const expectedHost = `127.0.0.1:${this.port}`;
-    if (req.headers.host !== expectedHost) {
+    const host = req.headers.host;
+    if (!host || !isAllowedLoopbackHost(host, this.port)) {
       res.statusCode = 403;
       res.end('Invalid host');
       return null;
     }
 
     const origin = req.headers.origin;
-    if (origin && origin !== `http://${expectedHost}`) {
+    if (origin && !isAllowedLoopbackOrigin(origin, this.port)) {
       res.statusCode = 403;
       res.end('Invalid origin');
       return null;

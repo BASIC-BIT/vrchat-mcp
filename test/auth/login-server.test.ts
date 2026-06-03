@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { RequestInfo, RequestInit } from 'undici';
 
 const authModulePath = '../../src/auth/index.js';
@@ -54,6 +54,11 @@ function createMockFetch(queue: MockFetchEntry[], realFetch: typeof fetch) {
 
 describe.sequential('auth login server', () => {
   const realFetch = globalThis.fetch;
+  const prevStore = process.env.VRCHAT_MCP_COOKIE_STORE;
+
+  beforeEach(() => {
+    process.env.VRCHAT_MCP_COOKIE_STORE = 'memory';
+  });
 
   afterEach(async () => {
     if (globalThis.fetch !== realFetch) {
@@ -61,6 +66,11 @@ describe.sequential('auth login server', () => {
     }
     const authManager = await getAuthManager();
     await authManager.logout();
+    if (prevStore === undefined) {
+      delete process.env.VRCHAT_MCP_COOKIE_STORE;
+    } else {
+      process.env.VRCHAT_MCP_COOKIE_STORE = prevStore;
+    }
   });
 
   it('reuses the same server when already running', async () => {
