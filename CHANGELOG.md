@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 - 2026-06-03
+
+- Fix local browser auth submissions from same-port loopback aliases such as `localhost`.
+- Keep auth Host and Origin validation strict for non-loopback, wrong-port, non-HTTP, and userinfo-shaped inputs.
+- Keep live status-page e2e coverage opt-in so release CI does not depend on transient external status-page availability.
+
 ## 0.1.5 - 2026-05-19
 
 - Correct the MCP Registry package metadata so the npm package entry points at the published release version.
