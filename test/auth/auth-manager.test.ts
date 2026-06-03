@@ -133,6 +133,17 @@ describe('auth manager', () => {
     expect(res.body).toContain('VRChat MCP Login');
   });
 
+  it('rejects login requests with userinfo-shaped host headers', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    const res = await requestText(url, { headers: { host: `@localhost:${parsed.port}` } });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toBe('Invalid host');
+  });
+
   it('rejects login form posts from unexpected origins', async () => {
     const authManager = await loadAuthManager();
     const { url } = await authManager.startLoginServer();
@@ -159,6 +170,24 @@ describe('auth manager', () => {
       method: 'POST',
       headers: {
         origin: `ftp://localhost:${parsed.port}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'username=test&password=test',
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toBe('Invalid origin');
+  });
+
+  it('rejects login form posts from userinfo-shaped origins', async () => {
+    const authManager = await loadAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    const res = await requestText(url.replace('/?', '/submit?'), {
+      method: 'POST',
+      headers: {
+        origin: `http://@localhost:${parsed.port}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
       body: 'username=test&password=test',

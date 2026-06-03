@@ -83,7 +83,14 @@ function isAllowedLoopbackHost(host: string, expectedPort: number): boolean {
   } catch {
     return false;
   }
-  if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+  if (
+    host.includes('@') ||
+    parsed.username.length > 0 ||
+    parsed.password.length > 0 ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash
+  ) {
     return false;
   }
 
@@ -102,7 +109,14 @@ function isAllowedLoopbackOrigin(origin: string, expectedPort: number): boolean 
   } catch {
     return false;
   }
-  if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+  if (
+    origin.includes('@') ||
+    parsed.username.length > 0 ||
+    parsed.password.length > 0 ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash
+  ) {
     return false;
   }
 
