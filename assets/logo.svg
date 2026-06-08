@@ -5,35 +5,54 @@
   aria-labelledby="title desc"
 >
   <title id="title">VRChat MCP logo</title>
-  <desc id="desc">A rounded blue chat mark connected to three small nodes.</desc>
+  <desc id="desc">Two nested speech bubbles inside a dark rounded app tile.</desc>
   <defs>
-    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#38bdf8" />
-      <stop offset="0.52" stop-color="#2563eb" />
-      <stop offset="1" stop-color="#312e81" />
+    <linearGradient id="tile-bg" x1="128" y1="0" x2="128" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#171b2f" />
+      <stop offset="0.58" stop-color="#101628" />
+      <stop offset="1" stop-color="#0b1020" />
     </linearGradient>
-    <linearGradient id="line" x1="76" y1="86" x2="184" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#e0f2fe" />
-      <stop offset="1" stop-color="#bfdbfe" />
+    <linearGradient
+      id="tile-border"
+      x1="26"
+      y1="18"
+      x2="230"
+      y2="238"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0" stop-color="#fff8ed" stop-opacity="0.52" />
+      <stop offset="0.48" stop-color="#6f8fd0" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#2c355a" stop-opacity="0.64" />
     </linearGradient>
+    <filter
+      id="soft-shadow"
+      x="-20%"
+      y="-20%"
+      width="140%"
+      height="150%"
+      color-interpolation-filters="sRGB"
+    >
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#020617" flood-opacity="0.42" />
+    </filter>
   </defs>
-  <rect width="256" height="256" rx="56" fill="#07111f" />
-  <path
-    d="M68 56h120c22.1 0 40 17.9 40 40v52c0 22.1-17.9 40-40 40h-47.5l-43 31.4c-8.7 6.3-20.9.1-20.9-10.7V188H68c-22.1 0-40-17.9-40-40V96c0-22.1 17.9-40 40-40Z"
-    fill="url(#bg)"
-  />
-  <path
-    d="M84 116h42.5M126.5 116l37-30M126.5 116l45.5 44"
-    fill="none"
-    stroke="url(#line)"
-    stroke-width="12"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
-  <circle cx="84" cy="116" r="18" fill="#f8fafc" />
-  <circle cx="164" cy="86" r="18" fill="#f8fafc" />
-  <circle cx="172" cy="160" r="18" fill="#f8fafc" />
-  <circle cx="84" cy="116" r="7" fill="#2563eb" />
-  <circle cx="164" cy="86" r="7" fill="#2563eb" />
-  <circle cx="172" cy="160" r="7" fill="#2563eb" />
+  <rect width="256" height="256" rx="56" fill="url(#tile-border)" />
+  <rect x="2" y="2" width="252" height="252" rx="54" fill="url(#tile-bg)" />
+  <g transform="translate(0 10)">
+    <path
+      d="M47 70c0-23.2 18.8-42 42-42h78c23.2 0 42 18.8 42 42v73c0 23.2-18.8 42-42 42h-31.2l-45.1 32.5c-8.6 6.2-20.7 0-20.7-10.6v-25.8c-13.6-7-23-21.2-23-37.6V70Z"
+      fill="#f6efe6"
+      filter="url(#soft-shadow)"
+    />
+    <path
+      d="M90 61h78c9.9 0 18 8.1 18 18v44c0 9.9-8.1 18-18 18h-31.6l-24.5 17.7c-4.1 3-9.9.1-9.9-5V141H90c-9.9 0-18-8.1-18-18V79c0-9.9 8.1-18 18-18Z"
+      fill="#4f6fa8"
+    />
+    <path
+      d="M108 84h51M108 104h41M108 124h27"
+      fill="none"
+      stroke="#fff8ed"
+      stroke-width="8"
+      stroke-linecap="round"
+    />
+  </g>
 </svg>
