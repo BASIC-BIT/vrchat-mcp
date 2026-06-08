@@ -145,7 +145,7 @@ describe('mcp e2e (mock writes)', () => {
 
     const deleteResult = await client.callTool({
       name: 'vrchat_event_delete',
-      arguments: { groupId, calendarId },
+      arguments: { groupId, calendarId, targetKind: 'series' },
     });
     expect(deleteResult).toMatchObject({ structuredContent: { status: 'deleted' } });
   });

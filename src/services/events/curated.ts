@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import {
   CalendarEventCreateSchema,
   type CalendarEventCreateInput,
+  type CalendarEventDeleteInput,
   type CalendarEventFollowInput,
   type CalendarEventUpdateInput,
   type EventsDiscoverInput,
@@ -41,6 +42,7 @@ type CalendarEventUpdatePayload = Omit<CalendarEventUpdateInput, 'groupId' | 'ca
   calendarId?: string;
 };
 type GroupCalendarEvent = NonNullable<ReadOperationData<'getGroupCalendarEvent'>>;
+type CalendarEventDeleteTargetKind = CalendarEventDeleteInput['targetKind'];
 
 function invalidateGroupEventCaches(groupId: string): void {
   cacheManager.invalidateByTag(`groups:${groupId}`);
@@ -49,6 +51,36 @@ function invalidateGroupEventCaches(groupId: string): void {
 function getOccurrenceKind(event: GroupCalendarEvent): string | undefined {
   const kind = (event as Record<string, unknown>).occurrenceKind;
   return typeof kind === 'string' ? kind : undefined;
+}
+
+async function getGroupCalendarEventOrThrow(
+  groupId: string,
+  calendarId: string,
+): Promise<GroupCalendarEvent> {
+  const eventResult = await callReadOperationParsed(
+    'getGroupCalendarEvent',
+    { groupId, calendarId },
+    {},
+  );
+  const event = eventResult.data;
+  if (!event) {
+    throw new Error('Calendar event not found.');
+  }
+  return event;
+}
+
+function assertDeleteTargetKind(
+  event: GroupCalendarEvent,
+  calendarId: string,
+  targetKind: CalendarEventDeleteTargetKind,
+): void {
+  const occurrenceKind = getOccurrenceKind(event);
+  if (occurrenceKind === targetKind) return;
+
+  const found = occurrenceKind ? `occurrenceKind "${occurrenceKind}"` : 'no occurrenceKind';
+  throw new Error(
+    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found ${found}.`,
+  );
 }
 
 function parseNumber(value: number | null | undefined, fallback: number): number {
@@ -290,36 +322,19 @@ export async function updateCalendarEvent(
   return result.data ?? null;
 }
 
-export async function deleteCalendarEvent(groupId: string, calendarId: string) {
+export async function deleteCalendarEvent(
+  groupId: string,
+  calendarId: string,
+  targetKind: CalendarEventDeleteTargetKind,
+) {
+  const event = await getGroupCalendarEventOrThrow(groupId, calendarId);
+  assertDeleteTargetKind(event, calendarId, targetKind);
   const result = await callWriteOperationParsed('deleteGroupCalendarEvent', {
     groupId,
     calendarId,
   });
   invalidateGroupEventCaches(groupId);
-  return result.data ?? null;
-}
-
-export async function deleteCalendarEventOccurrence(groupId: string, calendarId: string) {
-  const eventResult = await callReadOperationParsed(
-    'getGroupCalendarEvent',
-    { groupId, calendarId },
-    {},
-  );
-  const event = eventResult.data;
-  if (!event) {
-    throw new Error('Calendar event not found.');
-  }
-
-  const occurrenceKind = getOccurrenceKind(event);
-  if (occurrenceKind !== 'occurrence') {
-    const found = occurrenceKind ? `occurrenceKind "${occurrenceKind}"` : 'no occurrenceKind';
-    throw new Error(
-      `Refusing to delete calendar event ${calendarId}: expected occurrenceKind "occurrence" but found ${found}. Use vrchat_event_delete only if deleting the series or non-occurrence event is intentional.`,
-    );
-  }
-
-  const result = await deleteCalendarEvent(groupId, calendarId);
-  return { event, result };
+  return { event, result: result.data ?? null };
 }
 
 export async function followCalendarEvent(input: CalendarEventFollowInput) {

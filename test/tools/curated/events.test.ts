@@ -14,7 +14,6 @@ vi.mock('../../../src/services/events/curated.js', async () => {
     createCalendarEvent: vi.fn(),
     updateCalendarEvent: vi.fn(),
     deleteCalendarEvent: vi.fn(),
-    deleteCalendarEventOccurrence: vi.fn(),
     followCalendarEvent: vi.fn(),
   };
 });
@@ -29,7 +28,6 @@ import {
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
-  deleteCalendarEventOccurrence,
   discoverEvents,
   followCalendarEvent,
   listUpcomingEvents,
@@ -46,7 +44,6 @@ describe('curated event tools', () => {
     vi.mocked(createCalendarEvent).mockReset();
     vi.mocked(updateCalendarEvent).mockReset();
     vi.mocked(deleteCalendarEvent).mockReset();
-    vi.mocked(deleteCalendarEventOccurrence).mockReset();
     vi.mocked(followCalendarEvent).mockReset();
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
   });
@@ -202,31 +199,21 @@ describe('curated event tools', () => {
   });
 
   it('deletes events', async () => {
-    vi.mocked(deleteCalendarEvent).mockResolvedValue({ ok: true });
-
-    const server = new FakeServer();
-    registerCuratedEventTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
-
-    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
-    expect(deleteCalendarEvent).toHaveBeenCalledWith('grp_1', 'evt_1');
-    expect(result).toMatchObject({
-      structuredContent: { status: 'deleted' },
-    });
-  });
-
-  it('deletes occurrence events with the guarded tool', async () => {
-    vi.mocked(deleteCalendarEventOccurrence).mockResolvedValue({
+    vi.mocked(deleteCalendarEvent).mockResolvedValue({
       event: { id: 'evt_1', occurrenceKind: 'occurrence' },
       result: { ok: true },
     });
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete_occurrence');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
 
-    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
-    expect(deleteCalendarEventOccurrence).toHaveBeenCalledWith('grp_1', 'evt_1');
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'evt_1',
+      targetKind: 'occurrence',
+    });
+    expect(deleteCalendarEvent).toHaveBeenCalledWith('grp_1', 'evt_1', 'occurrence');
     expect(result).toMatchObject({
       structuredContent: {
         status: 'deleted',
@@ -235,14 +222,29 @@ describe('curated event tools', () => {
     });
   });
 
-  it('surfaces guarded occurrence delete errors', async () => {
-    vi.mocked(deleteCalendarEventOccurrence).mockRejectedValue(new Error('Refusing to delete series'));
+  it('requires an explicit delete target kind', async () => {
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
+
+    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(deleteCalendarEvent).not.toHaveBeenCalled();
+  });
+
+  it('surfaces guarded delete errors', async () => {
+    vi.mocked(deleteCalendarEvent).mockRejectedValue(new Error('Refusing to delete series'));
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete_occurrence');
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
 
-    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'evt_1',
+      targetKind: 'occurrence',
+    });
 
     expect(result).toMatchObject({ isError: true });
   });

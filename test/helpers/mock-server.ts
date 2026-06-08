@@ -932,6 +932,7 @@ export async function createMockServer(
         startsAt,
         endsAt,
         accessType: typeof body?.accessType === 'string' ? body.accessType : 'group',
+        occurrenceKind: 'series',
       });
       if (!data.calendarGroupEvents[groupId]) {
         data.calendarGroupEvents[groupId] = [];
