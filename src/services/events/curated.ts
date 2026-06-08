@@ -48,6 +48,8 @@ function invalidateGroupEventCaches(groupId: string): void {
   cacheManager.invalidateByTag(`groups:${groupId}`);
 }
 
+// occurrenceKind is not in the generated CalendarEvent type, but the API returns it
+// and generated schemas currently preserve unknown fields via .passthrough().
 function getOccurrenceKind(event: GroupCalendarEvent): string | undefined {
   const kind = (event as Record<string, unknown>).occurrenceKind;
   return typeof kind === 'string' ? kind : undefined;
@@ -344,6 +346,7 @@ export async function followCalendarEvent(input: CalendarEventFollowInput) {
     { groupId: input.groupId, calendarId: input.calendarId },
     { isFollowing: input.isFollowing },
   );
+  // Event reads may include current-user follow state via userInterest.
   invalidateGroupEventCaches(input.groupId);
   return result.data ?? null;
 }
