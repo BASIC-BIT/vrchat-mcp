@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-28T15:11:34.040Z
+Generated: 2026-06-08T08:31:09.652Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -485,7 +485,7 @@ Output schema:
 ```
 
 ### vrchat_event_delete
-Delete a group calendar event. (write, destructive)
+Delete a group calendar event after verifying whether the target is an occurrence or series. (write, destructive)
 
 Input schema:
 
@@ -499,11 +499,21 @@ Input schema:
     },
     "calendarId": {
       "type": "string"
+    },
+    "targetKind": {
+      "type": "string",
+      "enum": [
+        "single_event",
+        "occurrence",
+        "series"
+      ],
+      "description": "Required safety check. Use single_event for a non-recurring event, occurrence for a generated recurring occurrence, or series for the recurring parent series."
     }
   },
   "required": [
     "groupId",
-    "calendarId"
+    "calendarId",
+    "targetKind"
   ],
   "additionalProperties": false
 }

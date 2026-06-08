@@ -118,6 +118,11 @@ export const CalendarEventUpdateSchema = schemas.UpdateCalendarEventRequest.exte
 export const CalendarEventDeleteSchema = z.object({
   groupId: schemas.GroupID,
   calendarId: schemas.CalendarID,
+  targetKind: z
+    .enum(['single_event', 'occurrence', 'series'])
+    .describe(
+      'Required safety check. Use single_event for a non-recurring event, occurrence for a generated recurring occurrence, or series for the recurring parent series.',
+    ),
 });
 
 export const CalendarEventFollowSchema = z.object({

@@ -199,17 +199,54 @@ describe('curated event tools', () => {
   });
 
   it('deletes events', async () => {
-    vi.mocked(deleteCalendarEvent).mockResolvedValue({ ok: true });
+    vi.mocked(deleteCalendarEvent).mockResolvedValue({
+      event: { id: 'evt_1', occurrenceKind: 'occurrence' },
+      result: { ok: true },
+    });
 
     const server = new FakeServer();
     registerCuratedEventTools(server as unknown as McpServer);
     const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
 
-    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
-    expect(deleteCalendarEvent).toHaveBeenCalledWith('grp_1', 'evt_1');
-    expect(result).toMatchObject({
-      structuredContent: { status: 'deleted' },
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'evt_1',
+      targetKind: 'occurrence',
     });
+    expect(deleteCalendarEvent).toHaveBeenCalledWith('grp_1', 'evt_1', 'occurrence');
+    expect(result).toMatchObject({
+      structuredContent: {
+        status: 'deleted',
+        event: { id: 'evt_1', occurrenceKind: 'occurrence' },
+      },
+    });
+  });
+
+  it('requires an explicit delete target kind', async () => {
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
+
+    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(deleteCalendarEvent).not.toHaveBeenCalled();
+  });
+
+  it('surfaces guarded delete errors', async () => {
+    vi.mocked(deleteCalendarEvent).mockRejectedValue(new Error('Refusing to delete series'));
+
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete');
+
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'evt_1',
+      targetKind: 'occurrence',
+    });
+
+    expect(result).toMatchObject({ isError: true });
   });
 
   it('follows events', async () => {

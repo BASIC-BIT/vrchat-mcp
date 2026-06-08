@@ -236,7 +236,8 @@ export function registerCuratedEventTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.event.delete'),
     {
-      description: 'Delete a group calendar event.',
+      description:
+        'Delete a group calendar event after verifying whether the target is an occurrence or series.',
       inputSchema: CalendarEventDeleteSchema,
       outputSchema: CalendarEventWriteOutputSchema,
       annotations: destructiveToolAnnotations,
@@ -248,10 +249,15 @@ export function registerCuratedEventTools(server: McpServer): void {
         if (!allowed.ok) {
           return toolError(allowed.reason);
         }
-        const result = await deleteCalendarEvent(input.groupId, input.calendarId);
+        const deletion = await deleteCalendarEvent(
+          input.groupId,
+          input.calendarId,
+          input.targetKind,
+        );
         const payload = {
           status: 'deleted',
-          result: result ?? null,
+          event: deletion.event,
+          result: deletion.result ?? null,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),

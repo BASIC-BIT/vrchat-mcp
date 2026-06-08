@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import {
   CalendarEventCreateSchema,
   type CalendarEventCreateInput,
+  type CalendarEventDeleteInput,
   type CalendarEventFollowInput,
   type CalendarEventUpdateInput,
   type EventsDiscoverInput,
@@ -9,7 +10,12 @@ import {
   type EventsUpcomingInput,
 } from '../../models/events.js';
 import type { schemas } from '../../generated/vrchat-schemas.js';
-import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
+import {
+  callReadOperationParsed,
+  callWriteOperationParsed,
+  type ReadOperationData,
+} from '../api/client.js';
+import { cacheManager } from '../cache.js';
 import {
   getMonthKeys,
   monthKeyToDateTime,
@@ -35,6 +41,50 @@ type CalendarEventUpdatePayload = Omit<CalendarEventUpdateInput, 'groupId' | 'ca
   groupId?: string;
   calendarId?: string;
 };
+type GroupCalendarEvent = NonNullable<ReadOperationData<'getGroupCalendarEvent'>>;
+type CalendarEventDeleteTargetKind = CalendarEventDeleteInput['targetKind'];
+
+function invalidateGroupEventCaches(groupId: string): void {
+  cacheManager.invalidateByTag(`groups:${groupId}`);
+}
+
+// occurrenceKind is not in the generated CalendarEvent type, but the API returns it
+// and generated schemas currently preserve unknown fields via .passthrough().
+function getOccurrenceKind(event: GroupCalendarEvent): string | undefined {
+  const kind = (event as Record<string, unknown>).occurrenceKind;
+  return typeof kind === 'string' ? kind : undefined;
+}
+
+async function getGroupCalendarEventOrThrow(
+  groupId: string,
+  calendarId: string,
+): Promise<GroupCalendarEvent> {
+  const eventResult = await callReadOperationParsed(
+    'getGroupCalendarEvent',
+    { groupId, calendarId },
+    {},
+  );
+  const event = eventResult.data;
+  if (!event) {
+    throw new Error('Calendar event not found.');
+  }
+  return event;
+}
+
+function assertDeleteTargetKind(
+  event: GroupCalendarEvent,
+  calendarId: string,
+  targetKind: CalendarEventDeleteTargetKind,
+): void {
+  const occurrenceKind = getOccurrenceKind(event);
+  if (targetKind === 'single_event' && occurrenceKind === undefined) return;
+  if (occurrenceKind === targetKind) return;
+
+  const found = occurrenceKind ?? 'single_event';
+  throw new Error(
+    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${found}".`,
+  );
+}
 
 function parseNumber(value: number | null | undefined, fallback: number): number {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.floor(value);
@@ -257,6 +307,7 @@ export function buildCalendarUpdateRequest(
 
 export async function createCalendarEvent(groupId: string, request: CalendarEventCreateRequest) {
   const result = await callWriteOperationParsed('createGroupCalendarEvent', { groupId }, request);
+  invalidateGroupEventCaches(groupId);
   return result.data ?? null;
 }
 
@@ -270,15 +321,23 @@ export async function updateCalendarEvent(
     { groupId, calendarId },
     request,
   );
+  invalidateGroupEventCaches(groupId);
   return result.data ?? null;
 }
 
-export async function deleteCalendarEvent(groupId: string, calendarId: string) {
+export async function deleteCalendarEvent(
+  groupId: string,
+  calendarId: string,
+  targetKind: CalendarEventDeleteTargetKind,
+) {
+  const event = await getGroupCalendarEventOrThrow(groupId, calendarId);
+  assertDeleteTargetKind(event, calendarId, targetKind);
   const result = await callWriteOperationParsed('deleteGroupCalendarEvent', {
     groupId,
     calendarId,
   });
-  return result.data ?? null;
+  invalidateGroupEventCaches(groupId);
+  return { event, result: result.data ?? null };
 }
 
 export async function followCalendarEvent(input: CalendarEventFollowInput) {
@@ -287,5 +346,7 @@ export async function followCalendarEvent(input: CalendarEventFollowInput) {
     { groupId: input.groupId, calendarId: input.calendarId },
     { isFollowing: input.isFollowing },
   );
+  // Event reads may include current-user follow state via userInterest.
+  invalidateGroupEventCaches(input.groupId);
   return result.data ?? null;
 }
