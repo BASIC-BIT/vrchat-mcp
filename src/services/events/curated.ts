@@ -75,11 +75,12 @@ function assertDeleteTargetKind(
   targetKind: CalendarEventDeleteTargetKind,
 ): void {
   const occurrenceKind = getOccurrenceKind(event);
+  if (targetKind === 'single_event' && occurrenceKind === undefined) return;
   if (occurrenceKind === targetKind) return;
 
-  const found = occurrenceKind ? `occurrenceKind "${occurrenceKind}"` : 'no occurrenceKind';
+  const found = occurrenceKind ?? 'single_event';
   throw new Error(
-    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found ${found}.`,
+    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${found}".`,
   );
 }
 

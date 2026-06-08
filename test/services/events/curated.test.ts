@@ -292,6 +292,22 @@ describe('events curated service', () => {
     expect(result.event).toMatchObject({ id: 'cal_series', occurrenceKind: 'series' });
   });
 
+  it('deletes single events after verifying targetKind', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_single' },
+    });
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { status: 'success' } });
+
+    const result = await deleteCalendarEvent('grp_1', 'cal_single', 'single_event');
+
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'deleteGroupCalendarEvent',
+      params: { groupId: 'grp_1', calendarId: 'cal_single' },
+      body: undefined,
+    });
+    expect(result.event).toMatchObject({ id: 'cal_single' });
+  });
+
   it('refuses to delete when targetKind does not match', async () => {
     vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: { id: 'cal_series', occurrenceKind: 'series' },
@@ -299,6 +315,17 @@ describe('events curated service', () => {
 
     await expect(deleteCalendarEvent('grp_1', 'cal_series', 'occurrence')).rejects.toThrow(
       'expected targetKind "occurrence"',
+    );
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+
+  it('refuses to delete single events as recurring targets', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_single' },
+    });
+
+    await expect(deleteCalendarEvent('grp_1', 'cal_single', 'series')).rejects.toThrow(
+      'found "single_event"',
     );
     expect(callOperation).not.toHaveBeenCalled();
   });

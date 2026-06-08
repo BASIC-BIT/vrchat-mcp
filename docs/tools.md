@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-06-08T08:20:08.627Z
+Generated: 2026-06-08T08:31:09.652Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -503,10 +503,11 @@ Input schema:
     "targetKind": {
       "type": "string",
       "enum": [
+        "single_event",
         "occurrence",
         "series"
       ],
-      "description": "Required safety check. Use occurrence for a single generated occurrence, or series for the recurring parent series."
+      "description": "Required safety check. Use single_event for a non-recurring event, occurrence for a generated recurring occurrence, or series for the recurring parent series."
     }
   },
   "required": [
