@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-05-28T15:11:34.040Z
+Generated: 2026-06-08T08:02:56.484Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -486,6 +486,101 @@ Output schema:
 
 ### vrchat_event_delete
 Delete a group calendar event. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string"
+    },
+    "calendarId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "groupId",
+    "calendarId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated",
+        "deleted",
+        "followed",
+        "unfollowed"
+      ]
+    },
+    "event": {
+      "anyOf": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status_code": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "status_code"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_event_delete_occurrence
+Delete a group calendar event occurrence only. Refuses to delete recurring series entries. (write, destructive)
 
 Input schema:
 

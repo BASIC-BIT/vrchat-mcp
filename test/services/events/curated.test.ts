@@ -9,11 +9,13 @@ vi.mock('../../../src/core/client.js', () => ({
 
 import { callReadOperation } from '../../../src/core/readTools.js';
 import { callOperation } from '../../../src/core/client.js';
+import { cacheManager } from '../../../src/services/cache.js';
 import {
   buildCalendarCreateRequest,
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
+  deleteCalendarEventOccurrence,
   discoverEvents,
   followCalendarEvent,
   listUpcomingEvents,
@@ -29,6 +31,7 @@ describe('events curated service', () => {
   beforeEach(() => {
     vi.mocked(callReadOperation).mockReset();
     vi.mocked(callOperation).mockReset();
+    cacheManager.invalidateAll();
   });
 
   it('filters upcoming events within the window', async () => {
@@ -208,6 +211,7 @@ describe('events curated service', () => {
   });
 
   it('calls create/update/delete event operations', async () => {
+    const invalidateSpy = vi.spyOn(cacheManager, 'invalidateByTag');
     vi.mocked(callOperation)
       .mockResolvedValueOnce({ data: { id: 'evt_new' } })
       .mockResolvedValueOnce({ data: { id: 'evt_updated' } })
@@ -228,9 +232,57 @@ describe('events curated service', () => {
     expect(created).toMatchObject({ id: 'evt_new' });
     expect(updated).toMatchObject({ id: 'evt_updated' });
     expect(deleted).toEqual({ id: 'evt_deleted' });
+    expect(invalidateSpy).toHaveBeenCalledTimes(3);
+    expect(invalidateSpy).toHaveBeenCalledWith('groups:grp_1');
+    invalidateSpy.mockRestore();
+  });
+
+  it('invalidates cached group event reads after deleting an event', async () => {
+    cacheManager.set('cached-group-event', { event: { id: 'cal_1' } }, 60_000, [
+      'groups',
+      'groups:grp_1',
+    ]);
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { status: 'success' } });
+
+    await deleteCalendarEvent('grp_1', 'cal_1');
+
+    expect(cacheManager.get('cached-group-event')).toBeUndefined();
+  });
+
+  it('deletes occurrence events after verifying occurrenceKind', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_1', occurrenceKind: 'occurrence' },
+    });
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { status: 'success' } });
+
+    const result = await deleteCalendarEventOccurrence('grp_1', 'cal_1');
+
+    expect(callReadOperation).toHaveBeenCalledWith(
+      'getGroupCalendarEvent',
+      { groupId: 'grp_1', calendarId: 'cal_1' },
+      {},
+    );
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'deleteGroupCalendarEvent',
+      params: { groupId: 'grp_1', calendarId: 'cal_1' },
+      body: undefined,
+    });
+    expect(result.event).toMatchObject({ id: 'cal_1', occurrenceKind: 'occurrence' });
+  });
+
+  it('refuses to delete recurring series via occurrence delete', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_series', occurrenceKind: 'series' },
+    });
+
+    await expect(deleteCalendarEventOccurrence('grp_1', 'cal_series')).rejects.toThrow(
+      'expected occurrenceKind "occurrence"',
+    );
+    expect(callOperation).not.toHaveBeenCalled();
   });
 
   it('follows events via API', async () => {
+    const invalidateSpy = vi.spyOn(cacheManager, 'invalidateByTag');
     vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'evt_followed' } });
 
     const result = await followCalendarEvent({
@@ -245,5 +297,7 @@ describe('events curated service', () => {
       body: { isFollowing: true },
     });
     expect(result).toMatchObject({ id: 'evt_followed' });
+    expect(invalidateSpy).toHaveBeenCalledWith('groups:grp_1');
+    invalidateSpy.mockRestore();
   });
 });

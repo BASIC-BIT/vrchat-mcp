@@ -18,6 +18,7 @@ import {
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
+  deleteCalendarEventOccurrence,
   discoverEvents,
   followCalendarEvent,
   listUpcomingEvents,
@@ -221,6 +222,39 @@ export function registerCuratedEventTools(server: McpServer): void {
         const payload = {
           status: input.isFollowing ? 'followed' : 'unfollowed',
           event: event ?? null,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    },
+  );
+
+  server.registerTool(
+    toolName('vrchat.event.delete.occurrence'),
+    {
+      description:
+        'Delete a group calendar event occurrence only. Refuses to delete recurring series entries.',
+      inputSchema: CalendarEventDeleteSchema,
+      outputSchema: CalendarEventWriteOutputSchema,
+      annotations: destructiveToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = CalendarEventDeleteSchema.parse(args);
+        const allowed = checkGroupAllowed(input.groupId);
+        if (!allowed.ok) {
+          return toolError(allowed.reason);
+        }
+        const deletion = await deleteCalendarEventOccurrence(input.groupId, input.calendarId);
+        const payload = {
+          status: 'deleted',
+          event: deletion.event,
+          result: deletion.result ?? null,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),

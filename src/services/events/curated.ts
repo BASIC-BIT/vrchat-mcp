@@ -9,7 +9,12 @@ import {
   type EventsUpcomingInput,
 } from '../../models/events.js';
 import type { schemas } from '../../generated/vrchat-schemas.js';
-import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
+import {
+  callReadOperationParsed,
+  callWriteOperationParsed,
+  type ReadOperationData,
+} from '../api/client.js';
+import { cacheManager } from '../cache.js';
 import {
   getMonthKeys,
   monthKeyToDateTime,
@@ -35,6 +40,16 @@ type CalendarEventUpdatePayload = Omit<CalendarEventUpdateInput, 'groupId' | 'ca
   groupId?: string;
   calendarId?: string;
 };
+type GroupCalendarEvent = NonNullable<ReadOperationData<'getGroupCalendarEvent'>>;
+
+function invalidateGroupEventCaches(groupId: string): void {
+  cacheManager.invalidateByTag(`groups:${groupId}`);
+}
+
+function getOccurrenceKind(event: GroupCalendarEvent): string | undefined {
+  const kind = (event as Record<string, unknown>).occurrenceKind;
+  return typeof kind === 'string' ? kind : undefined;
+}
 
 function parseNumber(value: number | null | undefined, fallback: number): number {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.floor(value);
@@ -257,6 +272,7 @@ export function buildCalendarUpdateRequest(
 
 export async function createCalendarEvent(groupId: string, request: CalendarEventCreateRequest) {
   const result = await callWriteOperationParsed('createGroupCalendarEvent', { groupId }, request);
+  invalidateGroupEventCaches(groupId);
   return result.data ?? null;
 }
 
@@ -270,6 +286,7 @@ export async function updateCalendarEvent(
     { groupId, calendarId },
     request,
   );
+  invalidateGroupEventCaches(groupId);
   return result.data ?? null;
 }
 
@@ -278,7 +295,31 @@ export async function deleteCalendarEvent(groupId: string, calendarId: string) {
     groupId,
     calendarId,
   });
+  invalidateGroupEventCaches(groupId);
   return result.data ?? null;
+}
+
+export async function deleteCalendarEventOccurrence(groupId: string, calendarId: string) {
+  const eventResult = await callReadOperationParsed(
+    'getGroupCalendarEvent',
+    { groupId, calendarId },
+    {},
+  );
+  const event = eventResult.data;
+  if (!event) {
+    throw new Error('Calendar event not found.');
+  }
+
+  const occurrenceKind = getOccurrenceKind(event);
+  if (occurrenceKind !== 'occurrence') {
+    const found = occurrenceKind ? `occurrenceKind "${occurrenceKind}"` : 'no occurrenceKind';
+    throw new Error(
+      `Refusing to delete calendar event ${calendarId}: expected occurrenceKind "occurrence" but found ${found}. Use vrchat_event_delete only if deleting the series or non-occurrence event is intentional.`,
+    );
+  }
+
+  const result = await deleteCalendarEvent(groupId, calendarId);
+  return { event, result };
 }
 
 export async function followCalendarEvent(input: CalendarEventFollowInput) {
@@ -287,5 +328,6 @@ export async function followCalendarEvent(input: CalendarEventFollowInput) {
     { groupId: input.groupId, calendarId: input.calendarId },
     { isFollowing: input.isFollowing },
   );
+  invalidateGroupEventCaches(input.groupId);
   return result.data ?? null;
 }

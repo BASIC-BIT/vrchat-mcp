@@ -61,6 +61,7 @@ describe('registerAllTools', () => {
       'vrchat_events_search',
       'vrchat_event_create',
       'vrchat_event_update',
+      'vrchat_event_delete_occurrence',
       'vrchat_event_delete',
       'vrchat_cache_invalidate',
       'vrchat_me',

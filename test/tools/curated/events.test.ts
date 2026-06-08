@@ -14,6 +14,7 @@ vi.mock('../../../src/services/events/curated.js', async () => {
     createCalendarEvent: vi.fn(),
     updateCalendarEvent: vi.fn(),
     deleteCalendarEvent: vi.fn(),
+    deleteCalendarEventOccurrence: vi.fn(),
     followCalendarEvent: vi.fn(),
   };
 });
@@ -28,6 +29,7 @@ import {
   buildCalendarUpdateRequest,
   createCalendarEvent,
   deleteCalendarEvent,
+  deleteCalendarEventOccurrence,
   discoverEvents,
   followCalendarEvent,
   listUpcomingEvents,
@@ -44,6 +46,7 @@ describe('curated event tools', () => {
     vi.mocked(createCalendarEvent).mockReset();
     vi.mocked(updateCalendarEvent).mockReset();
     vi.mocked(deleteCalendarEvent).mockReset();
+    vi.mocked(deleteCalendarEventOccurrence).mockReset();
     vi.mocked(followCalendarEvent).mockReset();
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
   });
@@ -210,6 +213,38 @@ describe('curated event tools', () => {
     expect(result).toMatchObject({
       structuredContent: { status: 'deleted' },
     });
+  });
+
+  it('deletes occurrence events with the guarded tool', async () => {
+    vi.mocked(deleteCalendarEventOccurrence).mockResolvedValue({
+      event: { id: 'evt_1', occurrenceKind: 'occurrence' },
+      result: { ok: true },
+    });
+
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete_occurrence');
+
+    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
+    expect(deleteCalendarEventOccurrence).toHaveBeenCalledWith('grp_1', 'evt_1');
+    expect(result).toMatchObject({
+      structuredContent: {
+        status: 'deleted',
+        event: { id: 'evt_1', occurrenceKind: 'occurrence' },
+      },
+    });
+  });
+
+  it('surfaces guarded occurrence delete errors', async () => {
+    vi.mocked(deleteCalendarEventOccurrence).mockRejectedValue(new Error('Refusing to delete series'));
+
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_delete_occurrence');
+
+    const result = await tool!.handler({ groupId: 'grp_1', calendarId: 'evt_1' });
+
+    expect(result).toMatchObject({ isError: true });
   });
 
   it('follows events', async () => {
