@@ -1,4 +1,4 @@
-name: Publish npm
+name: Publish release
 
 on:
   release:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish npm package
+    name: Publish release artifacts
     runs-on: ubuntu-latest
     environment: npm
     steps:
@@ -35,6 +35,7 @@ jobs:
       - run: npm ci
 
       - name: Validate release tag
+        id: release
         run: |
           package_version="$(node -p "require('./package.json').version")"
           expected_tag="v${package_version}"
@@ -45,6 +46,39 @@ jobs:
             exit 1
           fi
 
+          echo "package_version=$package_version" >> "$GITHUB_OUTPUT"
+
+      - name: Check npm package version
+        id: npm
+        env:
+          PACKAGE_VERSION: ${{ steps.release.outputs.package_version }}
+        run: |
+          if npm view "@basicbit/vrchat-mcp@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "@basicbit/vrchat-mcp@${PACKAGE_VERSION} is already published."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - run: npm run release:verify
 
-      - run: npm publish --access public --provenance
+      - if: steps.npm.outputs.exists != 'true'
+        run: npm publish --access public --provenance
+
+      - name: Install MCP publisher
+        run: |
+          publisher_version="1.7.9"
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          checksums="registry_${publisher_version}_checksums.txt"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/v${publisher_version}"
+
+          curl -fsSLO "${base_url}/${archive}"
+          curl -fsSLO "${base_url}/${checksums}"
+          grep "  ${archive}$" "${checksums}" | sha256sum -c -
+          tar -xzf "${archive}"
+
+      - name: Publish MCP Registry metadata
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher validate
+          ./mcp-publisher publish
