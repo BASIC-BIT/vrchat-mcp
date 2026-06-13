@@ -1,6 +1,6 @@
 {
   "name": "@basicbit/vrchat-mcp",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "mcpName": "io.github.BASIC-BIT/vrchat-mcp",
   "description": "MCP server for VRChat friends, worlds, groups, events, notifications, and VRCX history.",
   "type": "module",
@@ -88,7 +88,7 @@
     "@apidevtools/json-schema-ref-parser": "^15.3.5",
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.9.2",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
@@ -110,7 +110,7 @@
     "better-sqlite3": "^12.6.2",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
-    "undici": "^8.2.0",
+    "undici": "^8.4.0",
     "yaml": "^2.8.4",
     "zod": "^4.2.1"
   }
