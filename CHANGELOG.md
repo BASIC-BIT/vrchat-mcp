@@ -2,7 +2,7 @@
 
 ## 0.1.7 - 2026-06-13
 
-- Refresh dependency locks for Hono, Undici, and Node type patch updates.
+- Refresh dependency locks for Hono, Undici, esbuild, and Node type patch updates.
 - Raise the direct Undici and Node type dependency minimums to the refreshed patch versions.
 
 ## 0.1.6 - 2026-06-03
