@@ -7,9 +7,9 @@ This document tracks public discovery surfaces for VRChat MCP. Keep it updated w
 | Surface | Status | URL / Identifier | Notes |
 | --- | --- | --- | --- |
 | GitHub | Live | https://github.com/BASIC-BIT/vrchat-mcp | Canonical source, docs, issues, and releases. |
-| npm | Live | `@basicbit/vrchat-mcp` | Latest verified release: `0.1.6`. |
-| Official MCP Registry | Live | `io.github.BASIC-BIT/vrchat-mcp` | Latest verified release: `0.1.6`; package entry points to npm `0.1.6`. |
-| GitHub Releases | Live | https://github.com/BASIC-BIT/vrchat-mcp/releases | Latest verified release: `v0.1.6`. |
+| npm | Live | `@basicbit/vrchat-mcp` | Latest verified release: `0.1.7`. |
+| Official MCP Registry | Live | `io.github.BASIC-BIT/vrchat-mcp` | Latest verified release: `0.1.7`; package entry points to npm `0.1.7`. |
+| GitHub Releases | Live | https://github.com/BASIC-BIT/vrchat-mcp/releases | Latest verified release: `v0.1.7`. |
 
 ## Directories and Marketplaces
 
