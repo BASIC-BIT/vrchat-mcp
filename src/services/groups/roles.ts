@@ -1,4 +1,5 @@
 import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
+import { cacheManager } from '../cache.js';
 import {
   toGroupRoleSummary,
   type GroupRoleSummary,
@@ -46,6 +47,7 @@ export async function manageGroupRole(
       userId: input.userId,
       groupRoleId: input.groupRoleId,
     });
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
     return { roleIds: result.data };
   }
   if (input.action === 'remove_member_role') {
@@ -54,6 +56,7 @@ export async function manageGroupRole(
       userId: input.userId,
       groupRoleId: input.groupRoleId,
     });
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
     return { roleIds: result.data };
   }
   if (input.action === 'create_role') {

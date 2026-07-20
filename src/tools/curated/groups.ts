@@ -79,7 +79,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -124,13 +124,14 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
     toolName('vrchat.group.members'),
     {
-      description: 'List group members by userId + displayName (read-only).',
+      description:
+        'List one page of compact group members by default. Use view=all only when a complete, cached snapshot is required (read-only, capped at 10,000).',
       inputSchema: GroupMembersInputSchema,
       outputSchema: GroupMembersOutputSchema,
       annotations: readOnlyToolAnnotations,
@@ -152,7 +153,8 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const result = await listGroupMembers(resolved.groupId, args ?? {});
         const payload = {
           groupId: resolved.groupId,
-          totalMembers: result.members.length,
+          view: result.view,
+          returnedMembers: result.members.length,
           truncated: result.truncated,
           stale: result.stale,
           page: result.page,
@@ -166,7 +168,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -215,7 +217,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -260,7 +262,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -304,7 +306,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -355,7 +357,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -400,7 +402,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -444,7 +446,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -497,7 +499,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -542,6 +544,6 @@ export function registerCuratedGroupTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    }
+    },
   );
 }

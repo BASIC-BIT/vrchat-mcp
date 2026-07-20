@@ -6,6 +6,7 @@ const mockConfig = {
   generatedWriteTools: { enabled: true, operationIds: [] as string[] },
   logging: { level: 'info' },
 };
+const invalidateByTagMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../src/core/generatedToolSkips.js', () => ({
   GENERATED_READ_SKIP_IDS: [],
@@ -28,6 +29,9 @@ vi.mock('../../src/core/spec.js', () => {
             },
             '/widgets/{widgetId}': {
               delete: { operationId: 'deleteWidget', summary: 'Delete Widget' },
+            },
+            '/groups/{groupId}/members/{userId}': {
+              delete: { operationId: 'kickGroupMember', summary: 'Kick Group Member' },
             },
             '/invite/{userId}': {
               post: { operationId: 'inviteUser', summary: 'Invite User' },
@@ -75,6 +79,16 @@ vi.mock('../../src/core/spec.js', () => {
             },
           ],
           [
+            'kickGroupMember',
+            {
+              operationId: 'kickGroupMember',
+              method: 'DELETE',
+              path: '/groups/{groupId}/members/{userId}',
+              parameters: [],
+              hasRequestBody: false,
+            },
+          ],
+          [
             'updateUser',
             {
               operationId: 'updateUser',
@@ -109,10 +123,15 @@ vi.mock('../../src/core/client.js', () => {
   };
 });
 
+vi.mock('../../src/services/cache.js', () => ({
+  cacheManager: { invalidateByTag: invalidateByTagMock },
+}));
+
 describe('write tool registry', () => {
   beforeEach(() => {
     mockConfig.generatedReadTools = { enabled: true, operationIds: [] };
     mockConfig.generatedWriteTools = { enabled: true, operationIds: [] };
+    invalidateByTagMock.mockReset();
     vi.resetModules();
   });
 
@@ -256,6 +275,36 @@ describe('write tool registry', () => {
     expect(response?.content[0]?.text).toBe('boom');
   });
 
+  it('invalidates group member caches after a generated membership mutation', async () => {
+    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['kickGroupMember'] };
+    const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
+    const { callOperation } = await import('../../src/core/client.js');
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { success: true }, url: 'test' });
+
+    const handlers: Record<string, (args: unknown) => Promise<unknown>> = {};
+    const server = {
+      registerTool: (
+        name: string,
+        _meta: unknown,
+        handler: (args: unknown) => Promise<unknown>,
+      ) => {
+        handlers[name] = handler;
+      },
+    };
+    await registerGeneratedWriteTools(server as never, {
+      writeOptionsSchema: z.object({}),
+      writeOutputSchema: z.object({}),
+      respond: () => ({ content: [], structuredContent: {} }),
+    });
+
+    await handlers.vrchat_delete?.({
+      operationId: 'kickGroupMember',
+      params: { groupId: 'grp_1', userId: 'usr_1' },
+    });
+
+    expect(invalidateByTagMock).toHaveBeenCalledWith('group-members:grp_1');
+  });
+
   it('uses compact body schema and leaves required bodies to runtime validation', async () => {
     mockConfig.generatedWriteTools = { enabled: true, operationIds: ['createWidget'] };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
@@ -266,7 +315,7 @@ describe('write tool registry', () => {
     const server = {
       registerTool: (
         name: string,
-        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
+        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } },
       ) => {
         metas[name] = meta;
       },
@@ -282,9 +331,9 @@ describe('write tool registry', () => {
     expect(schema).toBeDefined();
     expect(schema?.safeParse({}).success).toBe(false);
     expect(schema?.safeParse({ operationId: 'createWidget' }).success).toBe(true);
-    expect(schema?.safeParse({ operationId: 'createWidget', body: { name: 'Widget' } }).success).toBe(
-      true
-    );
+    expect(
+      schema?.safeParse({ operationId: 'createWidget', body: { name: 'Widget' } }).success,
+    ).toBe(true);
     expect(schema?.safeParse({ operationId: 'createWidget', body: 'raw' }).success).toBe(true);
     expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);
   });

@@ -255,6 +255,7 @@ describe('curated group tools', () => {
   it('returns members list', async () => {
     vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
     vi.mocked(listGroupMembers).mockResolvedValue({
+      view: 'page',
       members: [
         { userId: 'usr_1', displayName: 'Alpha' },
         { userId: 'usr_2', displayName: 'Beta' },
@@ -271,7 +272,8 @@ describe('curated group tools', () => {
 
     expect(result).toMatchObject({
       structuredContent: {
-        totalMembers: 2,
+        view: 'page',
+        returnedMembers: 2,
         members: [{ userId: 'usr_1' }, { userId: 'usr_2' }],
       },
     });

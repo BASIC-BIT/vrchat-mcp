@@ -1,4 +1,5 @@
 import { callOperation } from '../../core/client.js';
+import { callWithRetry, errorStatus, sleep, type RetryOptions } from '../../core/retry.js';
 import type { WriteOperationData } from '../api/client.js';
 import { fetchFriends, type FriendRecord } from '../friends/fetch.js';
 import { normalizeName } from '../friends/match.js';
@@ -8,11 +9,7 @@ export type SentNotification = WriteOperationData<'inviteUser'>;
 export type BulkStatus = 'completed' | 'dry_run';
 export type TargetStatus = 'sent' | 'failed' | 'skipped' | 'would_send';
 
-export interface RetryOptions {
-  maxAttempts: number;
-  baseDelayMs: number;
-  maxDelayMs: number;
-}
+export type { RetryOptions } from '../../core/retry.js';
 
 export interface ResolvedUserTarget {
   target: string;
@@ -77,33 +74,8 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function errorRetryAfter(err: unknown): string | undefined {
-  if (!err || typeof err !== 'object') return undefined;
-  const retryAfter = (err as { retryAfter?: unknown }).retryAfter;
-  return typeof retryAfter === 'string' ? retryAfter : undefined;
-}
-
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
-}
-
-function errorStatus(err: unknown): number | undefined {
-  if (!err || typeof err !== 'object') return undefined;
-  const direct = (err as { status?: unknown }).status;
-  if (typeof direct === 'number') return direct;
-  const payload = asRecord((err as { payload?: unknown }).payload);
-  const status = payload?.status;
-  return typeof status === 'number' ? status : undefined;
-}
-
-function retryAfterMs(err: unknown): number | undefined {
-  const header = errorRetryAfter(err);
-  if (!header) return undefined;
-  const seconds = Number(header);
-  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000;
-  const date = Date.parse(header);
-  if (!Number.isNaN(date)) return Math.max(0, date - Date.now());
-  return undefined;
 }
 
 function isRetryable(err: unknown): boolean {
@@ -115,42 +87,15 @@ function shouldStopAfterError(err: unknown): boolean {
   return errorStatus(err) === 401;
 }
 
-async function sleep(ms: number): Promise<void> {
-  if (ms <= 0) return;
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function retryDelayMs(attempt: number, retry: RetryOptions, err: unknown): number {
-  const retryAfter = retryAfterMs(err);
-  if (retryAfter !== undefined) return Math.min(retryAfter, retry.maxDelayMs);
-  const exponential = retry.baseDelayMs * 2 ** Math.max(0, attempt - 1);
-  const jitter = retry.baseDelayMs > 0 ? Math.floor(Math.random() * retry.baseDelayMs) : 0;
-  return Math.min(exponential + jitter, retry.maxDelayMs);
-}
-
-async function callWithRetry<T>(operation: () => Promise<T>, retry: RetryOptions): Promise<{
-  data: T;
-  attempts: number;
-}> {
-  let attempt = 1;
-  for (;;) {
-    try {
-      return { data: await operation(), attempts: attempt };
-    } catch (err) {
-      if (attempt >= retry.maxAttempts || !isRetryable(err)) throw err;
-      await sleep(retryDelayMs(attempt, retry, err));
-      attempt += 1;
-    }
-  }
-}
-
 export function collectTargetInputs(input: {
   user?: string;
   users?: string[];
   self?: boolean;
 }): string[] {
   if (input.user && input.users) {
-    throw new Error('Provide either user or users, not both. Each entry may be a usr_ id or exact display name.');
+    throw new Error(
+      'Provide either user or users, not both. Each entry may be a usr_ id or exact display name.',
+    );
   }
   if (input.self && (input.user || input.users)) {
     throw new Error('self=true cannot be combined with user or users.');
@@ -163,7 +108,9 @@ export function collectTargetInputs(input: {
 
 export function collectRequiredUserTargets(input: { user?: string; users?: string[] }): string[] {
   if (input.user && input.users) {
-    throw new Error('Provide either user or users, not both. Each entry may be a usr_ id or exact display name.');
+    throw new Error(
+      'Provide either user or users, not both. Each entry may be a usr_ id or exact display name.',
+    );
   }
   if (input.user) return [input.user];
   if (input.users) return input.users;
@@ -174,7 +121,10 @@ function looksLikeUserId(target: string): boolean {
   return target.startsWith('usr_');
 }
 
-function toResolvedUserFromRecord(target: string, record: Record<string, unknown>): ResolvedUserTarget | null {
+function toResolvedUserFromRecord(
+  target: string,
+  record: Record<string, unknown>,
+): ResolvedUserTarget | null {
   const userId = typeof record.id === 'string' ? record.id : undefined;
   if (!userId) return null;
   const displayName = typeof record.displayName === 'string' ? record.displayName : undefined;
@@ -207,7 +157,9 @@ class UserTargetResolver {
     );
 
     if (matches.length > 1) {
-      throw new Error(`Display name "${target}" matched multiple friends. Pass a usr_ userId instead.`);
+      throw new Error(
+        `Display name "${target}" matched multiple friends. Pass a usr_ userId instead.`,
+      );
     }
     if (matches.length === 0) return null;
 
@@ -234,10 +186,14 @@ class UserTargetResolver {
       .filter((entry) => normalizeName(recordDisplayName(entry)) === normalized);
 
     if (matches.length === 0) {
-      throw new Error(`No user found with exact display name "${target}". Try vrchat_friends_search or pass a usr_ userId.`);
+      throw new Error(
+        `No user found with exact display name "${target}". Try vrchat_friends_search or pass a usr_ userId.`,
+      );
     }
     if (matches.length > 1) {
-      throw new Error(`Display name "${target}" matched multiple users. Pass a usr_ userId instead.`);
+      throw new Error(
+        `Display name "${target}" matched multiple users. Pass a usr_ userId instead.`,
+      );
     }
 
     const resolved = toResolvedUserFromRecord(target, matches[0]);
@@ -343,7 +299,11 @@ export async function executeResolvedUserWrites(input: {
     writesAttempted += 1;
 
     try {
-      const { data, attempts } = await callWithRetry(() => input.send(target), input.retry);
+      const { data, attempts } = await callWithRetry(
+        () => input.send(target),
+        input.retry,
+        isRetryable,
+      );
       const result: BulkTargetResult = {
         target: target.target,
         userId: target.userId,

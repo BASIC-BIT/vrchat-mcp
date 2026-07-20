@@ -81,6 +81,22 @@ describe('cache', () => {
     vi.useRealTimers();
   });
 
+  it('retains stale data when a background refresh fails', async () => {
+    const cache = new CacheManager();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(0));
+    cache.set('a', 'old', 1000, ['friends']);
+    vi.setSystemTime(new Date(1500));
+
+    const result = await cache.getOrSetStale('a', 1000, 5000, ['friends'], () =>
+      Promise.reject(new Error('rate limited'))
+    );
+    await vi.runAllTimersAsync();
+
+    expect(result).toEqual({ value: 'old', stale: true });
+    vi.useRealTimers();
+  });
+
   it('evicts too-stale entries', async () => {
     const cache = new CacheManager();
     vi.useFakeTimers();
