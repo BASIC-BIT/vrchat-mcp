@@ -86,8 +86,9 @@ export const GroupMembersInputSchema = z.object({
   view: z
     .enum(['page', 'all'])
     .default('page')
+    .optional()
     .describe(
-      'page fetches one bounded API page; all explicitly loads and caches a rate-aware snapshot capped at 10,000 members.',
+      'page fetches one bounded API page; all explicitly loads and caches a rate-aware snapshot capped at 10,000 members.'
     ),
   pageSize: z
     .number()
@@ -282,7 +283,7 @@ export const GroupEventsUpcomingOutputSchema = z.object({
     z.object({
       date: z.string(),
       page: GroupPageSchema.optional(),
-    }),
+    })
   ),
   events: z.array(ApiObjectSchema),
 });
@@ -340,8 +341,7 @@ export function toGroupSummary(group: LimitedGroupRecord): GroupSummary | null {
     groupId,
     name: group.name ?? undefined,
     shortCode: group.shortCode ?? undefined,
-    memberCount:
-      typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
+    memberCount: typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
   };
 }
 
@@ -359,21 +359,15 @@ export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | nu
   };
 }
 
-export function toGroupInstanceSummary(
-  instance: GroupInstanceRecord,
-): GroupInstanceSummary | null {
-  const instanceId =
-    typeof instance.instanceId === 'string' ? instance.instanceId : '';
+export function toGroupInstanceSummary(instance: GroupInstanceRecord): GroupInstanceSummary | null {
+  const instanceId = typeof instance.instanceId === 'string' ? instance.instanceId : '';
   if (!instanceId) return null;
-  const worldId =
-    typeof instance.world?.id === 'string' ? instance.world.id : undefined;
-  const worldName =
-    typeof instance.world?.name === 'string' ? instance.world.name : undefined;
+  const worldId = typeof instance.world?.id === 'string' ? instance.world.id : undefined;
+  const worldName = typeof instance.world?.name === 'string' ? instance.world.name : undefined;
   return {
     instanceId,
     location: typeof instance.location === 'string' ? instance.location : undefined,
-    memberCount:
-      typeof instance.memberCount === 'number' ? instance.memberCount : 0,
+    memberCount: typeof instance.memberCount === 'number' ? instance.memberCount : 0,
     worldId,
     worldName,
   };

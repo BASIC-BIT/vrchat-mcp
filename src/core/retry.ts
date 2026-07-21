@@ -8,8 +8,16 @@ export interface RetryOptions {
 interface RetryError {
   name?: unknown;
   payload?: unknown;
+  retryable?: unknown;
   status?: unknown;
   retryAfter?: unknown;
+}
+
+export class RetryDeadlineError extends Error {
+  constructor(maxElapsedMs: number) {
+    super(`Operation exceeded its ${maxElapsedMs}ms retry deadline.`);
+    this.name = 'RetryDeadlineError';
+  }
 }
 
 function asRetryError(err: unknown): RetryError | null {
@@ -40,7 +48,7 @@ export function isRetryableRequestError(err: unknown): boolean {
   const retryError = asRetryError(err);
   const status = errorStatus(err);
   if (status === 429 || (typeof status === 'number' && status >= 500)) return true;
-  return status === undefined && retryError?.name === 'CallError';
+  return status === undefined && retryError?.name === 'CallError' && retryError.retryable === true;
 }
 
 export function retryDelayMs(attempt: number, options: RetryOptions, err: unknown): number {
@@ -57,6 +65,26 @@ export async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function callWithinDeadline<T>(
+  operation: () => Promise<T>,
+  remainingMs: number | undefined,
+  maxElapsedMs: number | undefined
+): Promise<T> {
+  if (remainingMs === undefined || maxElapsedMs === undefined) return operation();
+  if (remainingMs <= 0) throw new RetryDeadlineError(maxElapsedMs);
+
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => reject(new RetryDeadlineError(maxElapsedMs)), remainingMs);
+  });
+
+  try {
+    return await Promise.race([operation(), deadline]);
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
+}
+
 export async function callWithRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions,
@@ -67,7 +95,12 @@ export async function callWithRetry<T>(
 
   for (;;) {
     try {
-      return { data: await operation(), attempts: attempt };
+      const remainingMs =
+        options.maxElapsedMs === undefined
+          ? undefined
+          : options.maxElapsedMs - (Date.now() - startedAt);
+      const data = await callWithinDeadline(operation, remainingMs, options.maxElapsedMs);
+      return { data, attempts: attempt };
     } catch (err) {
       if (attempt >= options.maxAttempts || !shouldRetry(err)) throw err;
 

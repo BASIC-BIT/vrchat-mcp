@@ -13,6 +13,7 @@ const GROUP_MEMBER_MUTATION_OPERATIONS = new Set([
   'banGroupMember',
   'joinGroup',
   'leaveGroup',
+  'respondGroupJoinRequest',
   'updateGroupMember',
   'kickGroupMember',
   'unbanGroupMember',

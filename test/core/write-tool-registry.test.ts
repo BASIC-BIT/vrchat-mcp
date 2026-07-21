@@ -33,6 +33,9 @@ vi.mock('../../src/core/spec.js', () => {
             '/groups/{groupId}/members/{userId}': {
               delete: { operationId: 'kickGroupMember', summary: 'Kick Group Member' },
             },
+            '/groups/{groupId}/requests/{userId}': {
+              put: { operationId: 'respondGroupJoinRequest', summary: 'Respond to Join Request' },
+            },
             '/invite/{userId}': {
               post: { operationId: 'inviteUser', summary: 'Invite User' },
             },
@@ -86,6 +89,16 @@ vi.mock('../../src/core/spec.js', () => {
               path: '/groups/{groupId}/members/{userId}',
               parameters: [],
               hasRequestBody: false,
+            },
+          ],
+          [
+            'respondGroupJoinRequest',
+            {
+              operationId: 'respondGroupJoinRequest',
+              method: 'PUT',
+              path: '/groups/{groupId}/requests/{userId}',
+              parameters: [],
+              hasRequestBody: true,
             },
           ],
           [
@@ -275,8 +288,11 @@ describe('write tool registry', () => {
     expect(response?.content[0]?.text).toBe('boom');
   });
 
-  it('invalidates group member caches after a generated membership mutation', async () => {
-    mockConfig.generatedWriteTools = { enabled: true, operationIds: ['kickGroupMember'] };
+  it('invalidates group member caches after generated membership mutations', async () => {
+    mockConfig.generatedWriteTools = {
+      enabled: true,
+      operationIds: ['kickGroupMember', 'respondGroupJoinRequest'],
+    };
     const { registerGeneratedWriteTools } = await import('../../src/core/writeToolRegistry.js');
     const { callOperation } = await import('../../src/core/client.js');
     vi.mocked(callOperation).mockResolvedValueOnce({ data: { success: true }, url: 'test' });
@@ -286,7 +302,7 @@ describe('write tool registry', () => {
       registerTool: (
         name: string,
         _meta: unknown,
-        handler: (args: unknown) => Promise<unknown>,
+        handler: (args: unknown) => Promise<unknown>
       ) => {
         handlers[name] = handler;
       },
@@ -303,6 +319,16 @@ describe('write tool registry', () => {
     });
 
     expect(invalidateByTagMock).toHaveBeenCalledWith('group-members:grp_1');
+
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { success: true }, url: 'test' });
+    await handlers.vrchat_write?.({
+      operationId: 'respondGroupJoinRequest',
+      params: { groupId: 'grp_1', userId: 'usr_2' },
+      body: { action: 'accept' },
+    });
+
+    expect(invalidateByTagMock).toHaveBeenCalledTimes(2);
+    expect(invalidateByTagMock).toHaveBeenLastCalledWith('group-members:grp_1');
   });
 
   it('uses compact body schema and leaves required bodies to runtime validation', async () => {
@@ -315,7 +341,7 @@ describe('write tool registry', () => {
     const server = {
       registerTool: (
         name: string,
-        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } },
+        meta: { inputSchema: { safeParse: (value: unknown) => { success: boolean } } }
       ) => {
         metas[name] = meta;
       },
@@ -332,7 +358,7 @@ describe('write tool registry', () => {
     expect(schema?.safeParse({}).success).toBe(false);
     expect(schema?.safeParse({ operationId: 'createWidget' }).success).toBe(true);
     expect(
-      schema?.safeParse({ operationId: 'createWidget', body: { name: 'Widget' } }).success,
+      schema?.safeParse({ operationId: 'createWidget', body: { name: 'Widget' } }).success
     ).toBe(true);
     expect(schema?.safeParse({ operationId: 'createWidget', body: 'raw' }).success).toBe(true);
     expect(schema?.safeParse({ params: 'bad' }).success).toBe(false);

@@ -27,4 +27,16 @@ describe('group role management', () => {
 
     expect(cacheManager.get('members')).toBeUndefined();
   });
+
+  it('invalidates cached member snapshots after deleting a role', async () => {
+    cacheManager.set('members', { members: [] }, 60_000, ['group-members:grp_1']);
+    vi.mocked(callWriteOperationParsed).mockResolvedValueOnce({ data: [] });
+
+    await manageGroupRole('grp_1', {
+      action: 'delete_role',
+      groupRoleId: 'role_1',
+    });
+
+    expect(cacheManager.get('members')).toBeUndefined();
+  });
 });

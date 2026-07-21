@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-20T20:53:20.362Z
+Generated: 2026-07-21T08:48:10.759Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -3891,8 +3891,8 @@ Input schema:
       "description": "VRChat group-member sort expression."
     },
     "view": {
-      "default": "page",
       "description": "page fetches one bounded API page; all explicitly loads and caches a rate-aware snapshot capped at 10,000 members.",
+      "default": "page",
       "type": "string",
       "enum": [
         "page",
@@ -3912,9 +3912,6 @@ Input schema:
       "description": "Starting member offset when view=page. Ignored when view=all."
     }
   },
-  "required": [
-    "view"
-  ],
   "additionalProperties": false
 }
 ```

@@ -34,17 +34,20 @@ export class CallError extends Error {
   status?: number;
   payload?: Record<string, unknown>;
   retryAfter?: string;
+  retryable: boolean;
   constructor(
     message: string,
     status?: number,
     payload?: Record<string, unknown>,
-    retryAfter?: string
+    retryAfter?: string,
+    retryable = false
   ) {
     super(message);
     this.name = 'CallError';
     this.status = status;
     this.payload = payload;
     this.retryAfter = retryAfter;
+    this.retryable = retryable;
   }
 }
 
@@ -340,7 +343,7 @@ async function executeRequestWithHandling(input: {
       message: (err as Error).message,
     });
     if (err instanceof CallError) throw err;
-    throw new CallError('Network or fetch error');
+    throw new CallError('Network or fetch error', undefined, undefined, undefined, true);
   }
 }
 
