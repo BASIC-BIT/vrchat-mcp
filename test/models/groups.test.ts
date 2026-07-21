@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { toJSONSchema } from 'zod';
 import { schemas } from '../../src/generated/vrchat-schemas.js';
 import {
+  GroupMembersInputSchema,
   toGroupInstanceSummary,
   toGroupMemberSummary,
   toGroupPostSummary,
@@ -15,7 +17,7 @@ describe('group model mappers', () => {
         name: 'Group One',
         shortCode: 'ABC',
         memberCount: 42,
-      }),
+      })
     );
 
     expect(summary).toEqual({
@@ -32,7 +34,7 @@ describe('group model mappers', () => {
         id: 'post_1',
         title: 'Hello',
         visibility: 'public',
-      }),
+      })
     );
     expect(post).toMatchObject({ id: 'post_1', title: 'Hello', visibility: 'public' });
 
@@ -45,7 +47,7 @@ describe('group model mappers', () => {
         location: 'wrld_1:1',
         memberCount: 3,
         world: { id: 'wrld_1', name: 'Test World' },
-      }),
+      })
     );
     expect(instance).toMatchObject({
       instanceId: 'i1',
@@ -60,8 +62,15 @@ describe('group model mappers', () => {
     const member = toGroupMemberSummary(
       schemas.GroupMember.parse({
         user: { id: 'usr_2', displayName: 'User Two' },
-      }),
+      })
     );
     expect(member).toEqual({ userId: 'usr_2', displayName: 'User Two' });
+  });
+
+  it('keeps the default member view optional in tool JSON schema', () => {
+    const schema = toJSONSchema(GroupMembersInputSchema);
+
+    expect(schema.required ?? []).not.toContain('view');
+    expect(schema.properties?.view).toMatchObject({ default: 'page' });
   });
 });

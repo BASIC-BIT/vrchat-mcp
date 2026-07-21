@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-06-08T08:31:09.652Z
+Generated: 2026-07-21T08:48:10.759Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -3865,7 +3865,7 @@ Output schema:
 ```
 
 ### vrchat_group_members
-List group members by userId + displayName (read-only). (read-only)
+List one page of compact group members by default. Use view=all only when a complete, cached snapshot is required (read-only, capped at 10,000). (read-only)
 
 Input schema:
 
@@ -3875,36 +3875,41 @@ Input schema:
   "type": "object",
   "properties": {
     "groupId": {
-      "type": "string"
+      "type": "string",
+      "description": "Exact group ID. Provide groupId or shortCode."
     },
     "shortCode": {
-      "type": "string"
+      "type": "string",
+      "description": "Exact group short code. Provide groupId or shortCode."
     },
     "roleId": {
-      "type": "string"
+      "type": "string",
+      "description": "Only include members with this role."
     },
     "sort": {
-      "type": "string"
+      "type": "string",
+      "description": "VRChat group-member sort expression."
+    },
+    "view": {
+      "description": "page fetches one bounded API page; all explicitly loads and caches a rate-aware snapshot capped at 10,000 members.",
+      "default": "page",
+      "type": "string",
+      "enum": [
+        "page",
+        "all"
+      ]
     },
     "pageSize": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 100
-    },
-    "maxPages": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 200
-    },
-    "maxItems": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 9007199254740991
+      "maximum": 100,
+      "description": "Members to fetch when view=page. Ignored when view=all."
     },
     "offset": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 9007199254740991
+      "maximum": 9007199254740991,
+      "description": "Starting member offset when view=page. Ignored when view=all."
     }
   },
   "additionalProperties": false
@@ -3921,7 +3926,14 @@ Output schema:
     "groupId": {
       "type": "string"
     },
-    "totalMembers": {
+    "view": {
+      "type": "string",
+      "enum": [
+        "page",
+        "all"
+      ]
+    },
+    "returnedMembers": {
       "type": "integer",
       "minimum": 0,
       "maximum": 9007199254740991
@@ -3989,9 +4001,11 @@ Output schema:
   },
   "required": [
     "groupId",
-    "totalMembers",
+    "view",
+    "returnedMembers",
     "truncated",
-    "stale"
+    "stale",
+    "members"
   ],
   "additionalProperties": false
 }

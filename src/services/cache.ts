@@ -135,6 +135,13 @@ export class CacheManager {
               this.set(key, value, ttlMs, tags);
               return value;
             })
+            .catch((err: unknown) => {
+              logger.warn('Background cache refresh failed; retaining stale value.', {
+                key,
+                message: err instanceof Error ? err.message : 'Unknown error',
+              });
+              return entry.value as T;
+            })
             .finally(() => {
               this.inflight.delete(key);
             });

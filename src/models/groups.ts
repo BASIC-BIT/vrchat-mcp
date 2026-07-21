@@ -76,23 +76,43 @@ export const GroupProfileOutputSchema = z.object({
 });
 
 export const GroupMembersInputSchema = z.object({
-  groupId: schemas.GroupID.optional(),
-  shortCode: z.string().optional(),
-  roleId: schemas.GroupRoleID.optional(),
-  sort: z.string().optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
-  maxPages: z.number().int().min(1).max(200).optional(),
-  maxItems: z.number().int().min(1).optional(),
-  offset: z.number().int().min(0).optional(),
+  groupId: schemas.GroupID.describe('Exact group ID. Provide groupId or shortCode.').optional(),
+  shortCode: z
+    .string()
+    .describe('Exact group short code. Provide groupId or shortCode.')
+    .optional(),
+  roleId: schemas.GroupRoleID.describe('Only include members with this role.').optional(),
+  sort: z.string().describe('VRChat group-member sort expression.').optional(),
+  view: z
+    .enum(['page', 'all'])
+    .default('page')
+    .optional()
+    .describe(
+      'page fetches one bounded API page; all explicitly loads and caches a rate-aware snapshot capped at 10,000 members.'
+    ),
+  pageSize: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .describe('Members to fetch when view=page. Ignored when view=all.')
+    .optional(),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .describe('Starting member offset when view=page. Ignored when view=all.')
+    .optional(),
 });
 
 export const GroupMembersOutputSchema = z.object({
   groupId: schemas.GroupID,
-  totalMembers: z.number().int().min(0),
+  view: z.enum(['page', 'all']),
+  returnedMembers: z.number().int().min(0),
   truncated: z.boolean(),
   stale: z.boolean(),
   page: GroupPageSchema.optional(),
-  members: z.array(GroupMemberSchema).optional(),
+  members: z.array(GroupMemberSchema),
 });
 
 export const GroupRoleSummarySchema = z.object({
@@ -263,7 +283,7 @@ export const GroupEventsUpcomingOutputSchema = z.object({
     z.object({
       date: z.string(),
       page: GroupPageSchema.optional(),
-    }),
+    })
   ),
   events: z.array(ApiObjectSchema),
 });
@@ -289,7 +309,7 @@ export type GroupMemberSummary = z.infer<typeof GroupMemberSchema>;
 export type GroupSearchInput = z.infer<typeof GroupSearchInputSchema>;
 export type GroupSearchOutput = z.infer<typeof GroupSearchOutputSchema>;
 export type GroupProfileInput = z.infer<typeof GroupProfileInputSchema>;
-export type GroupMembersInput = z.infer<typeof GroupMembersInputSchema>;
+export type GroupMembersInput = z.input<typeof GroupMembersInputSchema>;
 export type GroupRolesInput = z.infer<typeof GroupRolesInputSchema>;
 export type GroupRolesManageInput = z.infer<typeof GroupRolesManageInputSchema>;
 export type GroupRoleSummary = z.infer<typeof GroupRoleSummarySchema>;
@@ -321,8 +341,7 @@ export function toGroupSummary(group: LimitedGroupRecord): GroupSummary | null {
     groupId,
     name: group.name ?? undefined,
     shortCode: group.shortCode ?? undefined,
-    memberCount:
-      typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
+    memberCount: typeof group.memberCount === 'number' ? Math.floor(group.memberCount) : undefined,
   };
 }
 
@@ -340,21 +359,15 @@ export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | nu
   };
 }
 
-export function toGroupInstanceSummary(
-  instance: GroupInstanceRecord,
-): GroupInstanceSummary | null {
-  const instanceId =
-    typeof instance.instanceId === 'string' ? instance.instanceId : '';
+export function toGroupInstanceSummary(instance: GroupInstanceRecord): GroupInstanceSummary | null {
+  const instanceId = typeof instance.instanceId === 'string' ? instance.instanceId : '';
   if (!instanceId) return null;
-  const worldId =
-    typeof instance.world?.id === 'string' ? instance.world.id : undefined;
-  const worldName =
-    typeof instance.world?.name === 'string' ? instance.world.name : undefined;
+  const worldId = typeof instance.world?.id === 'string' ? instance.world.id : undefined;
+  const worldName = typeof instance.world?.name === 'string' ? instance.world.name : undefined;
   return {
     instanceId,
     location: typeof instance.location === 'string' ? instance.location : undefined,
-    memberCount:
-      typeof instance.memberCount === 'number' ? instance.memberCount : 0,
+    memberCount: typeof instance.memberCount === 'number' ? instance.memberCount : 0,
     worldId,
     worldName,
   };

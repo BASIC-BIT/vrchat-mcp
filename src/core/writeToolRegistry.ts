@@ -7,6 +7,25 @@ import { toolError } from '../utils/toolResponses.js';
 import { destructiveToolAnnotations, writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { getAvailableGeneratedOperationIds } from './generatedOperations.js';
 import { GeneratedWriteToolInputSchema } from '../schemas/write.js';
+import { cacheManager } from '../services/cache.js';
+
+const GROUP_MEMBER_MUTATION_OPERATIONS = new Set([
+  'banGroupMember',
+  'joinGroup',
+  'leaveGroup',
+  'respondGroupJoinRequest',
+  'updateGroupMember',
+  'kickGroupMember',
+  'unbanGroupMember',
+]);
+
+function invalidateGroupMemberCache(operationId: string, params: Record<string, unknown>): void {
+  if (!GROUP_MEMBER_MUTATION_OPERATIONS.has(operationId)) return;
+  const groupId = params.groupId;
+  if (typeof groupId === 'string' && groupId) {
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
+  }
+}
 
 export type WriteToolResponder = (
   result: {
@@ -60,6 +79,7 @@ function registerGeneratedWriteRouter(input: {
           body,
           options: callOptions,
         });
+        if (!result.dryRun) invalidateGroupMemberCache(operationId, params);
         return input.respond(result, includeMeta);
       } catch (err) {
         if (err instanceof CallError && err.payload) {

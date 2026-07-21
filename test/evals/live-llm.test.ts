@@ -178,7 +178,7 @@ describeLive('llm evals (live)', () => {
         cases.push({
           name: 'group members list includes expected member',
           tool: 'vrchat_group_members',
-          args: { groupId: expectations.groupId },
+          args: { groupId: expectations.groupId, view: 'all' },
           expectedFacts: [
             `At least one item has displayName "${expectations.groupMemberName}".`,
           ],

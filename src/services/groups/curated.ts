@@ -2,14 +2,12 @@ import { callReadOperationParsed, type ReadOperationData } from '../api/client.j
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 import {
   toGroupInstanceSummary,
-  toGroupMemberSummary,
   toGroupPostSummary,
   toGroupSummary,
   type GroupEventsListInput,
   type GroupEventsUpcomingInput,
   type GroupEventGetInput,
   type GroupInstanceSummary,
-  type GroupMembersInput,
   type GroupPostsRecentInput,
   type GroupPostSummary,
   type GroupResolution,
@@ -35,8 +33,6 @@ interface PageInfo {
 
 const DEFAULT_GROUP_PAGE_SIZE = 50;
 const DEFAULT_GROUP_MAX_PAGES = 10;
-const DEFAULT_GROUP_MEMBER_PAGE_SIZE = 100;
-const DEFAULT_GROUP_MEMBER_MAX_PAGES = 100;
 const DEFAULT_GROUP_POSTS_PAGE_SIZE = 50;
 const DEFAULT_GROUP_POSTS_MAX_PAGES = 10;
 const DEFAULT_GROUP_EVENT_PAGE_SIZE = 50;
@@ -45,9 +41,7 @@ type GroupRecord = ReadOperationData<'getGroup'>;
 type GroupCalendarEvent = ReadOperationData<'getGroupCalendarEvent'>;
 type GroupNextCalendarEvent = ReadOperationData<'getGroupNextCalendarEvent'>;
 
-export async function searchGroups(
-  input: GroupSearchInput,
-): Promise<{
+export async function searchGroups(input: GroupSearchInput): Promise<{
   groups: GroupSummary[];
   page?: PageInfo;
   truncated: boolean;
@@ -156,79 +150,6 @@ export async function getGroupProfile(
   return { group: value.group, stale };
 }
 
-export async function listGroupMembers(
-  groupId: string,
-  input: GroupMembersInput,
-): Promise<{
-  members: { userId: string; displayName?: string }[];
-  page?: PageInfo;
-  truncated: boolean;
-  stale: boolean;
-}> {
-  const pageSize =
-    typeof input.pageSize === 'number' ? Math.floor(input.pageSize) : DEFAULT_GROUP_MEMBER_PAGE_SIZE;
-  const maxPages =
-    typeof input.maxPages === 'number' ? Math.floor(input.maxPages) : DEFAULT_GROUP_MEMBER_MAX_PAGES;
-  const maxItems =
-    typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : pageSize * maxPages;
-  const offset = typeof input.offset === 'number' ? Math.floor(input.offset) : 0;
-  const roleId = typeof input.roleId === 'string' ? input.roleId : undefined;
-  const sort = typeof input.sort === 'string' ? input.sort : undefined;
-
-  const cacheKey = buildCacheKey('groups:members', {
-    groupId,
-    roleId,
-    sort,
-    pageSize,
-    maxPages,
-    maxItems,
-    offset,
-  });
-  const tags = ['groups', `groups:${groupId}`];
-  const { value, stale } = await cacheManager.getOrSetStale(
-    cacheKey,
-    cacheConfig.groupsTtlMs,
-    cacheConfig.groupsStaleTtlMs,
-    tags,
-    async () => {
-      const result = await callReadOperationParsed(
-        'getGroupMembers',
-        { groupId, roleId, sort, offset },
-        {
-          page: {
-            enabled: true,
-            size: pageSize,
-            maxPages,
-            maxItems,
-          },
-        },
-      );
-      const members = result.data
-        .map(toGroupMemberSummary)
-        .filter(
-          (member): member is { userId: string; displayName?: string } =>
-            Boolean(member),
-        );
-      const byId = new Map<string, { userId: string; displayName?: string }>();
-      for (const member of members) {
-        if (!byId.has(member.userId)) byId.set(member.userId, member);
-      }
-      return {
-        members: [...byId.values()],
-        page: result.page as PageInfo | undefined,
-        truncated: result.page?.truncated ?? false,
-      };
-    },
-  );
-
-  return {
-    members: value.members,
-    page: value.page,
-    truncated: value.truncated,
-    stale,
-  };
-}
-
 export async function listGroupPosts(
   groupId: string,
   input: GroupPostsRecentInput,
@@ -248,7 +169,13 @@ export async function listGroupPosts(
     typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : pageSize * maxPages;
   const publicOnly = input.publicOnly === true;
 
-  const cacheKey = buildCacheKey('groups:posts', { groupId, pageSize, maxPages, maxItems, publicOnly });
+  const cacheKey = buildCacheKey('groups:posts', {
+    groupId,
+    pageSize,
+    maxPages,
+    maxItems,
+    publicOnly,
+  });
   const tags = ['groups', `groups:${groupId}`];
   const { value, stale } = await cacheManager.getOrSetStale(
     cacheKey,
@@ -270,9 +197,7 @@ export async function listGroupPosts(
       );
       const posts = result.data
         .map(toGroupPostSummary)
-        .filter(
-          (post): post is GroupPostSummary => Boolean(post),
-        );
+        .filter((post): post is GroupPostSummary => Boolean(post));
       return {
         posts,
         page: result.page as PageInfo | undefined,
@@ -433,8 +358,7 @@ export async function listGroupEventsUpcoming(
     throw new Error('from must be a valid ISO date/time string.');
   }
   const fromDate = fromInput ?? new Date();
-  const windowHours =
-    typeof input.windowHours === 'number' ? Math.floor(input.windowHours) : 168;
+  const windowHours = typeof input.windowHours === 'number' ? Math.floor(input.windowHours) : 168;
   const toDate = new Date(fromDate.getTime() + windowHours * 60 * 60 * 1000);
   const pageSize =
     typeof input.pageSize === 'number' ? Math.floor(input.pageSize) : DEFAULT_GROUP_EVENT_PAGE_SIZE;
@@ -553,9 +477,7 @@ export async function getGroupInstancesOverview(
       const result = await callReadOperationParsed('getGroupInstances', { groupId });
       const instances = result.data
         .map(toGroupInstanceSummary)
-        .filter(
-          (instance): instance is GroupInstanceSummary => Boolean(instance),
-        );
+        .filter((instance): instance is GroupInstanceSummary => Boolean(instance));
       return { instances };
     },
   );

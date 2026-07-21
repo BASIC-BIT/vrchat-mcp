@@ -1,4 +1,5 @@
 import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
+import { cacheManager } from '../cache.js';
 import {
   toGroupRoleSummary,
   type GroupRoleSummary,
@@ -23,8 +24,10 @@ function roleBodyFromInput(input: GroupRolesManageInput): Record<string, unknown
   const body: Record<string, unknown> = {};
   if ('roleId' in input && input.roleId) body.id = input.roleId;
   if ('name' in input && input.name !== undefined) body.name = input.name;
-  if ('description' in input && input.description !== undefined) body.description = input.description;
-  if ('permissions' in input && input.permissions !== undefined) body.permissions = input.permissions;
+  if ('description' in input && input.description !== undefined)
+    body.description = input.description;
+  if ('permissions' in input && input.permissions !== undefined)
+    body.permissions = input.permissions;
   if ('isSelfAssignable' in input && input.isSelfAssignable !== undefined) {
     body.isSelfAssignable = input.isSelfAssignable;
   }
@@ -46,6 +49,7 @@ export async function manageGroupRole(
       userId: input.userId,
       groupRoleId: input.groupRoleId,
     });
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
     return { roleIds: result.data };
   }
   if (input.action === 'remove_member_role') {
@@ -54,10 +58,15 @@ export async function manageGroupRole(
       userId: input.userId,
       groupRoleId: input.groupRoleId,
     });
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
     return { roleIds: result.data };
   }
   if (input.action === 'create_role') {
-    const result = await callWriteOperationParsed('createGroupRole', { groupId }, roleBodyFromInput(input));
+    const result = await callWriteOperationParsed(
+      'createGroupRole',
+      { groupId },
+      roleBodyFromInput(input)
+    );
     return { role: result.data ? toGroupRoleSummary(result.data) : null };
   }
   if (input.action === 'update_role') {
@@ -78,6 +87,7 @@ export async function manageGroupRole(
       groupId,
       groupRoleId: input.groupRoleId,
     });
+    cacheManager.invalidateByTag(`group-members:${groupId}`);
     return {
       roles: result.data
         .map(toGroupRoleSummary)
