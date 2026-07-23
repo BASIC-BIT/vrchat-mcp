@@ -15,10 +15,13 @@ import { logger } from '../infra/logger.js';
 
 const HTTP_HOST = '127.0.0.1';
 const MIN_BEARER_TOKEN_LENGTH = 32;
+const DEFAULT_SESSION_IDLE_TIMEOUT_MS = 30 * 60_000;
 
 interface HttpSession {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
+  activeResponses: number;
+  idleTimer?: ReturnType<typeof setTimeout>;
 }
 
 export interface HttpTransportOptions {
@@ -27,6 +30,7 @@ export interface HttpTransportOptions {
   bearerToken: string;
   maxSessions: number;
   rateLimitPerMinute: number;
+  sessionIdleTimeoutMs?: number;
   serverFactory: () => Promise<McpServer>;
   releaseServer?: (server: McpServer) => void;
 }
@@ -70,6 +74,12 @@ function validateOptions(options: HttpTransportOptions): void {
   }
   if (!Number.isInteger(options.rateLimitPerMinute) || options.rateLimitPerMinute < 1) {
     throw new Error('HTTP rateLimitPerMinute must be a positive integer.');
+  }
+  if (
+    options.sessionIdleTimeoutMs !== undefined &&
+    (!Number.isInteger(options.sessionIdleTimeoutMs) || options.sessionIdleTimeoutMs < 1)
+  ) {
+    throw new Error('HTTP sessionIdleTimeoutMs must be a positive integer.');
   }
 }
 
@@ -143,6 +153,7 @@ export async function startHttpTransport(
   let boundPort = options.port;
   let closing = false;
   let pendingInitializations = 0;
+  const sessionIdleTimeoutMs = options.sessionIdleTimeoutMs ?? DEFAULT_SESSION_IDLE_TIMEOUT_MS;
 
   app.disable('x-powered-by');
   app.use(localhostHostValidation());
@@ -190,15 +201,53 @@ export async function startHttpTransport(
   const releaseSession = (sessionId: string, session: HttpSession): void => {
     if (sessions.get(sessionId) !== session) return;
     sessions.delete(sessionId);
+    if (session.idleTimer) {
+      clearTimeout(session.idleTimer);
+      session.idleTimer = undefined;
+    }
     options.releaseServer?.(session.server);
   };
 
+  const scheduleSessionExpiry = (sessionId: string, session: HttpSession): void => {
+    if (sessions.get(sessionId) !== session || session.activeResponses > 0) return;
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    session.idleTimer = setTimeout(() => {
+      if (sessions.get(sessionId) !== session || session.activeResponses > 0) return;
+      releaseSession(sessionId, session);
+      void session.transport.close().catch((error: unknown) => {
+        logger.warn('Failed to close an expired MCP HTTP session.', {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }, sessionIdleTimeoutMs);
+    session.idleTimer.unref();
+  };
+
+  const trackSessionResponse = (sessionId: string, session: HttpSession, res: Response): void => {
+    if (session.idleTimer) {
+      clearTimeout(session.idleTimer);
+      session.idleTimer = undefined;
+    }
+    session.activeResponses += 1;
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      session.activeResponses = Math.max(0, session.activeResponses - 1);
+      scheduleSessionExpiry(sessionId, session);
+    };
+    res.once('finish', settle);
+    res.once('close', settle);
+  };
+
   const handleSessionRequest = async (
+    sessionId: string,
     session: HttpSession,
     req: Request,
     res: Response,
     parsedBody?: unknown
   ): Promise<void> => {
+    trackSessionResponse(sessionId, session, res);
     try {
       await session.transport.handleRequest(req, res, parsedBody);
     } catch (error) {
@@ -220,19 +269,24 @@ export async function startHttpTransport(
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (sessionId) => {
           initializedSessionId = sessionId;
-          if (session) sessions.set(sessionId, session);
+          if (session) {
+            sessions.set(sessionId, session);
+            scheduleSessionExpiry(sessionId, session);
+          }
         },
         onsessionclosed: (sessionId) => {
           if (session) releaseSession(sessionId, session);
         },
       });
-      session = { server, transport };
+      session = { server, transport, activeResponses: 0 };
       transport.onclose = () => {
         const sessionId = transport.sessionId ?? initializedSessionId;
         if (sessionId && session) releaseSession(sessionId, session);
       };
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
+      const sessionId = transport.sessionId ?? initializedSessionId;
+      if (sessionId) scheduleSessionExpiry(sessionId, session);
     } catch (error) {
       if (session) {
         const sessionId = session.transport.sessionId ?? initializedSessionId;
@@ -259,8 +313,8 @@ export async function startHttpTransport(
 
     const requestedSessionId = headerValue(req.headers['mcp-session-id']);
     const existing = requestedSessionId ? sessions.get(requestedSessionId) : undefined;
-    if (existing) {
-      await handleSessionRequest(existing, req, res, req.body);
+    if (requestedSessionId && existing) {
+      await handleSessionRequest(requestedSessionId, existing, req, res, req.body);
       return;
     }
 
@@ -283,7 +337,7 @@ export async function startHttpTransport(
   const handleEstablishedSession = async (req: Request, res: Response): Promise<void> => {
     const sessionId = headerValue(req.headers['mcp-session-id']);
     const session = sessionId ? sessions.get(sessionId) : undefined;
-    if (!session) {
+    if (!sessionId || !session) {
       jsonRpcError(
         res,
         sessionId ? 404 : 400,
@@ -291,7 +345,7 @@ export async function startHttpTransport(
       );
       return;
     }
-    await handleSessionRequest(session, req, res);
+    await handleSessionRequest(sessionId, session, req, res);
   };
 
   app.get(options.path, handleEstablishedSession);

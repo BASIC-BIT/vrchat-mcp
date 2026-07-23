@@ -96,6 +96,7 @@ const ConfigBaseSchema = z
           .refine((value) => !/^\/healthz\/?$/i.test(value), 'HTTP path /healthz is reserved.'),
         maxSessions: z.number().int().min(1).max(100),
         rateLimitPerMinute: z.number().int().min(1).max(10000),
+        sessionIdleTimeoutMs: z.number().int().min(1).max(86_400_000),
       })
       .strict(),
     vrcx: z
@@ -189,6 +190,7 @@ const EnvSchema = z
     VRCHAT_MCP_HTTP_PATH: EnvString,
     VRCHAT_MCP_HTTP_MAX_SESSIONS: EnvInteger,
     VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE: EnvInteger,
+    VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS: EnvInteger,
   })
   .strict();
 
@@ -367,6 +369,9 @@ function applyHttpEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValue
   }
   if (env.VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE !== undefined) {
     httpOverrides.rateLimitPerMinute = env.VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE;
+  }
+  if (env.VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS !== undefined) {
+    httpOverrides.sessionIdleTimeoutMs = env.VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS;
   }
   if (Object.keys(httpOverrides).length > 0) {
     overrides.http = httpOverrides as ConfigBase['http'];

@@ -43,6 +43,7 @@ async function main(): Promise<void> {
     bearerToken,
     maxSessions: config.http.maxSessions,
     rateLimitPerMinute: config.http.rateLimitPerMinute,
+    sessionIdleTimeoutMs: config.http.sessionIdleTimeoutMs,
     serverFactory: createVrchatMcpServer,
     releaseServer: releaseVrchatMcpServer,
   });

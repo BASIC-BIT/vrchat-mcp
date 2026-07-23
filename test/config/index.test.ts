@@ -150,6 +150,7 @@ describe('config loader', () => {
       path: '/mcp',
       maxSessions: 8,
       rateLimitPerMinute: 300,
+      sessionIdleTimeoutMs: 1_800_000,
     });
 
     resetConfigCacheForTest();
@@ -157,12 +158,14 @@ describe('config loader', () => {
     setEnv('VRCHAT_MCP_HTTP_PATH', '/vrchat');
     setEnv('VRCHAT_MCP_HTTP_MAX_SESSIONS', '4');
     setEnv('VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE', '120');
+    setEnv('VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS', '60000');
 
     expect(getConfig().http).toEqual({
       port: 9000,
       path: '/vrchat',
       maxSessions: 4,
       rateLimitPerMinute: 120,
+      sessionIdleTimeoutMs: 60_000,
     });
   });
 

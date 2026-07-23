@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Add opt-in, loopback-only MCP Streamable HTTP alongside the default stdio transport.
-- Protect HTTP with required bearer authentication, Host and Origin validation, bounded sessions, request rate and body limits, and graceful shutdown.
+- Protect HTTP with required bearer authentication, Host and Origin validation, bounded sessions, abandoned-session cleanup, request rate and body limits, and graceful shutdown.
 - Track resource subscriptions per MCP session and fan VRChat pipeline updates out to every subscribed client.
 - Add HTTP configuration, CLI options, documentation, multi-session end-to-end coverage, and compatible production dependency security updates.
 

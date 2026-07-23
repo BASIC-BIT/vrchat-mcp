@@ -144,6 +144,28 @@ describe('Streamable HTTP transport', () => {
     await Promise.all([first.transport.close(), second.transport.close(), third.transport.close()]);
   });
 
+  it('reaps abandoned idle sessions so they do not exhaust the session cap', async () => {
+    const released = vi.fn();
+    const handle = await start({
+      maxSessions: 1,
+      sessionIdleTimeoutMs: 50,
+      releaseServer: released,
+    });
+    const abandoned = makeClient(handle.url);
+    await abandoned.client.connect(abandoned.transport);
+    expect(handle.sessionCount()).toBe(1);
+
+    await abandoned.transport.close();
+    await vi.waitFor(() => expect(handle.sessionCount()).toBe(0), { timeout: 2_000 });
+    expect(released).toHaveBeenCalledTimes(1);
+
+    const replacement = makeClient(handle.url);
+    await replacement.client.connect(replacement.transport);
+    expect(handle.sessionCount()).toBe(1);
+    await replacement.transport.terminateSession();
+    await replacement.transport.close();
+  });
+
   it('delivers resource updates to every subscribed HTTP session', async () => {
     const makeResourceServer = async (): Promise<McpServer> => {
       const server = await makeServer();

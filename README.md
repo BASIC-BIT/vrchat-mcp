@@ -116,6 +116,7 @@ HTTP mode:
 - Uses the MCP endpoint `http://127.0.0.1:8765/mcp` by default.
 - Requires `Authorization: Bearer <token>` on every MCP request.
 - Supports stateful sessions, SSE notifications, resource subscriptions, and session termination.
+- Reaps abandoned sessions after 30 minutes of inactivity while preserving active response streams.
 - Shares one local VRChat login, cache, and pipeline connection across all connected HTTP clients.
 - Is not a hosted or multi-user mode.
 
@@ -253,20 +254,21 @@ Configuration is optional. Defaults cover normal local use.
 
 Common environment variables:
 
-| Variable                                | Use                                                      |
-| --------------------------------------- | -------------------------------------------------------- |
-| `VRCHAT_MCP_CONFIG_FILE`                | Path to a JSON config file.                              |
-| `VRCHAT_MCP_USER_AGENT`                 | Descriptive user agent for VRChat API requests.          |
-| `VRCHAT_MCP_LOG_LEVEL`                  | `debug`, `info`, `warn`, or `error`.                     |
-| `VRCHAT_MCP_COOKIE_STORE`               | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
-| `VRCHAT_MCP_COOKIE_FILE`                | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
-| `VRCHAT_MCP_ALLOW_WRITES`               | Set to `false` for read-only mode.                       |
-| `VRCHAT_MCP_TRANSPORT`                  | `stdio` (default) or `http`.                             |
-| `VRCHAT_MCP_HTTP_BEARER_TOKEN`          | Required 32+ character secret for HTTP mode.             |
-| `VRCHAT_MCP_HTTP_PORT`                  | Loopback HTTP port. Defaults to `8765`.                  |
-| `VRCHAT_MCP_HTTP_PATH`                  | MCP endpoint path. Defaults to `/mcp`.                   |
-| `VRCHAT_MCP_HTTP_MAX_SESSIONS`          | Maximum concurrent HTTP sessions. Defaults to `8`.       |
-| `VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE` | Per-client HTTP request limit. Defaults to `300`.        |
+| Variable                                  | Use                                                      |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `VRCHAT_MCP_CONFIG_FILE`                  | Path to a JSON config file.                              |
+| `VRCHAT_MCP_USER_AGENT`                   | Descriptive user agent for VRChat API requests.          |
+| `VRCHAT_MCP_LOG_LEVEL`                    | `debug`, `info`, `warn`, or `error`.                     |
+| `VRCHAT_MCP_COOKIE_STORE`                 | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
+| `VRCHAT_MCP_COOKIE_FILE`                  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
+| `VRCHAT_MCP_ALLOW_WRITES`                 | Set to `false` for read-only mode.                       |
+| `VRCHAT_MCP_TRANSPORT`                    | `stdio` (default) or `http`.                             |
+| `VRCHAT_MCP_HTTP_BEARER_TOKEN`            | Required 32+ character secret for HTTP mode.             |
+| `VRCHAT_MCP_HTTP_PORT`                    | Loopback HTTP port. Defaults to `8765`.                  |
+| `VRCHAT_MCP_HTTP_PATH`                    | MCP endpoint path. Defaults to `/mcp`.                   |
+| `VRCHAT_MCP_HTTP_MAX_SESSIONS`            | Maximum concurrent HTTP sessions. Defaults to `8`.       |
+| `VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE`   | Per-client HTTP request limit. Defaults to `300`.        |
+| `VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS` | Abandoned-session timeout. Defaults to `1800000`.        |
 
 Example JSON config:
 
@@ -278,7 +280,8 @@ Example JSON config:
     "port": 8765,
     "path": "/mcp",
     "maxSessions": 8,
-    "rateLimitPerMinute": 300
+    "rateLimitPerMinute": 300,
+    "sessionIdleTimeoutMs": 1800000
   },
   "groups": { "allowlist": ["grp_abc123"] },
   "cache": { "enabled": true },
