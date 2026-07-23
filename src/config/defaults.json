@@ -52,6 +52,13 @@
     "enabled": true,
     "operationIds": []
   },
+  "http": {
+    "port": 8765,
+    "path": "/mcp",
+    "maxSessions": 8,
+    "rateLimitPerMinute": 300,
+    "sessionIdleTimeoutMs": 1800000
+  },
   "vrcx": {
     "enabled": true,
     "databasePath": "",

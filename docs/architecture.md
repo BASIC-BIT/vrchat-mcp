@@ -4,7 +4,10 @@ This server is organized by responsibility so each file stays small and focused.
 
 ## Entry point
 
-- `src/index.ts` boots the MCP server, initializes auth, registers tools/resources, wires pipeline handlers, and connects the stdio transport.
+- `src/index.ts` selects stdio (default) or loopback Streamable HTTP and owns process shutdown.
+- `src/server.ts` initializes the process-wide VRChat runtime and creates transport-independent `McpServer` instances.
+- `src/transports/http.ts` owns bearer authentication, Origin/Host protection, rate limits, stateful HTTP sessions, SSE routing, and graceful session cleanup.
+- STDIO uses one `McpServer`. HTTP creates one `McpServer` per client session while sharing process-wide VRChat auth, cache, and pipeline state.
 
 ## Core API plumbing (`src/core/`)
 
@@ -34,6 +37,7 @@ This server is organized by responsibility so each file stays small and focused.
 ## Resources (`src/resources/`)
 
 - MCP resources backed by pipeline/cache (e.g., friend change delta feed).
+- Subscription state is tracked per `McpServer`; pipeline updates fan out only to subscribed live sessions.
 
 ## Infra + utils
 

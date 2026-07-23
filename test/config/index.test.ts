@@ -144,6 +144,31 @@ describe('config loader', () => {
     expect(getConfig().vrcx.enabled).toBe(true);
   });
 
+  it('uses bounded loopback HTTP defaults and supports non-secret env overrides', () => {
+    expect(getConfig().http).toEqual({
+      port: 8765,
+      path: '/mcp',
+      maxSessions: 8,
+      rateLimitPerMinute: 300,
+      sessionIdleTimeoutMs: 1_800_000,
+    });
+
+    resetConfigCacheForTest();
+    setEnv('VRCHAT_MCP_HTTP_PORT', '9000');
+    setEnv('VRCHAT_MCP_HTTP_PATH', '/vrchat');
+    setEnv('VRCHAT_MCP_HTTP_MAX_SESSIONS', '4');
+    setEnv('VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE', '120');
+    setEnv('VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS', '60000');
+
+    expect(getConfig().http).toEqual({
+      port: 9000,
+      path: '/vrchat',
+      maxSessions: 4,
+      rateLimitPerMinute: 120,
+      sessionIdleTimeoutMs: 60_000,
+    });
+  });
+
   it('enables generated OpenAPI tools by default for local full-capability use', () => {
     expect(getConfig().generatedReadTools).toEqual({ enabled: true, operationIds: [] });
     expect(getConfig().generatedWriteTools).toEqual({ enabled: true, operationIds: [] });

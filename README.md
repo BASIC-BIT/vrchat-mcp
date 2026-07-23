@@ -8,7 +8,7 @@ Unofficial local [Model Context Protocol](https://modelcontextprotocol.io/) tool
 
 [![npm](https://img.shields.io/npm/v/%40basicbit%2Fvrchat-mcp)](https://www.npmjs.com/package/@basicbit/vrchat-mcp) [![license](https://img.shields.io/npm/l/%40basicbit%2Fvrchat-mcp)](./LICENSE)
 
-VRChat MCP runs locally through stdio. Your VRChat auth cookies stay on your machine and default to your OS keychain, with file storage as the fallback when a keychain backend is unavailable. Curated write tools, generated read/write tools, and read-only VRCX local-history tools are available by default; use your MCP client or agent harness to approve account-changing tool calls.
+VRChat MCP runs locally through stdio by default and also offers an opt-in loopback-only Streamable HTTP mode. Your VRChat auth cookies stay on your machine and default to your OS keychain, with file storage as the fallback when a keychain backend is unavailable. Curated write tools, generated read/write tools, and read-only VRCX local-history tools are available by default; use your MCP client or agent harness to approve account-changing tool calls.
 
 This project is unofficial and is not affiliated with VRChat Inc.
 
@@ -105,6 +105,37 @@ startup_timeout_sec = 40
 ```
 
 If your Windows client cannot spawn `npx` directly, use `cmd` as the command and put `/c`, `npx`, `-y`, and `@basicbit/vrchat-mcp` in the argument list.
+
+## Local Streamable HTTP
+
+Use native Streamable HTTP when an MCP client needs to connect to a long-running local server instead of spawning its own stdio child process. STDIO remains the default and recommended setup for ordinary desktop clients.
+
+HTTP mode:
+
+- Binds only to `127.0.0.1`.
+- Uses the MCP endpoint `http://127.0.0.1:8765/mcp` by default.
+- Requires `Authorization: Bearer <token>` on every MCP request.
+- Supports stateful sessions, SSE notifications, resource subscriptions, and session termination.
+- Reaps abandoned sessions after 30 minutes of inactivity while preserving active response streams.
+- Shares one local VRChat login, cache, and pipeline connection across all connected HTTP clients.
+- Is not a hosted or multi-user mode.
+
+Generate a secret and launch the server in PowerShell:
+
+```powershell
+$env:VRCHAT_MCP_HTTP_BEARER_TOKEN = node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+npx -y @basicbit/vrchat-mcp --transport http
+```
+
+Then configure the MCP client to use `http://127.0.0.1:8765/mcp` and send the token from `VRCHAT_MCP_HTTP_BEARER_TOKEN` as a bearer token. Keep the token in an environment variable or secret store; do not put it in a URL or commit it to a client configuration.
+
+CLI overrides:
+
+```powershell
+npx -y @basicbit/vrchat-mcp --transport http --port 9000 --path /vrchat-mcp
+```
+
+The HTTP listener deliberately cannot bind to a LAN or public interface. Public hosting remains unsupported because VRChat does not provide the OAuth/account-isolation model needed for a hosted personal-account service.
 
 ## Login
 
@@ -223,14 +254,21 @@ Configuration is optional. Defaults cover normal local use.
 
 Common environment variables:
 
-| Variable                  | Use                                                      |
-| ------------------------- | -------------------------------------------------------- |
-| `VRCHAT_MCP_CONFIG_FILE`  | Path to a JSON config file.                              |
-| `VRCHAT_MCP_USER_AGENT`   | Descriptive user agent for VRChat API requests.          |
-| `VRCHAT_MCP_LOG_LEVEL`    | `debug`, `info`, `warn`, or `error`.                     |
-| `VRCHAT_MCP_COOKIE_STORE` | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
-| `VRCHAT_MCP_COOKIE_FILE`  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
-| `VRCHAT_MCP_ALLOW_WRITES` | Set to `false` for read-only mode.                       |
+| Variable                                  | Use                                                      |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `VRCHAT_MCP_CONFIG_FILE`                  | Path to a JSON config file.                              |
+| `VRCHAT_MCP_USER_AGENT`                   | Descriptive user agent for VRChat API requests.          |
+| `VRCHAT_MCP_LOG_LEVEL`                    | `debug`, `info`, `warn`, or `error`.                     |
+| `VRCHAT_MCP_COOKIE_STORE`                 | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
+| `VRCHAT_MCP_COOKIE_FILE`                  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
+| `VRCHAT_MCP_ALLOW_WRITES`                 | Set to `false` for read-only mode.                       |
+| `VRCHAT_MCP_TRANSPORT`                    | `stdio` (default) or `http`.                             |
+| `VRCHAT_MCP_HTTP_BEARER_TOKEN`            | Required 32+ character secret for HTTP mode.             |
+| `VRCHAT_MCP_HTTP_PORT`                    | Loopback HTTP port. Defaults to `8765`.                  |
+| `VRCHAT_MCP_HTTP_PATH`                    | MCP endpoint path. Defaults to `/mcp`.                   |
+| `VRCHAT_MCP_HTTP_MAX_SESSIONS`            | Maximum concurrent HTTP sessions. Defaults to `8`.       |
+| `VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE`   | Per-client HTTP request limit. Defaults to `300`.        |
+| `VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS` | Abandoned-session timeout. Defaults to `1800000`.        |
 
 Example JSON config:
 
@@ -238,6 +276,13 @@ Example JSON config:
 {
   "auth": { "cookieStore": "file" },
   "writes": { "allow": false },
+  "http": {
+    "port": 8765,
+    "path": "/mcp",
+    "maxSessions": 8,
+    "rateLimitPerMinute": 300,
+    "sessionIdleTimeoutMs": 1800000
+  },
   "groups": { "allowlist": ["grp_abc123"] },
   "cache": { "enabled": true },
   "vrcx": { "enabled": true }
@@ -260,6 +305,8 @@ Useful scripts:
 
 - `npm run dev`: run from `src/index.ts`.
 - `npm run start`: run the built server from `dist/`.
+- `npm run dev -- --transport http`: run the local Streamable HTTP server from source.
+- `npm run start -- --transport http`: run the built local Streamable HTTP server.
 - `npm run mcp:login`: start login through the local harness.
 - `npm run mcp:status`: check auth through the local harness.
 - `npm run smoke:live`: run the opt-in live smoke check.

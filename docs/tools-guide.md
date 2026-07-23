@@ -23,6 +23,7 @@ Tool names, tool descriptions, argument names, argument descriptions, and schema
 ## Swagger UI (mcpo)
 
 - Run `npm run mcpo` to spin up an OpenAPI proxy with Swagger UI.
+- This development proxy is separate from the native MCP Streamable HTTP transport (`--transport http`).
 - `npm run mcpo` requires `uvx` (from Astral’s `uv`) to be installed.
 - Open `http://localhost:8000/docs` to browse and try tool calls.
 - For config-based setup (Claude Desktop config + hot reload), see `README.md`.
