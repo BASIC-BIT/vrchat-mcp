@@ -3,9 +3,9 @@ import {
   SubscribeRequestSchema,
   UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { logger } from '../infra/logger.js';
 
-const subscriptions = new Set<string>();
-const registeredServers = new WeakSet<object>();
+const subscriptionsByServer = new Map<McpServer, Set<string>>();
 
 function normalizeUri(uri: string): string {
   try {
@@ -19,8 +19,9 @@ function normalizeUri(uri: string): string {
 }
 
 export function registerResourceSubscriptions(server: McpServer): void {
-  if (registeredServers.has(server)) return;
-  registeredServers.add(server);
+  if (subscriptionsByServer.has(server)) return;
+  const subscriptions = new Set<string>();
+  subscriptionsByServer.set(server, subscriptions);
 
   server.server.setRequestHandler(SubscribeRequestSchema, (request) => {
     const normalized = normalizeUri(request.params.uri);
@@ -35,12 +36,26 @@ export function registerResourceSubscriptions(server: McpServer): void {
   });
 }
 
-export function isResourceSubscribed(uri: string): boolean {
+export function unregisterResourceSubscriptions(server: McpServer): void {
+  subscriptionsByServer.delete(server);
+}
+
+export function isResourceSubscribed(server: McpServer, uri: string): boolean {
   const normalized = normalizeUri(uri);
-  return subscriptions.has(normalized);
+  return subscriptionsByServer.get(server)?.has(normalized) ?? false;
 }
 
 export function notifyResourceUpdated(server: McpServer, uri: string): void {
-  if (!isResourceSubscribed(uri)) return;
-  void server.server.sendResourceUpdated({ uri });
+  if (!isResourceSubscribed(server, uri)) return;
+  void Promise.resolve(server.server.sendResourceUpdated({ uri })).catch((error: unknown) => {
+    logger.warn('Failed to notify an MCP resource subscriber.', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+}
+
+export function notifyResourceSubscribers(uri: string): void {
+  for (const server of subscriptionsByServer.keys()) {
+    notifyResourceUpdated(server, uri);
+  }
 }

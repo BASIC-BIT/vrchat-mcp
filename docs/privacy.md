@@ -1,6 +1,6 @@
 # Privacy
 
-VRChat MCP runs locally on your machine as a stdio MCP server. The project does not operate a hosted service for your VRChat session.
+VRChat MCP runs locally on your machine as a stdio MCP server by default. It also provides an opt-in Streamable HTTP listener that is hard-bound to `127.0.0.1` and protected by a required bearer token. The project does not operate a hosted service for your VRChat session.
 
 ## Data Access
 
@@ -20,4 +20,4 @@ Curated write tools, generated write tools for API gaps, generated read tools, a
 
 ## Hosted Integrations
 
-Do not send VRChat MCP cookies or session tokens to hosted third-party services. Public HTTP or hosted connector variants should only be used if a future VRChat OAuth or public-data-only design exists.
+The local HTTP bearer token protects access to the MCP listener; it is not a VRChat credential and does not make the server suitable for public hosting. Do not place the bearer token in URLs or logs, and do not send VRChat MCP cookies or session tokens to hosted third-party services. Public HTTP or hosted connector variants should only be used if a future VRChat OAuth or public-data-only design exists.

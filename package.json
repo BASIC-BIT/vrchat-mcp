@@ -88,6 +88,7 @@
     "@apidevtools/json-schema-ref-parser": "^15.3.5",
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.9.2",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
@@ -108,6 +109,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^12.6.2",
+    "express": "^5.2.1",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
     "undici": "^8.4.0",

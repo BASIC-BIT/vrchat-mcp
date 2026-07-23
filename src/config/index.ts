@@ -85,6 +85,19 @@ const ConfigBaseSchema = z
       .strict(),
     generatedReadTools: GeneratedToolConfigSchema,
     generatedWriteTools: GeneratedToolConfigSchema,
+    http: z
+      .object({
+        port: z.number().int().min(1).max(65535),
+        path: z
+          .string()
+          .min(2)
+          .max(128)
+          .regex(/^\/[A-Za-z0-9._~/-]*$/, 'HTTP path contains unsupported characters.')
+          .refine((value) => !/^\/healthz\/?$/i.test(value), 'HTTP path /healthz is reserved.'),
+        maxSessions: z.number().int().min(1).max(100),
+        rateLimitPerMinute: z.number().int().min(1).max(10000),
+      })
+      .strict(),
     vrcx: z
       .object({
         enabled: z.boolean(),
@@ -137,6 +150,14 @@ const EnvBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const EnvInteger = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return value;
+  return Number(trimmed);
+}, z.number().int().optional());
+
 const EnvAllowlist = z.preprocess((value) => {
   if (value === undefined) return undefined;
   if (typeof value !== 'string') return value;
@@ -164,6 +185,10 @@ const EnvSchema = z
     VRCHAT_MCP_ENABLE_RAW_CALL: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS: EnvBoolean,
+    VRCHAT_MCP_HTTP_PORT: EnvInteger,
+    VRCHAT_MCP_HTTP_PATH: EnvString,
+    VRCHAT_MCP_HTTP_MAX_SESSIONS: EnvInteger,
+    VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE: EnvInteger,
   })
   .strict();
 
@@ -329,6 +354,25 @@ function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvVa
   }
 }
 
+function applyHttpEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
+  const httpOverrides: Partial<ConfigBase['http']> = {};
+  if (env.VRCHAT_MCP_HTTP_PORT !== undefined) {
+    httpOverrides.port = env.VRCHAT_MCP_HTTP_PORT;
+  }
+  if (env.VRCHAT_MCP_HTTP_PATH) {
+    httpOverrides.path = env.VRCHAT_MCP_HTTP_PATH;
+  }
+  if (env.VRCHAT_MCP_HTTP_MAX_SESSIONS !== undefined) {
+    httpOverrides.maxSessions = env.VRCHAT_MCP_HTTP_MAX_SESSIONS;
+  }
+  if (env.VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE !== undefined) {
+    httpOverrides.rateLimitPerMinute = env.VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE;
+  }
+  if (Object.keys(httpOverrides).length > 0) {
+    overrides.http = httpOverrides as ConfigBase['http'];
+  }
+}
+
 function readEnvOverrides(): {
   overrides: DeepPartial<ConfigBase>;
 } {
@@ -358,6 +402,7 @@ function readEnvOverrides(): {
   applyPipelineEnvOverrides(overrides, env);
   applyGroupEnvOverrides(overrides, env);
   applyToolingEnvOverrides(overrides, env);
+  applyHttpEnvOverrides(overrides, env);
 
   return {
     overrides,
