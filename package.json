@@ -89,7 +89,7 @@
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
@@ -103,7 +103,7 @@
     "openapi-zod-client": "^1.18.3",
     "prettier": "^3.7.4",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.16"
   },
   "dependencies": {
