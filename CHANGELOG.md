@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 - 2026-07-24
 
 - Add opt-in, loopback-only MCP Streamable HTTP alongside the default stdio transport.
 - Protect HTTP with required bearer authentication, Host and Origin validation, bounded sessions, abandoned-session cleanup, request rate and body limits, and graceful shutdown.
 - Track resource subscriptions per MCP session and fan VRChat pipeline updates out to every subscribed client.
 - Add HTTP configuration, CLI options, documentation, multi-session end-to-end coverage, and compatible production dependency security updates.
+- Make `vrchat_group_members` return one bounded page by default and require `view: "all"` for complete snapshots.
+- Pace, retry, cache, and cap full group-member snapshots at 10,000 members without publishing interrupted scans as complete.
 
 ## 0.1.7 - 2026-06-13
 
