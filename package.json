@@ -89,7 +89,7 @@
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
@@ -108,7 +108,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^13.0.1",
     "express": "^5.2.1",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
