@@ -207,7 +207,7 @@ Generated OpenAPI API-gap coverage uses three router tools:
 
 Use `vrchat_operations` to list available generated operation IDs and `vrchat_operation_details` for exact per-operation params/body schemas.
 
-Generated read and write tools are enabled by default. `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS=true` hides `vrchat_read`. `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS=true` hides both `vrchat_write` and `vrchat_delete`, which share the generated-write switch. JSON config can also narrow either surface to specific operation IDs:
+Generated read and write tools are enabled by default. `VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS=true` hides `vrchat_read`. `VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS=true` hides both `vrchat_write` and `vrchat_delete`, which share the generated-write switch. JSON config can also narrow either surface to specific operation IDs; `generatedWriteTools.operationIds` covers DELETE operations too, so a list holding only POST/PUT/PATCH IDs also hides `vrchat_delete`:
 
 ```json
 {
