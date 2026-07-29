@@ -228,9 +228,12 @@ const GroupPostBodySchema = z.object({
   imageId: schemas.FileID.describe(
     'Existing VRChat file ID to attach as the post image.'
   ).optional(),
+  // .default().optional() rather than .default() alone: the former keeps the false
+  // default while leaving the field out of the advertised required list.
   sendNotification: z
     .boolean()
     .default(false)
+    .optional()
     .describe(
       'Notify group members. Defaults to false; set true only when the post warrants a ping.'
     ),
@@ -245,9 +248,13 @@ export const GroupPostUpdateInputSchema = GroupPostBodySchema.partial().extend({
   postId: schemas.NotificationID.describe(
     'Post ID from vrchat_group_post_create or vrchat_group_posts_recent. Shaped like a notification ID (not_...).'
   ),
+  roleIds: schemas.GroupRoleIDList.describe(
+    'Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them.'
+  ).optional(),
   sendNotification: z
     .boolean()
     .default(false)
+    .optional()
     .describe(
       'Re-notify group members about the edit. Defaults to false so corrections stay quiet.'
     ),

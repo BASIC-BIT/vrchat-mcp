@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-29T23:48:27.951Z
+Generated: 2026-07-29T23:54:42.546Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -4051,8 +4051,8 @@ Input schema:
       "description": "Existing VRChat file ID to attach as the post image."
     },
     "sendNotification": {
-      "default": false,
       "description": "Notify group members. Defaults to false; set true only when the post warrants a ping.",
+      "default": false,
       "type": "boolean"
     },
     "groupId": {
@@ -4064,7 +4064,6 @@ Input schema:
     "title",
     "text",
     "visibility",
-    "sendNotification",
     "groupId"
   ],
   "additionalProperties": false
@@ -4289,15 +4288,15 @@ Input schema:
       "items": {
         "type": "string"
       },
-      "description": "Restrict the post to these group roles. Omit to show it to everyone who can see the post."
+      "description": "Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them."
     },
     "imageId": {
       "type": "string",
       "description": "Existing VRChat file ID to attach as the post image."
     },
     "sendNotification": {
-      "default": false,
       "description": "Re-notify group members about the edit. Defaults to false so corrections stay quiet.",
+      "default": false,
       "type": "boolean"
     },
     "groupId": {
@@ -4310,7 +4309,6 @@ Input schema:
     }
   },
   "required": [
-    "sendNotification",
     "groupId",
     "postId"
   ],

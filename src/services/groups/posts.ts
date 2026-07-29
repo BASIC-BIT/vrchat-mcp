@@ -73,7 +73,9 @@ export function buildGroupPostRequest(input: {
   visibility?: string;
   roleIds?: string[];
   imageId?: string;
-  sendNotification: boolean;
+  // Optional here because the caller's schema defaults it; CreateGroupPostRequest
+  // re-applies the false default, so an omitted flag never notifies.
+  sendNotification?: boolean;
 }): CreateGroupPostRequest {
   if (!input.title || !input.text || !input.visibility) {
     throw new Error(
@@ -116,7 +118,7 @@ export async function updateGroupPost(input: GroupPostUpdateInput): Promise<{
     existing = await findGroupPostById(input.groupId, input.postId);
     if (!existing) {
       throw new Error(
-        `Group post ${input.postId} was not found in the last ${GROUP_POST_LOOKUP_MAX_ITEMS} posts for ${input.groupId}. Supply title, text, and visibility to replace it without the lookup.`
+        `Group post ${input.postId} was not found in the most recent ${GROUP_POST_LOOKUP_MAX_ITEMS} posts for ${input.groupId}. Supply title, text, and visibility to replace it without the lookup.`
       );
     }
   }

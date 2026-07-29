@@ -128,6 +128,35 @@ describe('group posts service', () => {
       invalidate.mockRestore();
     });
 
+    it('keeps groupId out of the request body', async () => {
+      // CreateGroupPostRequest is a passthrough schema, so a refactor that spreads the
+      // whole input would silently POST groupId inside the body.
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      await createGroupPost({
+        groupId: GROUP_ID,
+        title: 'T',
+        text: 'B',
+        visibility: 'group',
+        sendNotification: false,
+      });
+
+      expect(lastWriteCall()?.body).not.toHaveProperty('groupId');
+    });
+
+    it('does not notify when sendNotification is omitted entirely', async () => {
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      await createGroupPost({
+        groupId: GROUP_ID,
+        title: 'T',
+        text: 'B',
+        visibility: 'group',
+      });
+
+      expect(lastWriteCall()?.body).toMatchObject({ sendNotification: false });
+    });
+
     it('rejects an empty title before calling the API', async () => {
       await expect(
         createGroupPost({
@@ -253,7 +282,7 @@ describe('group posts service', () => {
         })
       ).rejects.toThrow(
         new RegExp(
-          `not found in the last ${GROUP_POST_LOOKUP_MAX_ITEMS} posts[\\s\\S]*Supply title, text, and visibility`
+          `not found in the most recent ${GROUP_POST_LOOKUP_MAX_ITEMS} posts[\\s\\S]*Supply title, text, and visibility`
         )
       );
       expect(callOperation).not.toHaveBeenCalled();
