@@ -87,6 +87,11 @@ const writeParsers = {
     parseNullable(CalendarEventSchema, data, 'followGroupCalendarEvent'),
   addFavorite: (data: unknown) => parseNullable(FavoriteSchema, data, 'addFavorite'),
   removeFavorite: (data: unknown) => parseNullable(schemas.Success.partial(), data, 'removeFavorite'),
+  addGroupPost: (data: unknown) => parseNullable(schemas.GroupPost.partial(), data, 'addGroupPost'),
+  updateGroupPost: (data: unknown) =>
+    parseNullable(schemas.GroupPost.partial(), data, 'updateGroupPost'),
+  deleteGroupPost: (data: unknown) =>
+    parseNullable(schemas.Success.partial(), data, 'deleteGroupPost'),
   addGroupMemberRole: (data: unknown) => parseWithSchema(schemas.GroupRoleIDList, data, 'addGroupMemberRole'),
   removeGroupMemberRole: (data: unknown) =>
     parseWithSchema(schemas.GroupRoleIDList, data, 'removeGroupMemberRole'),

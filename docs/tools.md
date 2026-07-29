@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-21T08:48:10.759Z
+Generated: 2026-07-29T23:48:27.951Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -4011,6 +4011,392 @@ Output schema:
 }
 ```
 
+### vrchat_group_post_create
+Create a group post (announcement). Does not notify members unless sendNotification is true. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Post title."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Post body text."
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "group",
+        "public"
+      ],
+      "description": "group restricts the post to members; public shows it on the group page."
+    },
+    "roleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Restrict the post to these group roles. Omit to show it to everyone who can see the post."
+    },
+    "imageId": {
+      "type": "string",
+      "description": "Existing VRChat file ID to attach as the post image."
+    },
+    "sendNotification": {
+      "default": false,
+      "description": "Notify group members. Defaults to false; set true only when the post warrants a ping.",
+      "type": "boolean"
+    },
+    "groupId": {
+      "type": "string",
+      "description": "Exact group ID that will own the post."
+    }
+  },
+  "required": [
+    "title",
+    "text",
+    "visibility",
+    "sendNotification",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated",
+        "deleted"
+      ]
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "postId": {
+      "type": "string"
+    },
+    "mergedFromExisting": {
+      "type": "boolean"
+    },
+    "post": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "authorId": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "roleIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "imageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_post_delete
+Delete a group post. Members already notified about it are not un-notified. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string",
+      "description": "Exact group ID that owns the post."
+    },
+    "postId": {
+      "type": "string",
+      "description": "Post ID to delete."
+    }
+  },
+  "required": [
+    "groupId",
+    "postId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated",
+        "deleted"
+      ]
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "postId": {
+      "type": "string"
+    },
+    "mergedFromExisting": {
+      "type": "boolean"
+    },
+    "post": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "authorId": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "roleIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "imageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_post_update
+Update a group post. VRChat replaces the whole post, so any field left out is filled in from the current post: this tool reads the last 300 posts to find it first. Supply title, text, and visibility together to skip that lookup and replace the post outright, which also clears roleIds and imageId unless you resend them. Editing does not re-notify members unless sendNotification is true. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Post title."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Post body text."
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "group",
+        "public"
+      ],
+      "description": "group restricts the post to members; public shows it on the group page."
+    },
+    "roleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Restrict the post to these group roles. Omit to show it to everyone who can see the post."
+    },
+    "imageId": {
+      "type": "string",
+      "description": "Existing VRChat file ID to attach as the post image."
+    },
+    "sendNotification": {
+      "default": false,
+      "description": "Re-notify group members about the edit. Defaults to false so corrections stay quiet.",
+      "type": "boolean"
+    },
+    "groupId": {
+      "type": "string",
+      "description": "Exact group ID that owns the post."
+    },
+    "postId": {
+      "type": "string",
+      "description": "Post ID from vrchat_group_post_create or vrchat_group_posts_recent. Shaped like a notification ID (not_...)."
+    }
+  },
+  "required": [
+    "sendNotification",
+    "groupId",
+    "postId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated",
+        "deleted"
+      ]
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "postId": {
+      "type": "string"
+    },
+    "mergedFromExisting": {
+      "type": "boolean"
+    },
+    "post": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "authorId": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "roleIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "imageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "groupId"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_group_posts_recent
 List recent posts for a group (read-only). (read-only)
 
@@ -4141,6 +4527,15 @@ Output schema:
             "type": "string"
           },
           "visibility": {
+            "type": "string"
+          },
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "imageId": {
             "type": "string"
           }
         },
@@ -9154,7 +9549,6 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `acceptFriendRequest` via `vrchat_write` (PUT /auth/user/notifications/{notificationId}/accept) - Write VRChat API: Accept Friend Request.
 - `acknowledgeNotificationV2` via `vrchat_write` (POST /notifications/{notificationId}/see) - Write VRChat API: Acknowledge NotificationV2.
 - `addGroupGalleryImage` via `vrchat_write` (POST /groups/{groupId}/galleries/{groupGalleryId}/images) - Write VRChat API: Add Group Gallery Image.
-- `addGroupPost` via `vrchat_write` (POST /groups/{groupId}/posts) - Write VRChat API: Create a post in a Group.
 - `addTags` via `vrchat_write` (POST /users/{userId}/addTags) - Write VRChat API: Add User Tags.
 - `banGroupMember` via `vrchat_write` (POST /groups/{groupId}/bans) - Write VRChat API: Ban Group Member.
 - `blockGroup` via `vrchat_write` (POST /groups/{groupId}/block) - Write VRChat API: Block Group.
@@ -9204,7 +9598,6 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `updateGroup` via `vrchat_write` (PUT /groups/{groupId}) - Write VRChat API: Update Group.
 - `updateGroupGallery` via `vrchat_write` (PUT /groups/{groupId}/galleries/{groupGalleryId}) - Write VRChat API: Update Group Gallery.
 - `updateGroupMember` via `vrchat_write` (PUT /groups/{groupId}/members/{userId}) - Write VRChat API: Update Group Member.
-- `updateGroupPost` via `vrchat_write` (PUT /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Edits a Group post.
 - `updateGroupRepresentation` via `vrchat_write` (PUT /groups/{groupId}/representation) - Write VRChat API: Update Group Representation.
 - `updateInviteMessage` via `vrchat_write` (PUT /message/{userId}/{messageType}/{slot}) - Write VRChat API: Update Invite Message.
 - `updateOwnInventoryItem` via `vrchat_write` (PUT /inventory/{inventoryItemId}) - Write VRChat API: Update Own Inventory Item.
@@ -9303,7 +9696,6 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `deleteGroupGallery` via `vrchat_delete` (DELETE /groups/{groupId}/galleries/{groupGalleryId}) - Write VRChat API: Delete Group Gallery.
 - `deleteGroupGalleryImage` via `vrchat_delete` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Write VRChat API: Delete Group Gallery Image.
 - `deleteGroupInvite` via `vrchat_delete` (DELETE /groups/{groupId}/invites/{userId}) - Write VRChat API: Delete User Invite.
-- `deleteGroupPost` via `vrchat_delete` (DELETE /groups/{groupId}/posts/{notificationId}) - Write VRChat API: Delete a Group post.
 - `deleteImpostor` via `vrchat_delete` (DELETE /avatars/{avatarId}/impostor) - Write VRChat API: Delete generated Impostor.
 - `deleteModerationReport` via `vrchat_delete` (DELETE /moderationReports/{moderationReportId}) - Write VRChat API: Delete Moderation Report.
 - `deleteNotificationV2` via `vrchat_delete` (DELETE /notifications/{notificationId}) - Write VRChat API: Delete NotificationV2.

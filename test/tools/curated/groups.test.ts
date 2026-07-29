@@ -10,7 +10,6 @@ vi.mock('../../../src/services/groups/index.js', () => ({
   getGroupRoleTemplates: vi.fn(),
   listGroupMembers: vi.fn(),
   listGroupRoles: vi.fn(),
-  listGroupPosts: vi.fn(),
   listGroupEvents: vi.fn(),
   getGroupEvent: vi.fn(),
   getGroupNextEvent: vi.fn(),
@@ -34,7 +33,6 @@ import {
   listGroupEvents,
   listGroupEventsUpcoming,
   listGroupMembers,
-  listGroupPosts,
   listGroupRoles,
   manageGroupRole,
   resolveGroupId,
@@ -106,27 +104,6 @@ describe('curated group tools', () => {
     expect(result).toMatchObject({ isError: true });
     const content = (result as { content: { text?: string }[] }).content;
     expect(content[0]?.text).toContain('not_found');
-  });
-
-  it('lists recent group posts', async () => {
-    vi.mocked(resolveGroupId).mockResolvedValue({ ok: true, groupId: 'grp_1', resolvedBy: 'id' });
-    vi.mocked(listGroupPosts).mockResolvedValue({
-      posts: [{ id: 'post_1', title: 'Hello' }],
-      page: { pages: 1, items: 1, pageSize: 50, offsetStart: 0, truncated: false },
-      truncated: false,
-      stale: false,
-      pageSize: 50,
-      maxPages: 10,
-    });
-
-    const server = new FakeServer();
-    registerCuratedGroupTools(server as unknown as McpServer);
-    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_posts_recent');
-    const result = await tool!.handler({ groupId: 'grp_1' });
-
-    expect(result).toMatchObject({
-      structuredContent: { totalPosts: 1, posts: [{ id: 'post_1' }] },
-    });
   });
 
   it('lists group events with pagination', async () => {

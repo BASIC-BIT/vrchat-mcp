@@ -104,6 +104,16 @@ Groups and social writes:
 - `vrchat_friend_request`
 - `vrchat_boop`
 
+Group posts (write):
+
+- `vrchat_group_post_create`
+- `vrchat_group_post_update`
+- `vrchat_group_post_delete`
+
+Neither create nor update notifies group members unless `sendNotification` is explicitly set, because a single post can ping the whole group.
+
+VRChat replaces the entire post on edit, and its API has no single-post read. `vrchat_group_post_update` therefore fills omitted fields from the current post, found by scanning the most recent 300 posts fresh from the API rather than from the cached list. Supply `title`, `text`, and `visibility` together to skip that lookup and replace the post outright; doing so also clears `roleIds` and `imageId` unless they are resent. All three tools invalidate cached group reads so `vrchat_group_posts_recent` reflects the write immediately.
+
 Invites (write, low-risk):
 
 - `vrchat_invite_self`

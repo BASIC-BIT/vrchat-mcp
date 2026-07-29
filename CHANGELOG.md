@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add curated `vrchat_group_post_create`, `vrchat_group_post_update`, and `vrchat_group_post_delete` so a tool-filtered deployment can grant group posting without granting every other write.
+- Keep group posts quiet by default: both create and update require an explicit `sendNotification` opt-in before members are pinged.
+- Fill omitted fields on `vrchat_group_post_update` from the current post, since VRChat replaces the whole post on edit, and invalidate cached group reads after every post write so `vrchat_group_posts_recent` does not serve a stale list.
+- Include `roleIds` and `imageId` in group post summaries so read-then-edit flows no longer drop role restrictions or attached images.
+- **Breaking:** `addGroupPost`, `updateGroupPost`, and `deleteGroupPost` now resolve to the curated tools above and are no longer reachable through `vrchat_write` or `vrchat_delete`, even when listed in `generatedWriteTools.operationIds`.
+
 ## 0.1.8 - 2026-07-24
 
 - Add opt-in, loopback-only MCP Streamable HTTP alongside the default stdio transport.
