@@ -342,8 +342,14 @@ jobs:
     runs-on: ubuntu-latest
     # Replays are isolated at workflow level so they cannot cancel a live review, which is
     # exactly what lets two publishers reach this job for the same head. Serialize publication
-    # per PR here instead: queued rather than cancelled, so no result is thrown away, and the
-    # find-or-create below never races another writer.
+    # per PR here so find-or-create never races another writer.
+    #
+    # Not fully lossless: GitHub keeps at most one running plus one pending member per group, so
+    # a third overlapping publisher cancels the pending one. With three publishers (a fresh run
+    # plus two replays) a cancelled pending job could have held the only successful review, and
+    # the comment would end up showing a failure. That needs a manual re-run of two separate
+    # older executions overlapping one live review, and it fails toward "looks unreviewed"
+    # rather than "looks reviewed", so it is accepted rather than solved with an external lock.
     concurrency:
       group: ${{ format('claude-review-publish-{0}', github.event.pull_request.number) }}
       cancel-in-progress: false
@@ -470,9 +476,15 @@ jobs:
           # Never replace a successful review of this same commit with a failure notice. A
           # replayed run that fails after a fresh run has already published would otherwise make
           # a reviewed commit look unreviewed and throw the real result away.
+          #
+          # Keyed on head *and* base ref, not head alone: a retarget can leave the head
+          # untouched, so matching on head only would find a success against the previous base
+          # and suppress the notice, leaving the comment claiming success while the current diff
+          # went unreviewed. Base SHA is deliberately not part of the key, because an ordinary
+          # commit landing on the base does not invalidate the review.
           if [ "${REVIEW_RESULT}" != "success" ] || [ -z "${REVIEW_MARKDOWN_B64}" ]; then
-            if gh api --paginate                  "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"                  --jq ".[] | select(.user.login == \"github-actions[bot]\") | .body"                | grep -qF "**Reviewed commit:** \`${PR_HEAD_SHA}\`"; then
-              echo "::notice::Not overwriting an existing successful review of ${PR_HEAD_SHA} with a failure notice."
+            if gh api --paginate                  "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"                  --jq ".[] | select(.user.login == \"github-actions[bot]\") | .body"                | grep -qF "**Reviewed commit:** \`${PR_HEAD_SHA}\` against \`${PR_BASE_REF}\`"; then
+              echo "::notice::Not overwriting an existing successful review of ${PR_HEAD_SHA} against ${PR_BASE_REF} with a failure notice."
               exit 0
             fi
           fi
