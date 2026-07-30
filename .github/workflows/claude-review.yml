@@ -428,7 +428,15 @@ jobs:
               echo "${STICKY_MARKER}"
               echo "**Reviewed commit:** \`${PR_HEAD_SHA}\` against \`${PR_BASE_REF}\` @ \`${PR_BASE_SHA}\`"
               echo
-              grep -vF "${STICKY_MARKER}" "$review_file" || true
+              # Drop only lines that are nothing but the marker, since one is prepended above.
+              # A plain grep -vF deleted any line merely containing it, which loses a finding
+              # whenever Claude puts the marker inline or quotes it while reviewing this
+              # workflow — which a review of this very PR would do.
+              awk -v marker="${STICKY_MARKER}" '
+                { trimmed = $0
+                  gsub(/^[ \t]+|[ \t]+$/, "", trimmed)
+                  if (trimmed != marker) print
+                }' "$review_file"
             } > "$body_file"
           else
             cat > "$body_file" <<EOF
@@ -483,7 +491,17 @@ jobs:
           # went unreviewed. Base SHA is deliberately not part of the key, because an ordinary
           # commit landing on the base does not invalidate the review.
           if [ "${REVIEW_RESULT}" != "success" ] || [ -z "${REVIEW_MARKDOWN_B64}" ]; then
-            if gh api --paginate                  "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"                  --jq ".[] | select(.user.login == \"github-actions[bot]\") | .body"                | grep -qF "**Reviewed commit:** \`${PR_HEAD_SHA}\` against \`${PR_BASE_REF}\`"; then
+            # Written to a file rather than piped into grep. With pipefail set, grep -q exits on
+            # the first match and closes the pipe, so gh api takes SIGPIPE and the pipeline
+            # reports failure — making the guard read as "no success found" exactly when it did
+            # find one. Separating the fetch also lets a genuine API failure be distinguished
+            # from "no match", which previously fell through and overwrote the success.
+            bodies_file="${RUNNER_TEMP}/claude-review-bodies.txt"
+            if ! gh api --paginate                  "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"                  --jq ".[] | select(.user.login == \"github-actions[bot]\") | .body" > "$bodies_file"; then
+              echo "::error::Could not read PR comments to check for an existing successful review; refusing to overwrite it with a failure notice."
+              exit 1
+            fi
+            if grep -qF "**Reviewed commit:** \`${PR_HEAD_SHA}\` against \`${PR_BASE_REF}\`" "$bodies_file"; then
               echo "::notice::Not overwriting an existing successful review of ${PR_HEAD_SHA} against ${PR_BASE_REF} with a failure notice."
               exit 0
             fi
