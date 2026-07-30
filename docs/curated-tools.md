@@ -112,7 +112,11 @@ Group posts (write):
 
 Neither create nor update notifies group members unless `sendNotification` is explicitly set, because a single post can ping the whole group.
 
-VRChat replaces the entire post on edit, and its API has no single-post read. `vrchat_group_post_update` therefore fills omitted fields from the current post, found by scanning the most recent 300 posts fresh from the API rather than from the cached list. Supply `title`, `text`, and `visibility` together to skip that lookup and replace the post outright; doing so also clears `roleIds` and `imageId` unless they are resent. To drop role restrictions on a merged edit, pass `roleIds: []` explicitly, since an omitted `roleIds` keeps the current roles. All three tools invalidate cached group reads so `vrchat_group_posts_recent` reflects the write immediately.
+VRChat replaces the entire post on edit, and its API has no single-post read. `vrchat_group_post_update` therefore always looks the post up first, scanning the most recent 300 posts fresh from the API rather than from the cached list, and fills in whatever fields the caller omitted. Omitting `roleIds` keeps the current role restrictions; pass `roleIds: []` to clear them.
+
+If the post is older than that lookup window, supplying `title`, `text`, and `visibility` together still lets the edit land as an outright replace. That path cannot recover `roleIds` or `imageId`, so it clears them and reports `mergedFromExisting: false`. Skipping the lookup is deliberately not offered as an optimization: a replace that silently drops `roleIds` would widen a role-restricted post to the whole group.
+
+All three tools invalidate cached group reads so `vrchat_group_posts_recent` reflects the write immediately, including when the write succeeds but its response fails to parse.
 
 Invites (write, low-risk):
 

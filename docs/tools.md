@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-29T23:54:42.546Z
+Generated: 2026-07-30T02:17:02.073Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -4256,7 +4256,7 @@ Output schema:
 ```
 
 ### vrchat_group_post_update
-Update a group post. VRChat replaces the whole post, so any field left out is filled in from the current post: this tool reads the last 300 posts to find it first. Supply title, text, and visibility together to skip that lookup and replace the post outright, which also clears roleIds and imageId unless you resend them. Editing does not re-notify members unless sendNotification is true. (write)
+Update a group post. Omitted fields keep their current values; pass roleIds: [] to clear role restrictions. VRChat replaces the whole post on edit, so this reads the most recent 300 posts to recover the fields you did not send. If the post is older than that window, supplying title, text, and visibility still lets the edit land, but it cannot preserve roleIds or imageId and the response reports mergedFromExisting: false. Editing does not re-notify members unless sendNotification is true. (write)
 
 Input schema:
 
@@ -4292,7 +4292,7 @@ Input schema:
     },
     "imageId": {
       "type": "string",
-      "description": "Existing VRChat file ID to attach as the post image."
+      "description": "Replace the post image. Omit to keep the current image."
     },
     "sendNotification": {
       "description": "Re-notify group members about the edit. Defaults to false so corrections stay quiet.",

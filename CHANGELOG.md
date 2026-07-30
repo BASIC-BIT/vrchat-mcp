@@ -4,7 +4,9 @@
 
 - Add curated `vrchat_group_post_create`, `vrchat_group_post_update`, and `vrchat_group_post_delete` so a tool-filtered deployment can grant group posting without granting every other write.
 - Keep group posts quiet by default: both create and update require an explicit `sendNotification` opt-in before members are pinged.
-- Fill omitted fields on `vrchat_group_post_update` from the current post, since VRChat replaces the whole post on edit, and invalidate cached group reads after every post write so `vrchat_group_posts_recent` does not serve a stale list.
+- Fill omitted fields on `vrchat_group_post_update` from the current post, since VRChat replaces the whole post on edit. The lookup always runs, so an edit never silently drops `roleIds` or `imageId`; pass `roleIds: []` to clear role restrictions deliberately. Posts older than the 300-post lookup window can still be replaced outright by supplying `title`, `text`, and `visibility`, which reports `mergedFromExisting: false`.
+- Reject a `vrchat_group_post_update` call that changes no fields, so an unchanged post cannot have its timestamp bumped or its members re-notified.
+- Invalidate cached group reads after every post write, including when the write succeeds but its response fails to parse, so `vrchat_group_posts_recent` does not serve a stale list and a retry cannot double-post.
 - Include `roleIds` and `imageId` in group post summaries so read-then-edit flows no longer drop role restrictions or attached images.
 - **Breaking:** `addGroupPost`, `updateGroupPost`, and `deleteGroupPost` now resolve to the curated tools above and are no longer reachable through `vrchat_write` or `vrchat_delete`, even when listed in `generatedWriteTools.operationIds`.
 

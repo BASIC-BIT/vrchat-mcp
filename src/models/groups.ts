@@ -251,6 +251,9 @@ export const GroupPostUpdateInputSchema = GroupPostBodySchema.partial().extend({
   roleIds: schemas.GroupRoleIDList.describe(
     'Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them.'
   ).optional(),
+  imageId: schemas.FileID.describe(
+    'Replace the post image. Omit to keep the current image.'
+  ).optional(),
   sendNotification: z
     .boolean()
     .default(false)

@@ -19,6 +19,7 @@ import {
   GROUP_POST_LOOKUP_PAGE_SIZE,
   updateGroupPost,
 } from '../../../src/services/groups/posts.js';
+import { listGroupPosts } from '../../../src/services/groups/curated.js';
 
 const GROUP_ID = 'grp_00000000-0000-0000-0000-000000000000';
 const POST_ID = 'not_00000000-0000-0000-0000-000000000001';
@@ -60,6 +61,11 @@ function filledPage(size = GROUP_POST_LOOKUP_PAGE_SIZE) {
 function lastWriteCall() {
   const calls = vi.mocked(callOperation).mock.calls;
   return calls[calls.length - 1]?.[0];
+}
+
+/** The body as it reaches the wire, with undefined-valued keys dropped by JSON. */
+function wireBody(): unknown {
+  return JSON.parse(JSON.stringify(lastWriteCall()?.body ?? null));
 }
 
 describe('group posts service', () => {
@@ -172,7 +178,10 @@ describe('group posts service', () => {
   });
 
   describe('updateGroupPost', () => {
-    it('skips the lookup when title, text, and visibility are all supplied', async () => {
+    it('preserves roleIds and imageId even when the caller supplies a full body', async () => {
+      // Regression: a full body used to skip the lookup, so the replacing PUT dropped
+      // roleIds and imageId and widened a role-restricted post to the whole group.
+      mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
       const result = await updateGroupPost({
@@ -184,13 +193,64 @@ describe('group posts service', () => {
         sendNotification: false,
       });
 
-      expect(callReadOperation).not.toHaveBeenCalled();
-      expect(result.mergedFromExisting).toBe(false);
-      expect(lastWriteCall()).toMatchObject({
-        operationId: 'updateGroupPost',
-        params: { groupId: GROUP_ID, notificationId: POST_ID },
-        body: { title: 'Doors closed', text: 'That is a wrap.', visibility: 'group' },
+      expect(callReadOperation).toHaveBeenCalled();
+      expect(result.mergedFromExisting).toBe(true);
+      // toEqual on the serialized body: toMatchObject would pass while dropping fields.
+      expect(wireBody()).toEqual({
+        title: 'Doors closed',
+        text: 'That is a wrap.',
+        visibility: 'group',
+        roleIds: [ROLE_ID],
+        imageId: IMAGE_ID,
+        sendNotification: false,
       });
+    });
+
+    it('clears role restrictions only when an empty array is passed explicitly', async () => {
+      mockPostsPage([EXISTING_POST]);
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      await updateGroupPost({
+        groupId: GROUP_ID,
+        postId: POST_ID,
+        text: 'Fixed typo.',
+        roleIds: [],
+        sendNotification: false,
+      });
+
+      expect(wireBody()).toMatchObject({ roleIds: [] });
+    });
+
+    it('falls back to an outright replace when the post is outside the lookup window', async () => {
+      for (let page = 0; page < GROUP_POST_LOOKUP_MAX_PAGES; page += 1) {
+        mockPostsPage(filledPage());
+      }
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      const result = await updateGroupPost({
+        groupId: GROUP_ID,
+        postId: POST_ID,
+        title: 'Doors closed',
+        text: 'That is a wrap.',
+        visibility: 'group',
+        sendNotification: false,
+      });
+
+      expect(result.mergedFromExisting).toBe(false);
+      expect(wireBody()).toEqual({
+        title: 'Doors closed',
+        text: 'That is a wrap.',
+        visibility: 'group',
+        sendNotification: false,
+      });
+    });
+
+    it('refuses an update that changes nothing', async () => {
+      await expect(
+        updateGroupPost({ groupId: GROUP_ID, postId: POST_ID, sendNotification: true })
+      ).rejects.toThrow(/at least one of title, text, visibility, roleIds, or imageId/);
+      expect(callReadOperation).not.toHaveBeenCalled();
+      expect(callOperation).not.toHaveBeenCalled();
     });
 
     it('merges untouched fields from the existing post, mapping roleId to roleIds', async () => {
@@ -302,18 +362,50 @@ describe('group posts service', () => {
       expect(callReadOperation).toHaveBeenCalledTimes(1);
     });
 
-    it('invalidates cached group reads after a successful update', async () => {
-      const invalidate = vi.spyOn(cacheManager, 'invalidateByTag');
-      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+    it('invalidates the cached post list the read tool actually serves', async () => {
+      // Asserts against listGroupPosts rather than the tag string, so retagging either
+      // side breaks this test instead of silently disabling invalidation.
+      mockPostsPage([EXISTING_POST]);
+      const before = await listGroupPosts(GROUP_ID, {});
+      expect(before.posts[0]?.text).toBe('Come join us.');
+      const readsAfterFirstList = vi.mocked(callReadOperation).mock.calls.length;
 
+      // Second read is a cache hit: no queued mock is consumed and no request is made.
+      await listGroupPosts(GROUP_ID, {});
+      expect(vi.mocked(callReadOperation).mock.calls.length).toBe(readsAfterFirstList);
+
+      mockPostsPage([EXISTING_POST]);
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
       await updateGroupPost({
         groupId: GROUP_ID,
         postId: POST_ID,
-        title: 'T',
-        text: 'B',
-        visibility: 'group',
+        text: 'Fixed typo.',
         sendNotification: false,
       });
+
+      // The write dropped the cached list, so this refetches and sees the new text.
+      mockPostsPage([{ ...EXISTING_POST, text: 'Fixed typo.' }]);
+      const after = await listGroupPosts(GROUP_ID, {});
+      expect(after.posts[0]?.text).toBe('Fixed typo.');
+    });
+
+    it('invalidates the cache even when the write response fails to parse', async () => {
+      const invalidate = vi.spyOn(cacheManager, 'invalidateByTag');
+      mockPostsPage([EXISTING_POST]);
+      // visibility is a closed enum, so this response cannot parse.
+      vi.mocked(callOperation).mockResolvedValueOnce({
+        url: 'u',
+        data: { id: POST_ID, visibility: 'nonsense-value' },
+      });
+
+      await expect(
+        updateGroupPost({
+          groupId: GROUP_ID,
+          postId: POST_ID,
+          text: 'Fixed typo.',
+          sendNotification: false,
+        })
+      ).rejects.toThrow();
 
       expect(invalidate).toHaveBeenCalledWith(`groups:${GROUP_ID}`);
       invalidate.mockRestore();

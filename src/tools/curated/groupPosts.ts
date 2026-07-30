@@ -65,7 +65,7 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -99,14 +99,14 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
     toolName('vrchat.group.post.update'),
     {
       description:
-        'Update a group post. VRChat replaces the whole post, so any field left out is filled in from the current post: this tool reads the last 300 posts to find it first. Supply title, text, and visibility together to skip that lookup and replace the post outright, which also clears roleIds and imageId unless you resend them. Editing does not re-notify members unless sendNotification is true.',
+        'Update a group post. Omitted fields keep their current values; pass roleIds: [] to clear role restrictions. VRChat replaces the whole post on edit, so this reads the most recent 300 posts to recover the fields you did not send. If the post is older than that window, supplying title, text, and visibility still lets the edit land, but it cannot preserve roleIds or imageId and the response reports mergedFromExisting: false. Editing does not re-notify members unless sendNotification is true.',
       inputSchema: GroupPostUpdateInputSchema,
       outputSchema: GroupPostWriteOutputSchema,
       annotations: writeToolAnnotations,
@@ -134,7 +134,7 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -166,6 +166,6 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 }
