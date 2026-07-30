@@ -80,14 +80,27 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
     async (args) => {
       try {
         const input = GroupPostCreateInputSchema.parse(args);
-        const allowed = checkGroupAllowed(input.groupId);
+        const resolved = await resolveGroupId({
+          groupId: input.groupId,
+          shortCode: input.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+        // Guard the resolved ID, never the caller's input: a short code must not be a way
+        // around groups.allowlist.
+        const allowed = checkGroupAllowed(resolved.groupId);
         if (!allowed.ok) {
           return toolError(allowed.reason);
         }
-        const post = await createGroupPost(input);
+        const post = await createGroupPost(resolved.groupId, input);
         const payload = {
           status: 'created' as const,
-          groupId: input.groupId,
+          groupId: resolved.groupId,
           postId: post?.id,
           post: post ?? null,
         };
@@ -114,14 +127,27 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
     async (args) => {
       try {
         const input = GroupPostUpdateInputSchema.parse(args);
-        const allowed = checkGroupAllowed(input.groupId);
+        const resolved = await resolveGroupId({
+          groupId: input.groupId,
+          shortCode: input.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+        // Guard the resolved ID, never the caller's input: a short code must not be a way
+        // around groups.allowlist.
+        const allowed = checkGroupAllowed(resolved.groupId);
         if (!allowed.ok) {
           return toolError(allowed.reason);
         }
-        const result = await updateGroupPost(input);
+        const result = await updateGroupPost(resolved.groupId, input);
         const payload = {
           status: 'updated' as const,
-          groupId: input.groupId,
+          groupId: resolved.groupId,
           postId: input.postId,
           mergedFromExisting: result.mergedFromExisting,
           post: result.post,
@@ -148,14 +174,27 @@ export function registerCuratedGroupPostTools(server: McpServer): void {
     async (args) => {
       try {
         const input = GroupPostDeleteInputSchema.parse(args);
-        const allowed = checkGroupAllowed(input.groupId);
+        const resolved = await resolveGroupId({
+          groupId: input.groupId,
+          shortCode: input.shortCode,
+        });
+        if (!resolved.ok) {
+          return toolError(resolved.reason, {
+            status: resolved.status,
+            message: resolved.reason,
+            nextSteps: resolved.nextSteps,
+          });
+        }
+        // Guard the resolved ID, never the caller's input: a short code must not be a way
+        // around groups.allowlist.
+        const allowed = checkGroupAllowed(resolved.groupId);
         if (!allowed.ok) {
           return toolError(allowed.reason);
         }
-        await deleteGroupPost(input);
+        await deleteGroupPost(resolved.groupId, input);
         const payload = {
           status: 'deleted' as const,
-          groupId: input.groupId,
+          groupId: resolved.groupId,
           postId: input.postId,
         };
         return {

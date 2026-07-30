@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-30T02:17:02.073Z
+Generated: 2026-07-30T16:08:13.535Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -4057,14 +4057,17 @@ Input schema:
     },
     "groupId": {
       "type": "string",
-      "description": "Exact group ID that will own the post."
+      "description": "Exact group ID. Provide groupId or shortCode."
+    },
+    "shortCode": {
+      "type": "string",
+      "description": "Exact group short code. Provide groupId or shortCode."
     }
   },
   "required": [
     "title",
     "text",
-    "visibility",
-    "groupId"
+    "visibility"
   ],
   "additionalProperties": false
 }
@@ -4161,7 +4164,11 @@ Input schema:
   "properties": {
     "groupId": {
       "type": "string",
-      "description": "Exact group ID that owns the post."
+      "description": "Exact group ID. Provide groupId or shortCode."
+    },
+    "shortCode": {
+      "type": "string",
+      "description": "Exact group short code. Provide groupId or shortCode."
     },
     "postId": {
       "type": "string",
@@ -4169,7 +4176,6 @@ Input schema:
     }
   },
   "required": [
-    "groupId",
     "postId"
   ],
   "additionalProperties": false
@@ -4291,8 +4297,15 @@ Input schema:
       "description": "Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them."
     },
     "imageId": {
-      "type": "string",
-      "description": "Replace the post image. Omit to keep the current image."
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Replace the post image. Omit to keep the current image; pass null to remove it."
     },
     "sendNotification": {
       "description": "Re-notify group members about the edit. Defaults to false so corrections stay quiet.",
@@ -4301,7 +4314,11 @@ Input schema:
     },
     "groupId": {
       "type": "string",
-      "description": "Exact group ID that owns the post."
+      "description": "Exact group ID. Provide groupId or shortCode."
+    },
+    "shortCode": {
+      "type": "string",
+      "description": "Exact group short code. Provide groupId or shortCode."
     },
     "postId": {
       "type": "string",
@@ -4309,7 +4326,6 @@ Input schema:
     }
   },
   "required": [
-    "groupId",
     "postId"
   ],
   "additionalProperties": false

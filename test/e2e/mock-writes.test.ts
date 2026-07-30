@@ -149,4 +149,53 @@ describe('mcp e2e (mock writes)', () => {
     });
     expect(deleteResult).toMatchObject({ structuredContent: { status: 'deleted' } });
   });
+
+  it('creates, updates, and deletes a group post end to end', async () => {
+    const client = harness!.client;
+    const groupId = server!.data.groups[0]?.id;
+    expect(typeof groupId).toBe('string');
+
+    const created = await client.callTool({
+      name: 'vrchat_group_post_create',
+      arguments: {
+        groupId,
+        title: 'Doors open',
+        text: 'Come join us.',
+        visibility: 'group',
+        roleIds: ['grol_e2e'],
+      },
+    });
+    const createdPayload = created.structuredContent as {
+      status?: string;
+      postId?: string;
+      post?: { roleIds?: string[] };
+    };
+    expect(createdPayload?.status).toBe('created');
+    expect(createdPayload?.post?.roleIds).toEqual(['grol_e2e']);
+    const postId = typeof createdPayload?.postId === 'string' ? createdPayload.postId : undefined;
+    if (!postId) {
+      throw new Error('Expected post id from vrchat_group_post_create.');
+    }
+
+    // The mock replaces the whole post exactly as VRChat does, so this asserts the merge
+    // really preserves roleIds rather than the handler quietly re-adding them.
+    const updated = await client.callTool({
+      name: 'vrchat_group_post_update',
+      arguments: { groupId, postId, text: 'Fixed typo.' },
+    });
+    const updatedPayload = updated.structuredContent as {
+      mergedFromExisting?: boolean;
+      post?: { title?: string; text?: string; roleIds?: string[] };
+    };
+    expect(updatedPayload?.mergedFromExisting).toBe(true);
+    expect(updatedPayload?.post?.title).toBe('Doors open');
+    expect(updatedPayload?.post?.text).toBe('Fixed typo.');
+    expect(updatedPayload?.post?.roleIds).toEqual(['grol_e2e']);
+
+    const deleted = await client.callTool({
+      name: 'vrchat_group_post_delete',
+      arguments: { groupId, postId },
+    });
+    expect(deleted).toMatchObject({ structuredContent: { status: 'deleted' } });
+  });
 });

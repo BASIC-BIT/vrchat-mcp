@@ -8,6 +8,8 @@ import {
   type GroupPostSummary,
   type GroupPostUpdateInput,
 } from '../../models/groups.js';
+import { callOperation } from '../../core/client.js';
+import { logger } from '../../infra/logger.js';
 import { callReadOperationParsed, callWriteOperationParsed } from '../api/client.js';
 import { cacheManager } from '../cache.js';
 
@@ -82,7 +84,9 @@ export function buildGroupPostRequest(input: {
   text?: string;
   visibility?: string;
   roleIds?: string[];
-  imageId?: string;
+  // null is an explicit removal: it is dropped from the request, and because the PUT
+  // replaces the post, an absent imageId clears the existing image.
+  imageId?: string | null;
   // Optional here because the caller's schema defaults it; CreateGroupPostRequest
   // re-applies the false default, so an omitted flag never notifies.
   sendNotification?: boolean;
@@ -97,26 +101,44 @@ export function buildGroupPostRequest(input: {
     text: input.text,
     visibility: input.visibility,
     roleIds: input.roleIds,
-    imageId: input.imageId,
+    imageId: input.imageId ?? undefined,
     sendNotification: input.sendNotification,
   });
 }
 
+/**
+ * Parse a write response without letting a parse failure look like a failed write. The post
+ * already exists at this point; surfacing an error would invite a retry that posts twice and,
+ * with sendNotification, pings the group twice. An unparseable body costs the summary only.
+ */
+function summarizeWrittenPost(data: unknown, label: string): GroupPostSummary | null {
+  if (data === null || data === undefined) return null;
+  const parsed = schemas.GroupPost.partial().safeParse(data);
+  if (!parsed.success) {
+    logger.warn(`${label} succeeded but its response did not parse`, {
+      issue: parsed.error.message,
+    });
+    return null;
+  }
+  return toGroupPostSummary(parsed.data);
+}
+
 export async function createGroupPost(
+  groupId: string,
   input: GroupPostCreateInput
 ): Promise<GroupPostSummary | null> {
   const request = buildGroupPostRequest(input);
   // finally, not after: a response that fails to parse still created the post, and an agent
   // retrying against a stale cached list could post (and notify) twice.
   try {
-    const result = await callWriteOperationParsed(
-      'addGroupPost',
-      { groupId: input.groupId },
-      request
-    );
-    return result.data ? toGroupPostSummary(result.data) : null;
+    const result = await callOperation({
+      operationId: 'addGroupPost',
+      params: { groupId },
+      body: request,
+    });
+    return summarizeWrittenPost(result.data, 'addGroupPost');
   } finally {
-    invalidateGroupPostCaches(input.groupId);
+    invalidateGroupPostCaches(groupId);
   }
 }
 
@@ -135,7 +157,22 @@ function hasFullPostBody(input: GroupPostUpdateInput): boolean {
   return input.title !== undefined && input.text !== undefined && input.visibility !== undefined;
 }
 
-export async function updateGroupPost(input: GroupPostUpdateInput): Promise<{
+/** True when every supplied content field already equals what the post holds. */
+function isNoOpUpdate(input: GroupPostUpdateInput, existing: GroupPostSummary): boolean {
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  if (input.title !== undefined && input.title !== existing.title) return false;
+  if (input.text !== undefined && input.text !== existing.text) return false;
+  if (input.visibility !== undefined && input.visibility !== existing.visibility) return false;
+  if (input.roleIds !== undefined && !same(input.roleIds, existing.roleIds ?? [])) return false;
+  if (input.imageId !== undefined && (input.imageId ?? undefined) !== existing.imageId)
+    return false;
+  return true;
+}
+
+export async function updateGroupPost(
+  groupId: string,
+  input: GroupPostUpdateInput
+): Promise<{
   post: GroupPostSummary | null;
   mergedFromExisting: boolean;
 }> {
@@ -148,13 +185,22 @@ export async function updateGroupPost(input: GroupPostUpdateInput): Promise<{
   // Always look the post up first. The PUT replaces the whole post, so skipping the read
   // would drop roleIds and imageId whenever the caller did not resend them, quietly
   // widening a role-restricted post to the entire group.
-  const existing = await findGroupPostById(input.groupId, input.postId);
+  const existing = await findGroupPostById(groupId, input.postId);
+
+  // Supplying a field is not the same as changing it. Without this, resending the current
+  // title with sendNotification: true would bump updatedAt and ping the whole group about
+  // nothing, which is exactly what the "at least one field" guard above claims to prevent.
+  if (existing && isNoOpUpdate(input, existing)) {
+    throw new Error(
+      `Group post ${input.postId} already has those values, so the update would only bump its timestamp and could re-notify members. Change a field, or omit the call.`
+    );
+  }
 
   // A full body still lets the edit land when the post is older than the lookup window.
   // That path cannot preserve roleIds/imageId, so it is reported via mergedFromExisting.
   if (!existing && !hasFullPostBody(input)) {
     throw new Error(
-      `Group post ${input.postId} was not found in the most recent ${GROUP_POST_LOOKUP_MAX_ITEMS} posts for ${input.groupId}. Supply title, text, and visibility to replace it without the lookup, which also clears its roleIds and imageId.`
+      `Group post ${input.postId} was not found in the most recent ${GROUP_POST_LOOKUP_MAX_ITEMS} posts for ${groupId}. Supply title, text, and visibility to replace it without the lookup, which also clears its roleIds and imageId.`
     );
   }
 
@@ -163,34 +209,35 @@ export async function updateGroupPost(input: GroupPostUpdateInput): Promise<{
     text: input.text ?? existing?.text,
     visibility: input.visibility ?? existing?.visibility,
     roleIds: input.roleIds ?? existing?.roleIds,
-    imageId: input.imageId ?? existing?.imageId,
+    // null means remove; undefined means keep whatever the post already had.
+    imageId: input.imageId === null ? null : (input.imageId ?? existing?.imageId),
     sendNotification: input.sendNotification,
   });
 
   // Invalidate even when the response fails to parse: the write already landed, and leaving
   // the cached list intact would hide it from vrchat_group_posts_recent for the full TTL.
   try {
-    const result = await callWriteOperationParsed(
-      'updateGroupPost',
-      { groupId: input.groupId, notificationId: input.postId },
-      request
-    );
+    const result = await callOperation({
+      operationId: 'updateGroupPost',
+      params: { groupId, notificationId: input.postId },
+      body: request,
+    });
     return {
-      post: result.data ? toGroupPostSummary(result.data) : null,
+      post: summarizeWrittenPost(result.data, 'updateGroupPost'),
       mergedFromExisting: existing !== null,
     };
   } finally {
-    invalidateGroupPostCaches(input.groupId);
+    invalidateGroupPostCaches(groupId);
   }
 }
 
-export async function deleteGroupPost(input: GroupPostDeleteInput): Promise<void> {
+export async function deleteGroupPost(groupId: string, input: GroupPostDeleteInput): Promise<void> {
   try {
     await callWriteOperationParsed('deleteGroupPost', {
-      groupId: input.groupId,
+      groupId,
       notificationId: input.postId,
     });
   } finally {
-    invalidateGroupPostCaches(input.groupId);
+    invalidateGroupPostCaches(groupId);
   }
 }

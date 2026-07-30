@@ -55,6 +55,11 @@ describe('curated group post tools', () => {
       vi.mocked(updateGroupPost).mockReset();
       vi.mocked(deleteGroupPost).mockReset();
       vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
+      vi.mocked(resolveGroupId).mockResolvedValue({
+        ok: true,
+        groupId: 'grp_1',
+        resolvedBy: 'id',
+      });
     });
 
     it('creates a post and defaults sendNotification to false', async () => {
@@ -71,7 +76,8 @@ describe('curated group post tools', () => {
       expect(tool?.config.annotations).toEqual({ readOnlyHint: false });
       expect(checkGroupAllowed).toHaveBeenCalledWith('grp_1');
       expect(createGroupPost).toHaveBeenCalledWith(
-        expect.objectContaining({ groupId: 'grp_1', sendNotification: false })
+        'grp_1',
+        expect.objectContaining({ sendNotification: false })
       );
       expect(result).toMatchObject({
         structuredContent: { status: 'created', groupId: 'grp_1', postId: 'not_1' },
@@ -92,6 +98,7 @@ describe('curated group post tools', () => {
       });
 
       expect(updateGroupPost).toHaveBeenCalledWith(
+        'grp_1',
         expect.objectContaining({ postId: 'not_1', sendNotification: false })
       );
       expect(result).toMatchObject({
@@ -106,7 +113,10 @@ describe('curated group post tools', () => {
       const result = await tool!.handler({ groupId: 'grp_1', postId: 'not_1' });
 
       expect(tool?.config.annotations).toMatchObject({ destructiveHint: true });
-      expect(deleteGroupPost).toHaveBeenCalledWith({ groupId: 'grp_1', postId: 'not_1' });
+      expect(deleteGroupPost).toHaveBeenCalledWith(
+        'grp_1',
+        expect.objectContaining({ postId: 'not_1' })
+      );
       expect(result).toMatchObject({
         structuredContent: { status: 'deleted', groupId: 'grp_1', postId: 'not_1' },
       });

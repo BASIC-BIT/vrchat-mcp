@@ -239,32 +239,38 @@ const GroupPostBodySchema = z.object({
     ),
 });
 
-export const GroupPostCreateInputSchema = GroupPostBodySchema.extend({
-  groupId: schemas.GroupID.describe('Exact group ID that will own the post.'),
+const GroupPostTargetSchema = z.object({
+  groupId: schemas.GroupID.describe('Exact group ID. Provide groupId or shortCode.').optional(),
+  shortCode: z
+    .string()
+    .describe('Exact group short code. Provide groupId or shortCode.')
+    .optional(),
 });
 
-export const GroupPostUpdateInputSchema = GroupPostBodySchema.partial().extend({
-  groupId: schemas.GroupID.describe('Exact group ID that owns the post.'),
-  postId: schemas.NotificationID.describe(
-    'Post ID from vrchat_group_post_create or vrchat_group_posts_recent. Shaped like a notification ID (not_...).'
-  ),
-  roleIds: schemas.GroupRoleIDList.describe(
-    'Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them.'
-  ).optional(),
-  imageId: schemas.FileID.describe(
-    'Replace the post image. Omit to keep the current image.'
-  ).optional(),
-  sendNotification: z
-    .boolean()
-    .default(false)
-    .optional()
-    .describe(
-      'Re-notify group members about the edit. Defaults to false so corrections stay quiet.'
+export const GroupPostCreateInputSchema = GroupPostBodySchema.extend(GroupPostTargetSchema.shape);
+
+export const GroupPostUpdateInputSchema = GroupPostBodySchema.partial()
+  .extend(GroupPostTargetSchema.shape)
+  .extend({
+    postId: schemas.NotificationID.describe(
+      'Post ID from vrchat_group_post_create or vrchat_group_posts_recent. Shaped like a notification ID (not_...).'
     ),
-});
+    roleIds: schemas.GroupRoleIDList.describe(
+      'Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them.'
+    ).optional(),
+    imageId: schemas.FileID.nullable()
+      .describe('Replace the post image. Omit to keep the current image; pass null to remove it.')
+      .optional(),
+    sendNotification: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe(
+        'Re-notify group members about the edit. Defaults to false so corrections stay quiet.'
+      ),
+  });
 
-export const GroupPostDeleteInputSchema = z.object({
-  groupId: schemas.GroupID.describe('Exact group ID that owns the post.'),
+export const GroupPostDeleteInputSchema = GroupPostTargetSchema.extend({
   postId: schemas.NotificationID.describe('Post ID to delete.'),
 });
 

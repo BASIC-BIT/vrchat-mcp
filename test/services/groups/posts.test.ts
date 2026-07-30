@@ -79,8 +79,7 @@ describe('group posts service', () => {
     it('posts the full body and returns a summary with roleIds mapped from roleId', async () => {
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      const post = await createGroupPost({
-        groupId: GROUP_ID,
+      const post = await createGroupPost(GROUP_ID, {
         title: 'Doors open',
         text: 'Come join us.',
         visibility: 'group',
@@ -107,8 +106,7 @@ describe('group posts service', () => {
     it('passes sendNotification through when explicitly opted in', async () => {
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await createGroupPost({
-        groupId: GROUP_ID,
+      await createGroupPost(GROUP_ID, {
         title: 'Doors open',
         text: 'Come join us.',
         visibility: 'public',
@@ -122,8 +120,7 @@ describe('group posts service', () => {
       const invalidate = vi.spyOn(cacheManager, 'invalidateByTag');
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await createGroupPost({
-        groupId: GROUP_ID,
+      await createGroupPost(GROUP_ID, {
         title: 'T',
         text: 'B',
         visibility: 'group',
@@ -139,8 +136,7 @@ describe('group posts service', () => {
       // whole input would silently POST groupId inside the body.
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await createGroupPost({
-        groupId: GROUP_ID,
+      await createGroupPost(GROUP_ID, {
         title: 'T',
         text: 'B',
         visibility: 'group',
@@ -153,8 +149,7 @@ describe('group posts service', () => {
     it('does not notify when sendNotification is omitted entirely', async () => {
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await createGroupPost({
-        groupId: GROUP_ID,
+      await createGroupPost(GROUP_ID, {
         title: 'T',
         text: 'B',
         visibility: 'group',
@@ -163,10 +158,27 @@ describe('group posts service', () => {
       expect(lastWriteCall()?.body).toMatchObject({ sendNotification: false });
     });
 
+    it('reports the created post as unavailable rather than failing when the response cannot be parsed', async () => {
+      vi.mocked(callOperation).mockResolvedValueOnce({
+        url: 'u',
+        data: { id: POST_ID, visibility: 'nonsense-value' },
+      });
+
+      // Creation is not idempotent: reporting an error here would invite a retry that
+      // posts twice and could notify the group twice.
+      await expect(
+        createGroupPost(GROUP_ID, {
+          title: 'T',
+          text: 'B',
+          visibility: 'group',
+          sendNotification: true,
+        })
+      ).resolves.toBeNull();
+    });
+
     it('rejects an empty title before calling the API', async () => {
       await expect(
-        createGroupPost({
-          groupId: GROUP_ID,
+        createGroupPost(GROUP_ID, {
           title: '',
           text: 'B',
           visibility: 'group',
@@ -184,8 +196,7 @@ describe('group posts service', () => {
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      const result = await updateGroupPost({
-        groupId: GROUP_ID,
+      const result = await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         title: 'Doors closed',
         text: 'That is a wrap.',
@@ -210,8 +221,7 @@ describe('group posts service', () => {
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await updateGroupPost({
-        groupId: GROUP_ID,
+      await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         roleIds: [],
@@ -227,8 +237,7 @@ describe('group posts service', () => {
       }
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      const result = await updateGroupPost({
-        groupId: GROUP_ID,
+      const result = await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         title: 'Doors closed',
         text: 'That is a wrap.',
@@ -247,7 +256,7 @@ describe('group posts service', () => {
 
     it('refuses an update that changes nothing', async () => {
       await expect(
-        updateGroupPost({ groupId: GROUP_ID, postId: POST_ID, sendNotification: true })
+        updateGroupPost(GROUP_ID, { postId: POST_ID, sendNotification: true })
       ).rejects.toThrow(/at least one of title, text, visibility, roleIds, or imageId/);
       expect(callReadOperation).not.toHaveBeenCalled();
       expect(callOperation).not.toHaveBeenCalled();
@@ -260,8 +269,7 @@ describe('group posts service', () => {
         data: { ...EXISTING_POST, text: 'Fixed typo.' },
       });
 
-      const result = await updateGroupPost({
-        groupId: GROUP_ID,
+      const result = await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         sendNotification: false,
@@ -285,8 +293,7 @@ describe('group posts service', () => {
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await updateGroupPost({
-        groupId: GROUP_ID,
+      await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         sendNotification: false,
@@ -300,8 +307,7 @@ describe('group posts service', () => {
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await updateGroupPost({
-        groupId: GROUP_ID,
+      await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         sendNotification: false,
@@ -316,8 +322,7 @@ describe('group posts service', () => {
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
-      await updateGroupPost({
-        groupId: GROUP_ID,
+      await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         sendNotification: false,
@@ -334,8 +339,7 @@ describe('group posts service', () => {
       }
 
       await expect(
-        updateGroupPost({
-          groupId: GROUP_ID,
+        updateGroupPost(GROUP_ID, {
           postId: POST_ID,
           text: 'Fixed typo.',
           sendNotification: false,
@@ -352,8 +356,7 @@ describe('group posts service', () => {
       mockPostsPage([{ id: 'not_other', title: 'T', text: 'B', visibility: 'group' }]);
 
       await expect(
-        updateGroupPost({
-          groupId: GROUP_ID,
+        updateGroupPost(GROUP_ID, {
           postId: POST_ID,
           text: 'Fixed typo.',
           sendNotification: false,
@@ -376,8 +379,7 @@ describe('group posts service', () => {
 
       mockPostsPage([EXISTING_POST]);
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
-      await updateGroupPost({
-        groupId: GROUP_ID,
+      await updateGroupPost(GROUP_ID, {
         postId: POST_ID,
         text: 'Fixed typo.',
         sendNotification: false,
@@ -389,7 +391,9 @@ describe('group posts service', () => {
       expect(after.posts[0]?.text).toBe('Fixed typo.');
     });
 
-    it('invalidates the cache even when the write response fails to parse', async () => {
+    it('reports success when the write lands but its response cannot be parsed', async () => {
+      // The post already exists at this point. Surfacing an error would invite a retry that
+      // edits twice and, with sendNotification, pings the group twice.
       const invalidate = vi.spyOn(cacheManager, 'invalidateByTag');
       mockPostsPage([EXISTING_POST]);
       // visibility is a closed enum, so this response cannot parse.
@@ -398,17 +402,44 @@ describe('group posts service', () => {
         data: { id: POST_ID, visibility: 'nonsense-value' },
       });
 
-      await expect(
-        updateGroupPost({
-          groupId: GROUP_ID,
-          postId: POST_ID,
-          text: 'Fixed typo.',
-          sendNotification: false,
-        })
-      ).rejects.toThrow();
+      const result = await updateGroupPost(GROUP_ID, {
+        postId: POST_ID,
+        text: 'Fixed typo.',
+        sendNotification: false,
+      });
 
+      expect(result.post).toBeNull();
+      expect(result.mergedFromExisting).toBe(true);
       expect(invalidate).toHaveBeenCalledWith(`groups:${GROUP_ID}`);
       invalidate.mockRestore();
+    });
+
+    it('removes the image when imageId is explicitly null', async () => {
+      mockPostsPage([EXISTING_POST]);
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      await updateGroupPost(GROUP_ID, {
+        postId: POST_ID,
+        imageId: null,
+        sendNotification: false,
+      });
+
+      // Absent from the replacing PUT is what clears it server-side.
+      expect(wireBody()).not.toHaveProperty('imageId');
+      expect(wireBody()).toMatchObject({ roleIds: [ROLE_ID] });
+    });
+
+    it('rejects an update whose supplied values already match the post', async () => {
+      mockPostsPage([EXISTING_POST]);
+
+      await expect(
+        updateGroupPost(GROUP_ID, {
+          postId: POST_ID,
+          title: 'Doors open',
+          sendNotification: true,
+        })
+      ).rejects.toThrow(/already has those values/);
+      expect(callOperation).not.toHaveBeenCalled();
     });
   });
 
@@ -420,7 +451,7 @@ describe('group posts service', () => {
         data: { success: { message: 'Group Post was deleted!', status_code: 200 } },
       });
 
-      await deleteGroupPost({ groupId: GROUP_ID, postId: POST_ID });
+      await deleteGroupPost(GROUP_ID, { postId: POST_ID });
 
       expect(lastWriteCall()).toMatchObject({
         operationId: 'deleteGroupPost',
