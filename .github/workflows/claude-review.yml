@@ -9,15 +9,19 @@ on:
 permissions:
   contents: read
 
+# Events the job below will skip must not share the PR's concurrency group: cancellation
+# happens before job conditions are evaluated, so a title edit would otherwise kill an
+# in-flight review of the current head.
 concurrency:
-  group: ${{ format('claude-review-{0}', github.event.pull_request.number) }}
-  cancel-in-progress: true
+  group: ${{ format('claude-review-{0}', ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) && format('noop-{0}', github.run_id) || github.event.pull_request.number) }}
+  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) }}
 
 jobs:
   prepare-comment:
     name: Prepare Claude review comment
     if: >-
       (github.event.action != 'edited' || github.event.changes.base != null) &&
+      (github.event.action != 'unlabeled' || github.event.label.name == 'skip-claude-review') &&
       !github.event.pull_request.draft &&
       !github.event.pull_request.head.repo.fork &&
       github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
@@ -83,7 +87,16 @@ jobs:
           fi
 
           if [ -n "$comment_id" ]; then
+            # Reset it to the queued body. Leaving the previous commit's completed review in
+            # place would make the new head look already reviewed for the whole run.
             echo "Reusing Claude review sticky comment ${comment_id}."
+            if ! gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              --input "$json_file" > /dev/null; then
+              echo "::notice::Skipping Claude review because the sticky review comment could not be reset to queued."
+              echo "comment_id=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           else
             response_file="${RUNNER_TEMP}/claude-review-comment-response.json"
             if ! gh api --method POST \
@@ -137,7 +150,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          mkdir -p .claude-review
+          # Recreate from scratch rather than mkdir -p. A PR can commit .claude-review or the
+          # files below as symlinks, which checkout preserves and mkdir -p leaves alone; the
+          # redirections would then follow them and overwrite REVIEW.md with PR-controlled
+          # text, steering the reviewer with no REVIEW.md edit visible in the patch.
+          rm -rf .claude-review
+          mkdir .claude-review
 
           {
             echo "# PR Context"
@@ -340,8 +358,24 @@ jobs:
 
           # No configured event cancels a run when a PR is converted back to draft mid-review,
           # and drafts are excluded from review, so re-check rather than publish into one.
+          # converted_to_draft triggers nothing either, so clear the queued state here or the
+          # comment claims a review is pending forever.
           if [ "${current_draft}" = "true" ]; then
             echo "::notice::Skipping Claude review publish because PR #${PR_NUMBER} was converted back to draft."
+            cat > "$body_file" <<EOF
+          ${STICKY_MARKER}
+          ## Claude Review
+
+          Not published for commit \`${PR_HEAD_SHA}\` because the PR was converted back to draft.
+
+          Mark it ready for review to run a review against the current head.
+          EOF
+            jq -n --rawfile body "$body_file" '{body: $body}' > "$json_file"
+            if ! gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" \
+              --input "$json_file" > /dev/null; then
+              echo "::notice::Could not update the sticky review comment to the draft state."
+            fi
             exit 0
           fi
 
