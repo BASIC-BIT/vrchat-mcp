@@ -86,10 +86,26 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Recreate from scratch rather than mkdir -p. A PR can commit .claude-review or the
-          # files below as symlinks, which checkout preserves and mkdir -p leaves alone; the
-          # redirections would then follow them and overwrite REVIEW.md with PR-controlled
-          # text, steering the reviewer with no REVIEW.md edit visible in the patch.
+          # Drop PR-controlled Claude configuration and project memory first, before anything
+          # else touches the tree. Two separate reasons: hooks and project MCP servers execute
+          # commands at startup, which the tool deny list and --tools cannot constrain and
+          # which would reach CLAUDE_CODE_OAUTH_TOKEN; and auto-loaded memory files let a PR
+          # author put instructions in front of the reviewer without the diff showing a
+          # REVIEW.md edit.
+          #
+          # Deliberately no -type predicate: any of these paths can be committed as a symlink,
+          # which find does not follow and -type d/-type f therefore skip, leaving the
+          # PR-controlled target in place for Claude to load. Matching on name alone and
+          # deleting with rm -rf removes files, directories and symlinks alike, and removes the
+          # link rather than its target. The diff below is produced from git objects, not the
+          # working tree, so it still shows the reviewer every change to these paths.
+          find . -name .git -prune -o \
+            \( -name 'CLAUDE.md' -o -name 'CLAUDE.local.md' -o -name '.mcp.json' -o -name '.claude' \) \
+            -print0 | xargs -0 -r rm -rf
+
+          # Same symlink reasoning: a committed .claude-review, or a committed file inside it,
+          # would otherwise be followed by the redirections below and overwrite REVIEW.md with
+          # PR-controlled text.
           rm -rf .claude-review
           mkdir .claude-review
 
@@ -113,20 +129,6 @@ jobs:
 
           git diff --find-renames --find-copies --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
           git diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
-
-          # Drop PR-controlled Claude configuration and project memory before Claude starts.
-          # Two separate reasons: hooks and project MCP servers execute commands at startup,
-          # which the tool deny list and --tools cannot constrain and which would reach
-          # CLAUDE_CODE_OAUTH_TOKEN; and auto-loaded memory files let a PR author put
-          # instructions in front of the reviewer without the diff showing a REVIEW.md edit.
-          # Recursive because CLAUDE.md is picked up from subdirectories too, and
-          # CLAUDE.local.md is auto-loaded as well. The diff captured above still shows the
-          # reviewer any changes to these paths.
-          find . -name .git -prune -o -type f \
-            \( -name 'CLAUDE.md' -o -name 'CLAUDE.local.md' -o -name '.mcp.json' \) \
-            -print0 | xargs -0 -r rm -f
-          find . -name .git -prune -o -type d -name '.claude' \
-            -print0 | xargs -0 -r rm -rf
 
       - name: Review with Claude
         id: claude_review
