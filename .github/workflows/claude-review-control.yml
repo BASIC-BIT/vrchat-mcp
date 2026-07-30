@@ -1,8 +1,9 @@
 name: Claude Review Control
 
-# Owns every "review stopped" state. The review workflow can only rewrite its sticky comment
-# from jobs that a later event may cancel or skip, so anything that ends a review early has to
-# be handled here or the comment strands, claiming a review is queued for a commit forever.
+# Cancels in-flight Claude review work when a PR stops being reviewable, purely to avoid
+# spending review quota on a result nobody will use. It deliberately writes no comments: the
+# review workflow's sticky comment only ever holds a terminal state naming the commit it
+# describes, so there is no pending state for this workflow to clean up.
 on:
   pull_request:
     types: [labeled, converted_to_draft, closed]
@@ -10,95 +11,20 @@ on:
 permissions:
   contents: read
 
+# Entering the review workflow's concurrency group is what performs the cancellation.
+# Irrelevant label events go to a per-run group so they cannot cancel anything.
 concurrency:
   group: ${{ format('claude-review-{0}', (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review') && github.event.pull_request.number || format('control-noop-{0}', github.run_id)) }}
   cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review' }}
 
 jobs:
   stop-review:
-    name: Stop Claude review and clear the sticky comment
-    # Entering the shared concurrency group above is what cancels in-flight review work.
-    if: >-
-      (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review') &&
-      !github.event.pull_request.head.repo.fork &&
-      github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+    name: Stop Claude review
+    if: github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
-
     steps:
       - name: Record the cancellation
         run: |
           echo "Action '${{ github.event.action }}' on PR #${{ github.event.pull_request.number }} cancels queued or in-flight Claude review work."
-
-      - name: Clear the sticky comment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_ACTION: ${{ github.event.action }}
-          PR_MERGED: ${{ github.event.pull_request.merged }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          STICKY_MARKER: '<!-- claude-pr-review -->'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          body_file="${RUNNER_TEMP}/claude-review-comment.md"
-          json_file="${RUNNER_TEMP}/claude-review-comment.json"
-
-          case "${PR_ACTION}" in
-            labeled)
-              reason="the \`skip-claude-review\` label was added"
-              resume="Remove the label to run a review against the current head."
-              ;;
-            converted_to_draft)
-              reason="the PR was converted back to draft"
-              resume="Mark it ready for review to run a review against the current head."
-              ;;
-            closed)
-              if [ "${PR_MERGED}" = "true" ]; then
-                reason="the PR was merged"
-              else
-                reason="the PR was closed"
-              fi
-              resume="Reopen the PR to run a review against the current head."
-              ;;
-            *)
-              reason="the review was stopped by a \`${PR_ACTION}\` event"
-              resume="Push a new commit to run a review against the current head."
-              ;;
-          esac
-
-          if ! comment_id="$(
-            gh api --paginate \
-              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id' |
-              tail -n 1
-          )"; then
-            echo "::notice::Could not read the sticky review comment; nothing to clear."
-            exit 0
-          fi
-
-          if [ -z "$comment_id" ]; then
-            echo "No Claude review sticky comment exists for PR #${PR_NUMBER}; nothing to clear."
-            exit 0
-          fi
-
-          cat > "$body_file" <<EOF
-          ${STICKY_MARKER}
-          ## Claude Review
-
-          Stopped for commit \`${PR_HEAD_SHA}\` because ${reason}.
-
-          ${resume}
-          EOF
-
-          jq -n --rawfile body "$body_file" '{body: $body}' > "$json_file"
-
-          if ! gh api --method PATCH \
-            "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
-            --input "$json_file" > /dev/null; then
-            echo "::notice::Could not update the sticky review comment to the stopped state."
-            exit 0
-          fi
