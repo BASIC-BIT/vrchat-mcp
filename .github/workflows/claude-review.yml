@@ -9,12 +9,14 @@ on:
 permissions:
   contents: read
 
-# Events the job below will skip must not share the PR's concurrency group: cancellation
-# happens before job conditions are evaluated, so a title edit would otherwise kill an
-# in-flight review of the current head.
+# Runs that will not review the current head must not share the PR's concurrency group:
+# cancellation happens before job conditions are evaluated, so they would kill an in-flight
+# review of the head they are not going to replace. That covers non-base edits, irrelevant
+# label removals, and manual re-runs, which replay their original payload and so may name a
+# commit the PR has already moved past.
 concurrency:
-  group: ${{ format('claude-review-{0}', ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) && format('noop-{0}', github.run_id) || github.event.pull_request.number) }}
-  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) }}
+  group: ${{ format('claude-review-{0}', (github.run_attempt != '1' || (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) && format('noop-{0}-{1}', github.run_id, github.run_attempt) || github.event.pull_request.number) }}
+  cancel-in-progress: ${{ !(github.run_attempt != '1' || (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'unlabeled' && github.event.label.name != 'skip-claude-review')) }}
 
 # The sticky comment only ever holds a terminal state that names the commit it describes.
 # There is deliberately no "queued" placeholder: a pending state has to be replaced by a
@@ -35,8 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
-      available: ${{ steps.claude_secret.outputs.available }}
+      available: ${{ steps.claude_secret.outputs.available == 'true' && steps.live_state.outputs.current == 'true' }}
 
     steps:
       - name: Check Claude OAuth token
@@ -51,6 +54,38 @@ jobs:
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Confirm the event payload still describes the PR
+        id: live_state
+        # The job conditions above read the event payload, which a manual re-run replays
+        # verbatim. Validate against live state before spending review quota: a replayed run
+        # can name a superseded commit, or predate a skip-claude-review label being added.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          state_file="${RUNNER_TEMP}/claude-review-gate-state.json"
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" > "$state_file"
+
+          stop() {
+            echo "::notice::Skipping Claude review because $1"
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          [ "$(jq -r '.state' "$state_file")" = "open" ] || stop "PR #${PR_NUMBER} is no longer open."
+          [ "$(jq -r '.draft' "$state_file")" = "false" ] || stop "PR #${PR_NUMBER} is a draft."
+          [ "$(jq -r '.head.sha' "$state_file")" = "${PR_HEAD_SHA}" ] || stop "the PR head has moved past ${PR_HEAD_SHA}."
+          [ "$(jq -r '.base.sha' "$state_file")" = "${PR_BASE_SHA}" ] || stop "the PR base has moved past ${PR_BASE_SHA}."
+          jq -e '[.labels[].name] | index("skip-claude-review") | not' "$state_file" > /dev/null \
+            || stop "PR #${PR_NUMBER} now carries the skip-claude-review label."
+
+          echo "current=true" >> "$GITHUB_OUTPUT"
 
 
   review:
@@ -330,6 +365,13 @@ jobs:
             exit 0
           fi
 
+          # Labels can change without touching head or base, so a replayed run could otherwise
+          # publish over an opt-out that was added after the review started.
+          if ! jq -e '[.labels[].name] | index("skip-claude-review") | not' "$pr_state_file" > /dev/null; then
+            echo "::notice::Not publishing: PR #${PR_NUMBER} now carries the skip-claude-review label."
+            exit 0
+          fi
+
           if [ "${REVIEW_RESULT}" = "success" ] && [ -n "${REVIEW_MARKDOWN_B64}" ]; then
             printf '%s' "${REVIEW_MARKDOWN_B64}" | base64 -d > "$review_file"
             {
@@ -349,6 +391,23 @@ jobs:
           EOF
           fi
 
+          # GitHub rejects issue-comment bodies over 65536 characters. Truncating with a visible
+          # marker is better than a failed write leaving the sticky comment on an older commit,
+          # which would read as "this head was reviewed".
+          max_body_bytes=60000
+          if [ "$(wc -c < "$body_file")" -gt "$max_body_bytes" ]; then
+            truncated_file="${RUNNER_TEMP}/claude-review-comment-truncated.md"
+            head -c "$max_body_bytes" "$body_file" > "$truncated_file"
+            {
+              echo
+              echo "---"
+              echo
+              echo "_Review truncated to fit GitHub's comment size limit. See the Claude PR review job logs for the full output._"
+            } >> "$truncated_file"
+            mv "$truncated_file" "$body_file"
+            echo "::warning::Claude review body exceeded ${max_body_bytes} bytes and was truncated."
+          fi
+
           jq -n --rawfile body "$body_file" '{body: $body}' > "$json_file"
 
           # Find-or-create: publish is the only writer, so there is no placeholder to reuse.
@@ -356,16 +415,21 @@ jobs:
             gh api --paginate               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id' |
               tail -n 1
           )"; then
-            echo "::notice::Could not read PR comments; the Claude review was not published."
-            exit 0
+            echo "::error::Could not read PR comments; the Claude review was not published."
+            exit 1
           fi
 
+          # A write failure past this point must fail the step. Exiting 0 would leave a green
+          # check with either no sticky comment or one describing an older commit, which reads
+          # as "this head was reviewed" — the one outcome this workflow must never produce.
           if [ -n "$comment_id" ]; then
             if ! gh api --method PATCH               "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}"               --input "$json_file" > /dev/null; then
-              echo "::notice::Could not update the sticky review comment."
+              echo "::error::Could not update the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
+              exit 1
             fi
           else
             if ! gh api --method POST               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --input "$json_file" > /dev/null; then
-              echo "::notice::Could not create the sticky review comment."
+              echo "::error::Could not create the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
+              exit 1
             fi
           fi
