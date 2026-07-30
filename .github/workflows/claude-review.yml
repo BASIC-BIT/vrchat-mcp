@@ -2,7 +2,9 @@ name: Claude Review
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
+    # unlabeled resumes a review after skip-claude-review is removed; edited catches a
+    # base-branch retarget, which GitHub reports as edited rather than synchronize.
+    types: [opened, reopened, ready_for_review, synchronize, unlabeled, edited]
 
 permissions:
   contents: read
@@ -15,6 +17,7 @@ jobs:
   prepare-comment:
     name: Prepare Claude review comment
     if: >-
+      (github.event.action != 'edited' || github.event.changes.base != null) &&
       !github.event.pull_request.draft &&
       !github.event.pull_request.head.repo.fork &&
       github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
@@ -157,6 +160,12 @@ jobs:
           git diff --find-renames --find-copies --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
           git diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
 
+          # Drop PR-controlled Claude configuration before Claude starts. Hooks and project
+          # MCP servers execute commands at startup, which the tool deny list and --tools
+          # cannot constrain, and this job holds CLAUDE_CODE_OAUTH_TOKEN. The diff above
+          # still shows the reviewer any changes to these paths.
+          rm -rf .claude .mcp.json CLAUDE.md
+
       - name: Review with Claude
         id: claude_review
         # Pinned from anthropics/claude-code-action v1.0.167. Update deliberately.
@@ -227,6 +236,7 @@ jobs:
           claude_args: |
             --max-turns 100
             --tools "Read"
+            --strict-mcp-config
       - name: Extract Claude review Markdown
         id: extract_review
         env:
@@ -318,12 +328,20 @@ jobs:
           json_file="${RUNNER_TEMP}/claude-review-comment.json"
           review_file="${RUNNER_TEMP}/claude-review-body.md"
 
-          current_head_sha="$(
-            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha'
-          )"
+          pr_state_file="${RUNNER_TEMP}/claude-review-pr-state.json"
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" > "$pr_state_file"
+          current_head_sha="$(jq -r '.head.sha' "$pr_state_file")"
+          current_draft="$(jq -r '.draft' "$pr_state_file")"
 
           if [ "${current_head_sha}" != "${PR_HEAD_SHA}" ]; then
             echo "::notice::Skipping stale Claude review publish for ${PR_HEAD_SHA}; current PR head is ${current_head_sha}."
+            exit 0
+          fi
+
+          # No configured event cancels a run when a PR is converted back to draft mid-review,
+          # and drafts are excluded from review, so re-check rather than publish into one.
+          if [ "${current_draft}" = "true" ]; then
+            echo "::notice::Skipping Claude review publish because PR #${PR_NUMBER} was converted back to draft."
             exit 0
           fi
 
