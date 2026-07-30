@@ -12,15 +12,17 @@ permissions:
   contents: read
 
 # Entering the review workflow's concurrency group is what performs the cancellation.
-# Irrelevant label events go to a per-run group so they cannot cancel anything.
+# Irrelevant label events go to a per-run group so they cannot cancel anything, and so do
+# manual re-runs: a replayed labeled/converted_to_draft/closed payload would otherwise cancel
+# a valid review of a head that has since become eligible again.
 concurrency:
-  group: ${{ format('claude-review-{0}', (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review') && github.event.pull_request.number || format('control-noop-{0}', github.run_id)) }}
-  cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review' }}
+  group: ${{ format('claude-review-{0}', (github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review')) && github.event.pull_request.number || format('control-noop-{0}-{1}', github.run_id, github.run_attempt)) }}
+  cancel-in-progress: ${{ github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review') }}
 
 jobs:
   stop-review:
     name: Stop Claude review
-    if: github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review'
+    if: github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review')
     runs-on: ubuntu-latest
     permissions:
       contents: read
