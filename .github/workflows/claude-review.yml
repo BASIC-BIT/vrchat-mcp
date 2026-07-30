@@ -340,6 +340,13 @@ jobs:
     needs: [gate, review]
     if: always() && !cancelled() && needs.gate.outputs.available == 'true'
     runs-on: ubuntu-latest
+    # Replays are isolated at workflow level so they cannot cancel a live review, which is
+    # exactly what lets two publishers reach this job for the same head. Serialize publication
+    # per PR here instead: queued rather than cancelled, so no result is thrown away, and the
+    # find-or-create below never races another writer.
+    concurrency:
+      group: ${{ format('claude-review-publish-{0}', github.event.pull_request.number) }}
+      cancel-in-progress: false
     permissions:
       contents: read
       issues: write
@@ -447,15 +454,27 @@ jobs:
 
           jq -n --rawfile body "$body_file" '{body: $body}' > "$json_file"
 
-          # Find-or-create. Replays run in an isolated concurrency group so they cannot cancel a
-          # current review, which means two publishers can be in flight for the same head and
-          # both find no comment. Collect every match rather than one: the oldest becomes
-          # canonical and any others are deleted, so a race converges on a single comment
-          # instead of leaving a permanent duplicate.
+          # Find-or-create, then converge. The job-level concurrency group above means only
+          # one publisher runs at a time per PR, so this no longer races another writer; the
+          # dedup pass stays because duplicates from earlier runs must still be cleaned up.
+          list_comments() {
+            gh api --paginate               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id'
+          }
+
           comments_file="${RUNNER_TEMP}/claude-review-existing.txt"
-          if ! gh api --paginate               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id' > "$comments_file"; then
+          if ! list_comments > "$comments_file"; then
             echo "::error::Could not read PR comments; the Claude review was not published."
             exit 1
+          fi
+
+          # Never replace a successful review of this same commit with a failure notice. A
+          # replayed run that fails after a fresh run has already published would otherwise make
+          # a reviewed commit look unreviewed and throw the real result away.
+          if [ "${REVIEW_RESULT}" != "success" ] || [ -z "${REVIEW_MARKDOWN_B64}" ]; then
+            if gh api --paginate                  "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"                  --jq ".[] | select(.user.login == \"github-actions[bot]\") | .body"                | grep -qF "**Reviewed commit:** \`${PR_HEAD_SHA}\`"; then
+              echo "::notice::Not overwriting an existing successful review of ${PR_HEAD_SHA} with a failure notice."
+              exit 0
+            fi
           fi
 
           comment_id="$(head -n 1 "$comments_file")"
@@ -468,16 +487,20 @@ jobs:
               echo "::error::Could not update the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
               exit 1
             fi
-
-            # Best effort: a failure here leaves a cosmetic duplicate, not a misleading review.
-            tail -n +2 "$comments_file" | while read -r dupe_id; do
-              [ -n "$dupe_id" ] || continue
-              echo "::warning::Removing duplicate Claude review sticky comment ${dupe_id}."
-              gh api --method DELETE                 "repos/${GITHUB_REPOSITORY}/issues/comments/${dupe_id}" > /dev/null || true
-            done
           else
             if ! gh api --method POST               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --input "$json_file" > /dev/null; then
               echo "::error::Could not create the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
               exit 1
             fi
+            # Re-query after creating: the previous version only deduplicated in the update
+            # branch, so two publishers that both created left both comments behind.
+            list_comments > "$comments_file" || true
           fi
+
+          # Converge on the oldest comment. Best effort: failing here leaves a cosmetic
+          # duplicate rather than a misleading review.
+          tail -n +2 "$comments_file" | while read -r dupe_id; do
+            [ -n "$dupe_id" ] || continue
+            echo "::warning::Removing duplicate Claude review sticky comment ${dupe_id}."
+            gh api --method DELETE               "repos/${GITHUB_REPOSITORY}/issues/comments/${dupe_id}" > /dev/null || true
+          done
