@@ -141,13 +141,21 @@ jobs:
             \( -name 'CLAUDE.md' -o -name 'CLAUDE.local.md' -o -name '.mcp.json' -o -name '.claude' \) \
             -print0 | xargs -0 -r rm -rf
 
-          # REVIEW.md goes too, even though it is the intended calibration. Leaving it readable
-          # by name let a PR replace it with a symlink: Claude is told to open REVIEW.md, the
-          # OS follows the link, and the path-oriented Read denies never fire because they match
-          # the requested path rather than the resolved target. A link to /proc/self/environ or
-          # the runner's credential storage would put CLAUDE_CODE_OAUTH_TOKEN in front of the
-          # model, which PR-controlled diff text could then ask it to echo into the review.
-          rm -f REVIEW.md
+          # REVIEW.md goes too, even though it is the intended calibration; the base revision's
+          # copy is materialized separately below. rm -rf, not rm -f: a PR can commit REVIEW.md
+          # as a directory, and the resulting "Is a directory" under set -e would abort context
+          # construction and turn a legitimate PR into a failed review.
+          rm -rf -- REVIEW.md
+
+          # Then every remaining symlink in the tree, regardless of name. The Read deny rules
+          # match the requested path, not the resolved target, so any PR-added link is a way to
+          # read something the denies were meant to block: leak -> /proc/self/environ turns an
+          # allowed Read("./leak") into the job environment, CLAUDE_CODE_OAUTH_TOKEN included,
+          # which PR-controlled diff text can then ask the model to echo into the review.
+          # Enumerating names cannot cover this; the property needed is that no path Claude can
+          # open resolves anywhere except into the checked-out tree. Links still appear in the
+          # diff, so the reviewer can see what the PR proposed.
+          find . -name .git -prune -o -type l -print0 | xargs -0 -r rm -f
 
           # Same symlink reasoning: a committed .claude-review, or a committed file inside it,
           # would otherwise be followed by the redirections below and overwrite REVIEW.md with
@@ -439,14 +447,18 @@ jobs:
 
           jq -n --rawfile body "$body_file" '{body: $body}' > "$json_file"
 
-          # Find-or-create: publish is the only writer, so there is no placeholder to reuse.
-          if ! comment_id="$(
-            gh api --paginate               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id' |
-              tail -n 1
-          )"; then
+          # Find-or-create. Replays run in an isolated concurrency group so they cannot cancel a
+          # current review, which means two publishers can be in flight for the same head and
+          # both find no comment. Collect every match rather than one: the oldest becomes
+          # canonical and any others are deleted, so a race converges on a single comment
+          # instead of leaving a permanent duplicate.
+          comments_file="${RUNNER_TEMP}/claude-review-existing.txt"
+          if ! gh api --paginate               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- claude-pr-review -->"))) | .id' > "$comments_file"; then
             echo "::error::Could not read PR comments; the Claude review was not published."
             exit 1
           fi
+
+          comment_id="$(head -n 1 "$comments_file")"
 
           # A write failure past this point must fail the step. Exiting 0 would leave a green
           # check with either no sticky comment or one describing an older commit, which reads
@@ -456,6 +468,13 @@ jobs:
               echo "::error::Could not update the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
               exit 1
             fi
+
+            # Best effort: a failure here leaves a cosmetic duplicate, not a misleading review.
+            tail -n +2 "$comments_file" | while read -r dupe_id; do
+              [ -n "$dupe_id" ] || continue
+              echo "::warning::Removing duplicate Claude review sticky comment ${dupe_id}."
+              gh api --method DELETE                 "repos/${GITHUB_REPOSITORY}/issues/comments/${dupe_id}" > /dev/null || true
+            done
           else
             if ! gh api --method POST               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments"               --input "$json_file" > /dev/null; then
               echo "::error::Could not create the sticky review comment; the review for ${PR_HEAD_SHA} was not published."
