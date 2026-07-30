@@ -1,0 +1,32 @@
+name: Claude Review Control
+
+# Cancels in-flight Claude review work when a PR stops being reviewable, purely to avoid
+# spending review quota on a result nobody will use. It deliberately writes no comments: the
+# review workflow's sticky comment only ever holds a terminal state naming the commit it
+# describes, so there is no pending state for this workflow to clean up.
+on:
+  pull_request:
+    types: [labeled, converted_to_draft, closed]
+
+permissions:
+  contents: read
+
+# Entering the review workflow's concurrency group is what performs the cancellation.
+# Irrelevant label events go to a per-run group so they cannot cancel anything, and so do
+# manual re-runs: a replayed labeled/converted_to_draft/closed payload would otherwise cancel
+# a valid review of a head that has since become eligible again.
+concurrency:
+  group: ${{ format('claude-review-{0}', (github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review')) && github.event.pull_request.number || format('control-noop-{0}-{1}', github.run_id, github.run_attempt)) }}
+  cancel-in-progress: ${{ github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review') }}
+
+jobs:
+  stop-review:
+    name: Stop Claude review
+    if: github.run_attempt == '1' && (github.event.action != 'labeled' || github.event.label.name == 'skip-claude-review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Record the cancellation
+        run: |
+          echo "Action '${{ github.event.action }}' on PR #${{ github.event.pull_request.number }} cancels queued or in-flight Claude review work."
