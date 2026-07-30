@@ -429,6 +429,32 @@ describe('group posts service', () => {
       expect(wireBody()).toMatchObject({ roleIds: [ROLE_ID] });
     });
 
+    it('treats reordered roleIds as unchanged rather than a real edit', async () => {
+      mockPostsPage([{ ...EXISTING_POST, roleId: [ROLE_ID, 'grol_second'] }]);
+
+      await expect(
+        updateGroupPost(GROUP_ID, {
+          postId: POST_ID,
+          roleIds: ['grol_second', ROLE_ID],
+          sendNotification: true,
+        })
+      ).rejects.toThrow(/already has those values/);
+      expect(callOperation).not.toHaveBeenCalled();
+    });
+
+    it('still treats a genuinely different role set as a change', async () => {
+      mockPostsPage([EXISTING_POST]);
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
+
+      await updateGroupPost(GROUP_ID, {
+        postId: POST_ID,
+        roleIds: [ROLE_ID, 'grol_added'],
+        sendNotification: false,
+      });
+
+      expect(wireBody()).toMatchObject({ roleIds: [ROLE_ID, 'grol_added'] });
+    });
+
     it('rejects an update whose supplied values already match the post', async () => {
       mockPostsPage([EXISTING_POST]);
 
