@@ -5,6 +5,7 @@ import { registerCuratedAvatarTools } from './curated/avatars.js';
 import { registerCuratedEventTools } from './curated/events.js';
 import { registerCuratedFavoriteTools } from './curated/favorites.js';
 import { registerCuratedFriendTools } from './curated/friends.js';
+import { registerCuratedGroupPostTools } from './curated/groupPosts.js';
 import { registerCuratedGroupTools } from './curated/groups.js';
 import { registerCuratedInstanceTools } from './curated/instances.js';
 import { registerCuratedInviteTools } from './curated/invites.js';
@@ -29,6 +30,7 @@ export async function registerAllTools(server: McpServer): Promise<void> {
   registerCuratedEventTools(server);
   registerCuratedFavoriteTools(server);
   registerCuratedGroupTools(server);
+  registerCuratedGroupPostTools(server);
   registerCuratedInstanceTools(server);
   registerCuratedInviteTools(server);
   registerCuratedStatusTools(server);

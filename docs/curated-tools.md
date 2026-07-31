@@ -104,6 +104,24 @@ Groups and social writes:
 - `vrchat_friend_request`
 - `vrchat_boop`
 
+Group posts (write):
+
+- `vrchat_group_post_create`
+- `vrchat_group_post_update`
+- `vrchat_group_post_delete`
+
+Neither create nor update notifies group members unless `sendNotification` is explicitly set, because a single post can ping the whole group.
+
+All three accept `groupId` or `shortCode`, and the `groups.allowlist` guard always runs against the resolved ID so a short code cannot route around it.
+
+VRChat replaces the entire post on edit, and its API has no single-post read. `vrchat_group_post_update` therefore always looks the post up first, scanning the most recent 300 posts fresh from the API rather than from the cached list, and fills in whatever fields the caller omitted. Omitting `roleIds` keeps the current role restrictions; pass `roleIds: []` to clear them. Omitting `imageId` keeps the current image; pass `imageId: null` to remove it. An update whose supplied values all match the post is rejected, since re-sending identical content only bumps the timestamp and can re-notify members.
+
+If the post is older than that lookup window, supplying `title`, `text`, and `visibility` together still lets the edit land as an outright replace. That path cannot recover `roleIds` or `imageId`, so it clears them and reports `mergedFromExisting: false`. Skipping the lookup is deliberately not offered as an optimization: a replace that silently drops `roleIds` would widen a role-restricted post to the whole group.
+
+Creates and updates report success even when the write lands but VRChat's response cannot be parsed, returning `post: null`. Neither call is idempotent, so reporting a failure there would invite a retry that posts twice and, with `sendNotification`, notifies twice.
+
+All three tools invalidate cached group reads after the write, including when the response fails to parse. One gap worth knowing: a `vrchat_group_posts_recent` load already in flight when the write happens can still store its pre-write result afterwards, because `invalidateByTag` cannot see a request whose entry has not been written yet. Reads can then serve the old list for the remainder of the group cache TTL. This affects every cached area equally, not just posts, and fixing it needs generation-checking in `CacheManager` rather than anything post-specific.
+
 Invites (write, low-risk):
 
 - `vrchat_invite_self`

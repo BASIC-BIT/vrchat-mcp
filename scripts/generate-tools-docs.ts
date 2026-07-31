@@ -19,6 +19,7 @@ import { registerCuratedAvatarTools } from '../src/tools/curated/avatars.js';
 import { registerCuratedEventTools } from '../src/tools/curated/events.js';
 import { registerCuratedFavoriteTools } from '../src/tools/curated/favorites.js';
 import { registerCuratedFriendTools } from '../src/tools/curated/friends.js';
+import { registerCuratedGroupPostTools } from '../src/tools/curated/groupPosts.js';
 import { registerCuratedGroupTools } from '../src/tools/curated/groups.js';
 import { registerCuratedInstanceTools } from '../src/tools/curated/instances.js';
 import { registerCuratedInviteTools } from '../src/tools/curated/invites.js';
@@ -208,6 +209,7 @@ async function main() {
   registerCuratedEventTools(collector.createServer('curated'));
   registerCuratedFavoriteTools(collector.createServer('curated'));
   registerCuratedGroupTools(collector.createServer('curated'));
+  registerCuratedGroupPostTools(collector.createServer('curated'));
   registerCuratedInstanceTools(collector.createServer('curated'));
   registerCuratedInviteTools(collector.createServer('curated'));
   registerCuratedNotificationTools(collector.createServer('curated'));

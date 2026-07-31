@@ -23,6 +23,10 @@ export const GroupPostSummarySchema = z.object({
   updatedAt: z.string().optional(),
   authorId: schemas.UserID.optional(),
   visibility: z.string().optional(),
+  // roleIds and imageId are part of the post's edit surface: vrchat_group_post_update
+  // replaces the whole post, so omitting them here would silently clear them.
+  roleIds: schemas.GroupRoleIDList.optional(),
+  imageId: schemas.FileID.optional(),
 });
 
 export const GroupInstanceSummarySchema = z.object({
@@ -212,6 +216,73 @@ export const GroupPostsRecentOutputSchema = z.object({
   posts: z.array(GroupPostSummarySchema),
 });
 
+const GroupPostBodySchema = z.object({
+  title: z.string().min(1).describe('Post title.'),
+  text: z.string().min(1).describe('Post body text.'),
+  visibility: schemas.GroupPostVisibility.describe(
+    'group restricts the post to members; public shows it on the group page.'
+  ),
+  roleIds: schemas.GroupRoleIDList.describe(
+    'Restrict the post to these group roles. Omit to show it to everyone who can see the post.'
+  ).optional(),
+  imageId: schemas.FileID.describe(
+    'Existing VRChat file ID to attach as the post image.'
+  ).optional(),
+  // .default().optional() rather than .default() alone: the former keeps the false
+  // default while leaving the field out of the advertised required list.
+  sendNotification: z
+    .boolean()
+    .default(false)
+    .optional()
+    .describe(
+      'Notify group members. Defaults to false; set true only when the post warrants a ping.'
+    ),
+});
+
+const GroupPostTargetSchema = z.object({
+  groupId: schemas.GroupID.describe('Exact group ID. Provide groupId or shortCode.').optional(),
+  shortCode: z
+    .string()
+    .describe('Exact group short code. Provide groupId or shortCode.')
+    .optional(),
+});
+
+export const GroupPostCreateInputSchema = GroupPostBodySchema.extend(GroupPostTargetSchema.shape);
+
+export const GroupPostUpdateInputSchema = GroupPostBodySchema.partial()
+  .extend(GroupPostTargetSchema.shape)
+  .extend({
+    postId: schemas.NotificationID.describe(
+      'Post ID from vrchat_group_post_create or vrchat_group_posts_recent. Shaped like a notification ID (not_...).'
+    ),
+    roleIds: schemas.GroupRoleIDList.describe(
+      'Replace the post role restrictions. Omit to keep the current roles; pass an empty array to clear them.'
+    ).optional(),
+    imageId: schemas.FileID.nullable()
+      .describe('Replace the post image. Omit to keep the current image; pass null to remove it.')
+      .optional(),
+    sendNotification: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe(
+        'Re-notify group members about the edit. Defaults to false so corrections stay quiet.'
+      ),
+  });
+
+export const GroupPostDeleteInputSchema = GroupPostTargetSchema.extend({
+  postId: schemas.NotificationID.describe('Post ID to delete.'),
+});
+
+export const GroupPostWriteOutputSchema = z.object({
+  status: z.enum(['created', 'updated', 'deleted']),
+  groupId: schemas.GroupID,
+  postId: schemas.NotificationID.optional(),
+  /** True when update merged missing fields from the existing post instead of replacing blind. */
+  mergedFromExisting: z.boolean().optional(),
+  post: GroupPostSummarySchema.nullable().optional(),
+});
+
 export const GroupEventsListInputSchema = GroupShapeSchema.extend({
   groupId: schemas.GroupID.optional(),
   shortCode: z.string().optional(),
@@ -314,6 +385,9 @@ export type GroupRolesInput = z.infer<typeof GroupRolesInputSchema>;
 export type GroupRolesManageInput = z.infer<typeof GroupRolesManageInputSchema>;
 export type GroupRoleSummary = z.infer<typeof GroupRoleSummarySchema>;
 export type GroupPostsRecentInput = z.infer<typeof GroupPostsRecentInputSchema>;
+export type GroupPostCreateInput = z.infer<typeof GroupPostCreateInputSchema>;
+export type GroupPostUpdateInput = z.infer<typeof GroupPostUpdateInputSchema>;
+export type GroupPostDeleteInput = z.infer<typeof GroupPostDeleteInputSchema>;
 export type GroupEventsListInput = z.infer<typeof GroupEventsListInputSchema>;
 export type GroupEventGetInput = z.infer<typeof GroupEventGetInputSchema>;
 export type GroupEventNextInput = z.infer<typeof GroupEventNextInputSchema>;
@@ -356,6 +430,9 @@ export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | nu
     updatedAt: post.updatedAt ?? undefined,
     authorId: post.authorId ?? undefined,
     visibility: post.visibility ?? undefined,
+    // The API reads back the role list as singular `roleId` but accepts it as `roleIds`.
+    roleIds: Array.isArray(post.roleId) ? post.roleId : undefined,
+    imageId: post.imageId ?? undefined,
   };
 }
 

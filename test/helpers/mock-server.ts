@@ -451,6 +451,7 @@ export async function createMockServer(
   const data = parseMockData(mockData);
   let instanceCounter = Object.keys(data.instances).length;
   let notificationCounter = data.notifications.length;
+  let groupPostCounter = Object.values(data.groupPosts).reduce((sum, list) => sum + list.length, 0);
   let calendarCounter =
     data.calendarEvents.length +
     data.calendarFeatured.length +
@@ -825,6 +826,64 @@ export async function createMockServer(
       const groupId = getParamValue(context.request.params, 'groupId') ?? '';
       const posts = data.groupPosts[groupId] ?? [];
       sendJson(toResponse(res), 200, { posts: applyPagination(posts, context.request.query) });
+    },
+    addGroupPost: (c, _req, res) => {
+      const context = toContext(c);
+      const groupId = getParamValue(context.request.params, 'groupId') ?? '';
+      const body = context.request.body as Record<string, unknown> | undefined;
+      if (!groupId) {
+        sendError(toResponse(res), 400, 'Missing groupId');
+        return;
+      }
+      groupPostCounter += 1;
+      const post = {
+        id: `not_mock_post_${groupPostCounter}`,
+        groupId,
+        title: typeof body?.title === 'string' ? body.title : 'Mock Post',
+        text: typeof body?.text === 'string' ? body.text : 'Mock post body',
+        visibility: typeof body?.visibility === 'string' ? body.visibility : 'group',
+        roleId: Array.isArray(body?.roleIds) ? (body?.roleIds as string[]) : undefined,
+        imageId: typeof body?.imageId === 'string' ? body.imageId : undefined,
+      };
+      if (!data.groupPosts[groupId]) {
+        data.groupPosts[groupId] = [];
+      }
+      data.groupPosts[groupId].unshift(post as (typeof data.groupPosts)[string][number]);
+      sendJson(toResponse(res), 200, post);
+    },
+    updateGroupPost: (c, _req, res) => {
+      const context = toContext(c);
+      const groupId = getParamValue(context.request.params, 'groupId') ?? '';
+      const notificationId = getParamValue(context.request.params, 'notificationId') ?? '';
+      const body = context.request.body as Record<string, unknown> | undefined;
+      const posts = data.groupPosts[groupId] ?? [];
+      const post = posts.find((entry) => entry.id === notificationId) as
+        Record<string, unknown> | undefined;
+      if (!post) {
+        sendError(toResponse(res), 404, 'Group post not found');
+        return;
+      }
+      // The real endpoint replaces the whole post, so mirror that rather than merging:
+      // a handler that merged would hide exactly the field-loss bug this tool guards against.
+      post.title = body?.title;
+      post.text = body?.text;
+      post.visibility = body?.visibility;
+      post.roleId = Array.isArray(body?.roleIds) ? body?.roleIds : undefined;
+      post.imageId = typeof body?.imageId === 'string' ? body.imageId : undefined;
+      sendJson(toResponse(res), 200, post);
+    },
+    deleteGroupPost: (c, _req, res) => {
+      const context = toContext(c);
+      const groupId = getParamValue(context.request.params, 'groupId') ?? '';
+      const notificationId = getParamValue(context.request.params, 'notificationId') ?? '';
+      const posts = data.groupPosts[groupId] ?? [];
+      const index = posts.findIndex((entry) => entry.id === notificationId);
+      if (index === -1) {
+        sendError(toResponse(res), 404, 'Group post not found');
+        return;
+      }
+      posts.splice(index, 1);
+      sendJson(toResponse(res), 200, { status: 'success' });
     },
     getGroupInstances: (c, _req, res) => {
       const context = toContext(c);

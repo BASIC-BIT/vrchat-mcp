@@ -13,8 +13,6 @@ import {
   GroupInstancesOverviewOutputSchema,
   GroupMembersInputSchema,
   GroupMembersOutputSchema,
-  GroupPostsRecentInputSchema,
-  GroupPostsRecentOutputSchema,
   GroupProfileInputSchema,
   GroupProfileOutputSchema,
   GroupRolesInputSchema,
@@ -34,7 +32,6 @@ import {
   listGroupEvents,
   listGroupEventsUpcoming,
   listGroupMembers,
-  listGroupPosts,
   listGroupRoles,
   manageGroupRole,
   resolveGroupId,
@@ -253,50 +250,6 @@ export function registerCuratedGroupTools(server: McpServer): void {
           userId: 'userId' in input ? input.userId : undefined,
           groupRoleId: 'groupRoleId' in input ? input.groupRoleId : undefined,
           ...result,
-        };
-        return {
-          content: textContent(JSON.stringify(payload, null, 2)),
-          structuredContent: payload as Record<string, unknown>,
-        };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        return toolError(message);
-      }
-    },
-  );
-
-  server.registerTool(
-    toolName('vrchat.group.posts.recent'),
-    {
-      description: 'List recent posts for a group (read-only).',
-      inputSchema: GroupPostsRecentInputSchema,
-      outputSchema: GroupPostsRecentOutputSchema,
-      annotations: readOnlyToolAnnotations,
-    },
-    async (args) => {
-      try {
-        const resolved = await resolveGroupId({
-          groupId: args?.groupId,
-          shortCode: args?.shortCode,
-        });
-        if (!resolved.ok) {
-          return toolError(resolved.reason, {
-            status: resolved.status,
-            message: resolved.reason,
-            nextSteps: resolved.nextSteps,
-          });
-        }
-
-        const result = await listGroupPosts(resolved.groupId, args ?? {});
-        const payload = {
-          groupId: resolved.groupId,
-          pageSize: result.pageSize,
-          maxPages: result.maxPages,
-          totalPosts: result.posts.length,
-          truncated: result.truncated,
-          stale: result.stale,
-          page: result.page,
-          posts: result.posts,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),

@@ -921,6 +921,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupPostsResponse'
+    post:
+      operationId: addGroupPost
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupPost'
+  /groups/{groupId}/posts/{notificationId}:
+    put:
+      operationId: updateGroupPost
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/NotificationIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupPost'
+    delete:
+      operationId: deleteGroupPost
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+        - $ref: '#/components/parameters/NotificationIdParam'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
   /groups/{groupId}/instances:
     get:
       operationId: getGroupInstances
