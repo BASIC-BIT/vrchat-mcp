@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 - 2026-07-31
 
 - Add curated `vrchat_group_post_create`, `vrchat_group_post_update`, and `vrchat_group_post_delete` so a tool-filtered deployment can grant group posting without granting every other write.
 - Keep group posts quiet by default: both create and update require an explicit `sendNotification` opt-in before members are pinged.
