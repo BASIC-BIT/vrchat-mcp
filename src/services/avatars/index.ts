@@ -108,6 +108,29 @@ async function resolveAvatarId(avatar: string): Promise<string> {
   return matches[0].id!;
 }
 
+/** Only fields that actually differ, so an unchanged request never issues a write. */
+function changedFieldsOnly(
+  current: { name?: unknown; description?: unknown; releaseStatus?: unknown },
+  input: AvatarUpdateInput,
+  existing: string[],
+  tags: string[]
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (input.name !== undefined && input.name !== current.name) {
+    body.name = input.name;
+  }
+  if (input.description !== undefined && input.description !== current.description) {
+    body.description = input.description;
+  }
+  if (input.releaseStatus !== undefined && input.releaseStatus !== current.releaseStatus) {
+    body.releaseStatus = input.releaseStatus;
+  }
+  if (tags.length !== existing.length || tags.some((tag, i) => tag !== existing[i])) {
+    body.tags = tags;
+  }
+  return body;
+}
+
 export async function updateAvatarMetadata(
   input: AvatarUpdateInput
 ): Promise<AvatarUpdateOutput> {
@@ -120,20 +143,7 @@ export async function updateAvatarMetadata(
 
   const existing = (current.data.tags ?? []) as string[];
   const tags = nextTagsFor(existing, input);
-  const body: Record<string, unknown> = {};
-
-  if (input.name !== undefined && input.name !== current.data.name) {
-    body.name = input.name;
-  }
-  if (input.description !== undefined && input.description !== current.data.description) {
-    body.description = input.description;
-  }
-  if (input.releaseStatus !== undefined && input.releaseStatus !== current.data.releaseStatus) {
-    body.releaseStatus = input.releaseStatus;
-  }
-  if (tags.length !== existing.length || tags.some((tag, i) => tag !== existing[i])) {
-    body.tags = tags;
-  }
+  const body = changedFieldsOnly(current.data, input, existing, tags);
 
   // Chainable output: callers targeting by ID still get the human-readable name back.
   const name = (body.name as string | undefined) ?? (current.data.name as string | undefined);
