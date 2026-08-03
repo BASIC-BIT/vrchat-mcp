@@ -6,6 +6,7 @@ import {
   callWriteOperationParsed,
   type ReadOperationData,
 } from '../api/client.js';
+import { callWithRetry, sleep, type RetryOptions } from '../../core/retry.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 
 const CACHE_TTL_MS = cacheConfig.groupsTtlMs;
@@ -37,6 +38,13 @@ async function fetchAvatarProfileCached(
 }
 
 const CONTENT_TAG_PREFIX = 'content_';
+
+const AVATAR_PAGE_DELAY_MS = 250;
+const AVATAR_PAGE_RETRY: RetryOptions = {
+  maxAttempts: 4,
+  baseDelayMs: 1_000,
+  maxDelayMs: 30_000,
+};
 
 function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
   let tags = existing;
@@ -74,15 +82,22 @@ async function resolveAvatarId(avatar: string): Promise<string> {
   const owned: { id?: string; name?: string }[] = [];
   let page = 0;
   for (; page < maxPages; page += 1) {
-    const result = await callReadOperationParsed('searchAvatars', {
-      user: 'me',
-      n: pageSize,
-      offset: page * pageSize,
-      releaseStatus: 'all',
-    });
+    // Retried and paced like the group-member snapshot: a transient 429 on page 7 should not
+    // discard six good pages and abort a resolution the caller cannot easily retry.
+    const { data: result } = await callWithRetry(
+      () =>
+        callReadOperationParsed('searchAvatars', {
+          user: 'me',
+          n: pageSize,
+          offset: page * pageSize,
+          releaseStatus: 'all',
+        }),
+      AVATAR_PAGE_RETRY
+    );
     const batch = (result.data ?? []) as { id?: string; name?: string }[];
     owned.push(...batch);
     if (batch.length < pageSize) break;
+    await sleep(AVATAR_PAGE_DELAY_MS);
   }
   if (page === maxPages) {
     throw new Error(
