@@ -43,6 +43,15 @@ export const InviteUserSchema = z.object({
       path: ['instanceId'],
     });
   }
+  // Pairing them would build "wrld_a:wrld_a:inst_1"; instanceId already carries the world.
+  if (input.worldId && input.instanceId?.includes(':')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        'instanceId is already a full "wrld_:instance" location, so drop worldId — or pass the bare instance ID alongside it.',
+      path: ['worldId'],
+    });
+  }
 });
 
 export const InviteUserOutputSchema = z.object({

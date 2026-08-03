@@ -17,9 +17,11 @@ import {
 } from '../../../src/services/api/client.js';
 import { updateAvatarMetadata } from '../../../src/services/avatars/index.js';
 
+const AVTR = 'avtr_00000000-0000-0000-0000-000000000001';
+
 function mockAvatar(tags: string[], extra: Record<string, unknown> = {}) {
   vi.mocked(callReadOperationParsed).mockResolvedValue({
-    data: { id: 'avtr_1', name: 'Cutie', tags, ...extra },
+    data: { id: AVTR, name: 'Cutie', tags, ...extra },
   } as never);
 }
 
@@ -34,14 +36,14 @@ describe('updateAvatarMetadata', () => {
     mockAvatar(['author_tag_dnb', 'content_horror']);
 
     await updateAvatarMetadata({
-      avatar: 'avtr_1',
+      avatar: AVTR,
       addTags: ['content_sex', 'content_adult'],
     } as never);
 
     // A blind replace here would wipe author_tag_dnb — that's the whole point of the merge.
     expect(callWriteOperationParsed).toHaveBeenCalledWith(
       'updateAvatar',
-      { avatarId: 'avtr_1' },
+      { avatarId: AVTR },
       { tags: ['author_tag_dnb', 'content_horror', 'content_sex', 'content_adult'] }
     );
   });
@@ -49,11 +51,11 @@ describe('updateAvatarMetadata', () => {
   it('clears content tags this build does not know about, keeping author tags', async () => {
     mockAvatar(['author_tag_dnb', 'content_sex', 'content_somethingnew']);
 
-    await updateAvatarMetadata({ avatar: 'avtr_1', clearContentTags: true } as never);
+    await updateAvatarMetadata({ avatar: AVTR, clearContentTags: true } as never);
 
     expect(callWriteOperationParsed).toHaveBeenCalledWith(
       'updateAvatar',
-      { avatarId: 'avtr_1' },
+      { avatarId: AVTR },
       { tags: ['author_tag_dnb'] }
     );
   });
@@ -61,7 +63,7 @@ describe('updateAvatarMetadata', () => {
   it('never writes asset fields even though the endpoint accepts them', async () => {
     mockAvatar([], { description: 'old' });
 
-    await updateAvatarMetadata({ avatar: 'avtr_1', description: 'new' } as never);
+    await updateAvatarMetadata({ avatar: AVTR, description: 'new' } as never);
 
     const body = vi.mocked(callWriteOperationParsed).mock.calls[0][2] as Record<string, unknown>;
     expect(Object.keys(body)).toEqual(['description']);
@@ -74,7 +76,7 @@ describe('updateAvatarMetadata', () => {
     mockAvatar(['content_sex']);
 
     const result = await updateAvatarMetadata({
-      avatar: 'avtr_1',
+      avatar: AVTR,
       addTags: ['content_sex'],
     } as never);
 
@@ -86,12 +88,12 @@ describe('updateAvatarMetadata', () => {
     mockAvatar([]);
 
     const result = await updateAvatarMetadata({
-      avatar: 'avtr_1',
+      avatar: AVTR,
       addTags: ['content_sex'],
       dryRun: true,
     } as never);
 
-    expect(result).toMatchObject({ avatarId: 'avtr_1', name: 'Cutie' });
+    expect(result).toMatchObject({ avatarId: AVTR, name: 'Cutie' });
   });
 
   it('resolves an avatar by name, and refuses when the name is ambiguous', async () => {
@@ -127,6 +129,43 @@ describe('updateAvatarMetadata', () => {
     ).rejects.toThrow('No avatar of yours is exactly named');
   });
 
+  it('treats an avtr_-prefixed name as a name, not an ID', async () => {
+    // Only the full avtr_ + UUID shape is an ID; an avatar merely named "avtr_thing" must
+    // still go through the owned-avatar lookup.
+    vi.mocked(callReadOperationParsed)
+      .mockResolvedValueOnce({ data: [{ id: 'avtr_a', name: 'avtr_thing' }] } as never)
+      .mockResolvedValueOnce({ data: { id: 'avtr_a', name: 'avtr_thing', tags: [] } } as never);
+
+    await updateAvatarMetadata({ avatar: 'avtr_thing', addTags: ['content_sex'] } as never);
+    expect(callWriteOperationParsed).toHaveBeenCalledWith(
+      'updateAvatar',
+      { avatarId: 'avtr_a' },
+      { tags: ['content_sex'] }
+    );
+  });
+
+  it('serializes overlapping updates so neither loses the other tag', async () => {
+    // Both calls read the same list; without serialization the later PUT drops the earlier add.
+    const writes: string[][] = [];
+    vi.mocked(callReadOperationParsed).mockImplementation(
+      () =>
+        Promise.resolve({
+          data: { id: AVTR, name: 'Cutie', tags: writes.at(-1) ?? [] },
+        }) as never
+    );
+    vi.mocked(callWriteOperationParsed).mockImplementation((_op, _p, body) => {
+      writes.push((body as { tags: string[] }).tags);
+      return Promise.resolve({ data: null }) as never;
+    });
+
+    await Promise.all([
+      updateAvatarMetadata({ avatar: AVTR, addTags: ['content_sex'] } as never),
+      updateAvatarMetadata({ avatar: AVTR, addTags: ['content_adult'] } as never),
+    ]);
+
+    expect(writes.at(-1)).toEqual(expect.arrayContaining(['content_sex', 'content_adult']));
+  });
+
   it('refuses a differently-cased name rather than guessing', async () => {
     vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
       data: [{ id: 'avtr_a', name: 'Cutie' }],
@@ -159,7 +198,7 @@ describe('updateAvatarMetadata', () => {
     mockAvatar(['content_sex']);
 
     const result = await updateAvatarMetadata({
-      avatar: 'avtr_1',
+      avatar: AVTR,
       removeTags: ['content_sex'],
       dryRun: true,
     } as never);

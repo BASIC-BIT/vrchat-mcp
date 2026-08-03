@@ -39,6 +39,31 @@ async function fetchAvatarProfileCached(
 
 const CONTENT_TAG_PREFIX = 'content_';
 
+/** Full avtr_ + UUID shape. A bare `avtr_` prefix test would misread an avatar *named* that. */
+const AVATAR_ID_PATTERN =
+  /^avtr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Serializes read-modify-write per avatar. Two overlapping updates would otherwise both read the
+ * same tag list and each PUT a complete array, so the later write would silently drop the
+ * earlier one's addition — breaking the merge guarantee this tool advertises.
+ */
+const avatarLocks = new Map<string, Promise<unknown>>();
+
+function withAvatarLock<T>(avatarId: string, run: () => Promise<T>): Promise<T> {
+  const prior = avatarLocks.get(avatarId) ?? Promise.resolve();
+  const result = prior.then(run, run);
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  );
+  avatarLocks.set(avatarId, settled);
+  void settled.then(() => {
+    if (avatarLocks.get(avatarId) === settled) avatarLocks.delete(avatarId);
+  });
+  return result;
+}
+
 const AVATAR_PAGE_DELAY_MS = 250;
 const AVATAR_PAGE_RETRY: RetryOptions = {
   maxAttempts: 4,
@@ -79,7 +104,7 @@ export class AvatarLookupError extends Error {
 
 /** Accepts an avtr_ ID or the exact name of one of the caller's own avatars. */
 async function resolveAvatarId(avatar: string): Promise<string> {
-  if (avatar.startsWith('avtr_')) return avatar;
+  if (AVATAR_ID_PATTERN.test(avatar)) return avatar;
 
   // Must see every owned avatar before deciding. Reading one page would report a later avatar
   // as missing, and — worse — if two same-named avatars straddle a page boundary the ambiguity
@@ -169,6 +194,13 @@ export async function updateAvatarMetadata(
   input: AvatarUpdateInput
 ): Promise<AvatarUpdateOutput> {
   const avatarId = await resolveAvatarId(input.avatar);
+  return await withAvatarLock(avatarId, () => applyAvatarUpdate(avatarId, input));
+}
+
+async function applyAvatarUpdate(
+  avatarId: string,
+  input: AvatarUpdateInput
+): Promise<AvatarUpdateOutput> {
   const dryRun = input.dryRun ?? false;
 
   // Read uncached — a stale tag list would silently drop tags on write.
