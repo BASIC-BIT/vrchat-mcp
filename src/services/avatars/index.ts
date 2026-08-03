@@ -66,12 +66,29 @@ function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
 async function resolveAvatarId(avatar: string): Promise<string> {
   if (avatar.startsWith('avtr_')) return avatar;
 
-  const result = await callReadOperationParsed('searchAvatars', {
-    user: 'me',
-    n: 100,
-    releaseStatus: 'all',
-  });
-  const owned = (result.data ?? []) as { id?: string; name?: string }[];
+  // Must see every owned avatar before deciding. Reading one page would report a later avatar
+  // as missing, and — worse — if two same-named avatars straddle a page boundary the ambiguity
+  // guard would see only one and write to it.
+  const pageSize = 100;
+  const maxPages = 20;
+  const owned: { id?: string; name?: string }[] = [];
+  let page = 0;
+  for (; page < maxPages; page += 1) {
+    const result = await callReadOperationParsed('searchAvatars', {
+      user: 'me',
+      n: pageSize,
+      offset: page * pageSize,
+      releaseStatus: 'all',
+    });
+    const batch = (result.data ?? []) as { id?: string; name?: string }[];
+    owned.push(...batch);
+    if (batch.length < pageSize) break;
+  }
+  if (page === maxPages) {
+    throw new Error(
+      `Could not list all of your avatars within ${maxPages * pageSize} results, so a name cannot be resolved safely. Pass the avtr_ ID instead.`
+    );
+  }
   const exact = owned.filter((a) => a.name === avatar);
   const matches = exact.length
     ? exact

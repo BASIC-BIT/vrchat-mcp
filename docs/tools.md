@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-08-03T03:21:20.624Z
+Generated: 2026-08-03T03:37:21.993Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -5729,7 +5729,7 @@ Output schema:
 ```
 
 ### vrchat_invite
-Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Supports here=true, full location, worldId+instanceId, or bare instanceId for user invites. (write)
+Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Destination is here=true, a full location like "wrld_:instance", or worldId+instanceId. A bare instanceId is not accepted: VRChat needs the worldId and rejects the stripped form. (write)
 
 Input schema:
 

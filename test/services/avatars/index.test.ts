@@ -115,6 +115,23 @@ describe('updateAvatarMetadata', () => {
     ).rejects.toThrow('No avatar of yours is named');
   });
 
+  it('pages through owned avatars before deciding a name is unambiguous', async () => {
+    // The dangerous case: a full first page hides a same-named avatar on the second, so a
+    // single-page read would think the name is unique and write to the wrong avatar.
+    const page1 = Array.from({ length: 100 }, (_, i) => ({
+      id: `avtr_p1_${i}`,
+      name: i === 0 ? 'Twin' : `Filler${i}`,
+    }));
+    vi.mocked(callReadOperationParsed)
+      .mockResolvedValueOnce({ data: page1 } as never)
+      .mockResolvedValueOnce({ data: [{ id: 'avtr_b', name: 'Twin' }] } as never);
+
+    await expect(
+      updateAvatarMetadata({ avatar: 'Twin', addTags: ['content_sex'] } as never)
+    ).rejects.toThrow('matches 2 of your avatars');
+    expect(callWriteOperationParsed).not.toHaveBeenCalled();
+  });
+
   it('computes the change but does not write on dryRun', async () => {
     mockAvatar(['content_sex']);
 

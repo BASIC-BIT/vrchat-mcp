@@ -35,7 +35,7 @@ export function registerCuratedInviteTools(server: McpServer): void {
     toolName('vrchat.invite'),
     {
       description:
-        'Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Supports here=true, full location, worldId+instanceId, or bare instanceId for user invites.',
+        'Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Destination is here=true, a full location like "wrld_:instance", or worldId+instanceId. A bare instanceId is not accepted: VRChat needs the worldId and rejects the stripped form.',
       inputSchema: UnifiedInviteSchema,
       outputSchema: UnifiedInviteOutputSchema,
       annotations: writeToolAnnotations,
