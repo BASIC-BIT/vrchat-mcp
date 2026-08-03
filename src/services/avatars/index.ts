@@ -1,6 +1,11 @@
 import type { z } from 'zod';
 import type { schemas } from '../../generated/vrchat-schemas.js';
-import { callReadOperationParsed, type ReadOperationData } from '../api/client.js';
+import type { AvatarUpdateInput, AvatarUpdateOutput } from '../../models/avatars.js';
+import {
+  callReadOperationParsed,
+  callWriteOperationParsed,
+  type ReadOperationData,
+} from '../api/client.js';
 import { buildCacheKey, cacheConfig, cacheManager } from '../cache.js';
 
 const CACHE_TTL_MS = cacheConfig.groupsTtlMs;
@@ -29,6 +34,75 @@ async function fetchAvatarProfileCached(
       return avatar;
     }
   );
+}
+
+const CONTENT_TAG_PREFIX = 'content_';
+
+function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
+  let tags = existing;
+  if (input.clearContentTags) {
+    tags = tags.filter((tag) => !tag.startsWith(CONTENT_TAG_PREFIX));
+  }
+  if (input.removeTags?.length) {
+    tags = tags.filter((tag) => !input.removeTags!.includes(tag as never));
+  }
+  if (input.addTags?.length) {
+    tags = [...tags, ...input.addTags.filter((tag) => !tags.includes(tag))];
+  }
+  return tags;
+}
+
+/**
+ * Edit avatar metadata. Only name, description, releaseStatus and content tags are reachable —
+ * assetUrl, unityPackageUrl, unityVersion and version are never written, because a bad value
+ * there points an avatar at the wrong build with no undo.
+ *
+ * Tags are merged against a freshly-read list rather than replaced, so unrelated tags (author
+ * tags in particular) survive. `updateAvatar` overwrites the whole array otherwise.
+ */
+export async function updateAvatarMetadata(
+  input: AvatarUpdateInput
+): Promise<AvatarUpdateOutput> {
+  const { avatarId } = input;
+  const dryRun = input.dryRun ?? false;
+
+  // Read uncached — a stale tag list would silently drop tags on write.
+  const current = await callReadOperationParsed('getAvatar', { avatarId });
+  if (!current.data) throw new Error('Avatar not found.');
+
+  const existing = (current.data.tags ?? []) as string[];
+  const tags = nextTagsFor(existing, input);
+  const body: Record<string, unknown> = {};
+
+  if (input.name !== undefined && input.name !== current.data.name) {
+    body.name = input.name;
+  }
+  if (input.description !== undefined && input.description !== current.data.description) {
+    body.description = input.description;
+  }
+  if (input.releaseStatus !== undefined && input.releaseStatus !== current.data.releaseStatus) {
+    body.releaseStatus = input.releaseStatus;
+  }
+  if (tags.length !== existing.length || tags.some((tag, i) => tag !== existing[i])) {
+    body.tags = tags;
+  }
+
+  if (Object.keys(body).length === 0) {
+    return { avatarId, dryRun, status: 'unchanged', tags: existing };
+  }
+  if (dryRun) {
+    return { avatarId, dryRun, status: 'updated', changes: body, tags };
+  }
+
+  const updated = await callWriteOperationParsed('updateAvatar', { avatarId }, body);
+  cacheManager.invalidateByTag('avatars:profile');
+  return {
+    avatarId,
+    dryRun,
+    status: 'updated',
+    changes: body,
+    tags: (updated.data?.tags ?? tags) as string[],
+  };
 }
 
 export async function getAvatarProfile(avatarId: string): Promise<{

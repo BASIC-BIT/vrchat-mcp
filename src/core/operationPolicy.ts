@@ -1,6 +1,9 @@
+// `updateAvatar` is deliberately absent: it is reachable only through the curated
+// vrchat_avatar_update tool, which writes metadata and merged content tags and never touches
+// assetUrl/unityPackageUrl/unityVersion/version. The raw and generated write paths still refuse
+// it via CURATED_WRITE_TOOL_MAP, so arbitrary avatar bodies remain unreachable.
 export const CONTENT_MANAGEMENT_OPERATION_IDS = [
   'createAvatar',
-  'updateAvatar',
   'deleteAvatar',
   'createWorld',
   'updateWorld',

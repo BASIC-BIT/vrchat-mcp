@@ -1,10 +1,15 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getConfig } from '../../config/index.js';
 import { shapeReadData } from '../../core/readTools.js';
-import { AvatarProfileInputSchema, AvatarProfileOutputSchema } from '../../models/avatars.js';
-import { getAvatarProfile } from '../../services/avatars/index.js';
+import {
+  AvatarProfileInputSchema,
+  AvatarProfileOutputSchema,
+  AvatarUpdateInputSchema,
+  AvatarUpdateOutputSchema,
+} from '../../models/avatars.js';
+import { getAvatarProfile, updateAvatarMetadata } from '../../services/avatars/index.js';
 import { getVrcxAvatarMemo } from '../../services/vrcx/index.js';
-import { readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
+import { destructiveToolAnnotations, readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
 import { textContent, toolError } from '../../utils/toolResponses.js';
 
@@ -53,6 +58,42 @@ export function registerCuratedAvatarTools(server: McpServer): void {
         return {
           content: textContent(JSON.stringify(payload, null, 2)),
           structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.avatar.update'),
+    {
+      description: [
+        'Edit your own avatar metadata: name, description, releaseStatus, and content tags.',
+        'Asset fields (assetUrl, unityPackageUrl, unityVersion, version) are intentionally',
+        'unreachable — a bad value there repoints the avatar at the wrong build with no undo.',
+        'Content tags are content_sex, content_adult, content_violence, content_gore and',
+        'content_horror. Tags merge against the current list rather than replacing it, so author',
+        'tags survive; use clearContentTags to strip every content_* tag including ones newer',
+        'than this build knows about.',
+        'CAUTION — releaseStatus is risky in BOTH directions, so confirm intent with the user',
+        'before changing it. Going public can expose a creator’s work against their terms, leak',
+        'a personal avatar, and public avatars carrying NSFW content are heavily actionable by',
+        'VRChat. Going private breaks the avatar for everyone currently wearing it, who will find',
+        'it gone at next login. Use dryRun to preview the exact change first.',
+      ].join(' '),
+      inputSchema: AvatarUpdateInputSchema,
+      outputSchema: AvatarUpdateOutputSchema,
+      annotations: destructiveToolAnnotations,
+    },
+    async (args) => {
+      try {
+        const input = AvatarUpdateInputSchema.parse(args);
+        const payload = await updateAvatarMetadata(input);
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as unknown as Record<string, unknown>,
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
