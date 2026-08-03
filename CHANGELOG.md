@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.10 - 2026-08-03
+
+- Add curated `vrchat_avatar_update` for avatar metadata: `name`, `description`, `releaseStatus`, and content tags. Content tags previously had no write path at all.
+- Keep avatar asset fields unreachable. `assetUrl`, `unityPackageUrl`, `unityVersion`, and `version` can repoint an avatar at the wrong build with no undo, so `updateAvatar` is curated-only: the raw call tool and the generated write registry both still refuse it, and `createAvatar`/`deleteAvatar` stay blocked outright.
+- Merge avatar tags against a freshly-read list instead of replacing them, since `updateAvatar` overwrites the whole array and a blind write would drop author tags. `addTags`/`removeTags` are explicit, `clearContentTags` strips every `content_*` tag including ones newer than this build, and concurrent updates to one avatar are serialized so neither loses the other's addition.
+- Target an avatar by `avtr_` ID or by the exact name of one of your own avatars, paging through every owned avatar before deciding and refusing with the candidate IDs rather than guessing when a name is ambiguous.
+- Fix login being impossible from any browser: the auth page sent `Referrer-Policy: no-referrer`, which makes a non-CORS form POST serialize `Origin` as `null`, and the page's own loopback origin check then rejected it.
+- Fix `getGroup` throwing for any group with no pending ownership transfer, where `transferTargetId` comes back `null` against a strict string schema.
+- Fix `vrchat_status_set` mapping `color: "blue"` to `active`. Blue is Join Me in the VRChat client; green is Active.
+- Fix user invites sending a stripped instance ID. `POST /invite/{userId}` requires the full `worldId:instanceId` location and answers `400: Invalid location` otherwise, which affected `vrchat_invite_user_to_me`, `here=true`, and `worldId + instanceId` calls.
+- Fix `vrchat_group_roles_manage` advertising a schema with no properties, so typed fields such as `permissions` never reached the wire contract and arrived as strings. Every argument now carries a description, including which action requires it.
+- Refresh the `GroupPermissions` enum: the live API returns 27 permissions and the vendored spec listed 25, so role updates using `group-instance-announcement-create` or `group-instance-bypass-avatar-performance` failed validation before reaching VRChat.
+- Add `docs/spec-drift.md`, a log of observed divergences between the community OpenAPI spec and the live API, with the standing rule that the live API is the source of truth and entries must be re-verified before being relied on.
+- **Breaking:** a bare instance ID is no longer accepted as an invite destination. VRChat rejects it, so `vrchat_invite` and `vrchat_invite_user` now require `here=true`, a full `wrld_:instance` location, or `worldId` + `instanceId`.
+
 ## 0.1.9 - 2026-07-31
 
 - Add curated `vrchat_group_post_create`, `vrchat_group_post_update`, and `vrchat_group_post_delete` so a tool-filtered deployment can grant group posting without granting every other write.
