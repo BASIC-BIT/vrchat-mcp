@@ -230,7 +230,7 @@ async function resolveInviteDestination(input: UnifiedInviteInput): Promise<Reso
   if (hasLocation) {
     const location = input.location?.trim() ?? '';
     if (!location.includes(':')) {
-      throw new Error('location must be a full VRChat location string like "wrld_:instance". Use instanceId for bare instance IDs.');
+      throw new Error('location must be a full VRChat location string like "wrld_:instance". Pass worldId + instanceId if you only have the bare instance ID.');
     }
     const parts = location.split(':');
     const worldId = parts[0];

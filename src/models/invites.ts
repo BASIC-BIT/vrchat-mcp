@@ -26,6 +26,23 @@ export const InviteUserSchema = z.object({
     .optional()
     .describe('Full location string like "wrld_:instance". Simplest option when you have it.'),
   messageSlot: z.number().int().min(0).max(11).optional(),
+}).superRefine((input, ctx) => {
+  // Silently preferring location over an explicit pair would invite people to a different
+  // instance than the caller named, so make the forms mutually exclusive.
+  if (input.location && (input.worldId || input.instanceId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Provide either location, or worldId + instanceId — not both.',
+      path: ['location'],
+    });
+  }
+  if (input.worldId && !input.instanceId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'worldId requires instanceId.',
+      path: ['instanceId'],
+    });
+  }
 });
 
 export const InviteUserOutputSchema = z.object({
