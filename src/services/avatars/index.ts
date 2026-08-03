@@ -96,7 +96,7 @@ async function resolveAvatarId(avatar: string): Promise<string> {
 
   if (matches.length === 0) {
     throw new Error(
-      `No avatar of yours is named "${avatar}". Pass an avtr_ ID, or check the name with vrchat_avatar_profile.`
+      `No avatar of yours is named "${avatar}". Pass an avtr_ ID, or list your avatars with vrchat_read using operationId searchAvatars and user="me".`
     );
   }
   if (matches.length > 1) {
@@ -135,17 +135,21 @@ export async function updateAvatarMetadata(
     body.tags = tags;
   }
 
+  // Chainable output: callers targeting by ID still get the human-readable name back.
+  const name = (body.name as string | undefined) ?? (current.data.name as string | undefined);
+
   if (Object.keys(body).length === 0) {
-    return { avatarId, dryRun, status: 'unchanged', tags: existing };
+    return { avatarId, name, dryRun, status: 'unchanged', tags: existing };
   }
   if (dryRun) {
-    return { avatarId, dryRun, status: 'updated', changes: body, tags };
+    return { avatarId, name, dryRun, status: 'updated', changes: body, tags };
   }
 
   const updated = await callWriteOperationParsed('updateAvatar', { avatarId }, body);
   cacheManager.invalidateByTag('avatars:profile');
   return {
     avatarId,
+    name: (updated.data?.name as string | undefined) ?? name,
     dryRun,
     status: 'updated',
     changes: body,

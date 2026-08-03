@@ -103,7 +103,8 @@ export function resolveInviteInstanceId(args: { instanceId?: string; location?: 
 export function prepareInviteUser(input: InviteUserInput): InviteUserPreparation {
   let instanceId: string;
   try {
-    instanceId = resolveInviteInstanceId({
+    instanceId = toInviteTarget({
+      worldId: input.worldId,
       instanceId: input.instanceId,
       location: input.location,
     });

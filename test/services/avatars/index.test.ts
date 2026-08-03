@@ -82,6 +82,18 @@ describe('updateAvatarMetadata', () => {
     expect(callWriteOperationParsed).not.toHaveBeenCalled();
   });
 
+  it('returns the avatar name so results stay identifiable when targeted by ID', async () => {
+    mockAvatar([]);
+
+    const result = await updateAvatarMetadata({
+      avatar: 'avtr_1',
+      addTags: ['content_sex'],
+      dryRun: true,
+    } as never);
+
+    expect(result).toMatchObject({ avatarId: 'avtr_1', name: 'Cutie' });
+  });
+
   it('resolves an avatar by name, and refuses when the name is ambiguous', async () => {
     const owned = [
       { id: 'avtr_a', name: 'Cutie' },

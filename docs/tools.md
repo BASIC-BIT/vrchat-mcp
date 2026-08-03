@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-08-03T03:37:21.993Z
+Generated: 2026-08-03T03:50:07.586Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -123,18 +123,20 @@ Input schema:
       "minLength": 1
     },
     "description": {
+      "description": "New description. Pass \"\" to clear it.",
       "type": "string"
     },
     "releaseStatus": {
+      "description": "Publication state. Risky in both directions — see the tool description before changing it.",
       "type": "string",
       "enum": [
-        "all",
-        "hidden",
+        "public",
         "private",
-        "public"
+        "hidden"
       ]
     },
     "addTags": {
+      "description": "Content tags to add. Merged into the existing tags; nothing else is removed.",
       "minItems": 1,
       "type": "array",
       "items": {
@@ -149,6 +151,7 @@ Input schema:
       }
     },
     "removeTags": {
+      "description": "Content tags to remove. Other tags, including author tags, are left alone.",
       "minItems": 1,
       "type": "array",
       "items": {
@@ -163,9 +166,11 @@ Input schema:
       }
     },
     "clearContentTags": {
+      "description": "Remove every content_* tag, including any this build does not know about.",
       "type": "boolean"
     },
     "dryRun": {
+      "description": "Compute and return the exact change without writing it.",
       "type": "boolean"
     }
   },
@@ -184,6 +189,9 @@ Output schema:
   "type": "object",
   "properties": {
     "avatarId": {
+      "type": "string"
+    },
+    "name": {
       "type": "string"
     },
     "dryRun": {
@@ -6031,10 +6039,16 @@ Input schema:
     "userId": {
       "type": "string"
     },
+    "worldId": {
+      "description": "World of the target instance. Pair with instanceId.",
+      "type": "string"
+    },
     "instanceId": {
+      "description": "Instance to invite into. Pair with worldId, or pass the full \"wrld_:instance\" string here. VRChat rejects a bare instance ID on its own.",
       "type": "string"
     },
     "location": {
+      "description": "Full location string like \"wrld_:instance\". Simplest option when you have it.",
       "type": "string"
     },
     "messageSlot": {

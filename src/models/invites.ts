@@ -15,8 +15,16 @@ export const InviteSelfOutputSchema = z.object({
 
 export const InviteUserSchema = z.object({
   userId: schemas.UserID,
-  instanceId: schemas.InstanceID.optional(),
-  location: z.string().optional(),
+  worldId: schemas.WorldID.optional().describe(
+    'World of the target instance. Pair with instanceId.'
+  ),
+  instanceId: schemas.InstanceID.optional().describe(
+    'Instance to invite into. Pair with worldId, or pass the full "wrld_:instance" string here. VRChat rejects a bare instance ID on its own.'
+  ),
+  location: z
+    .string()
+    .optional()
+    .describe('Full location string like "wrld_:instance". Simplest option when you have it.'),
   messageSlot: z.number().int().min(0).max(11).optional(),
 });
 
