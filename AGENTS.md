@@ -20,7 +20,7 @@ Guidance for coding agents:
 - Regenerate tool catalog docs after spec updates: `npm run generate:tools-docs`.
 - Regenerate VRChat OpenAPI schemas after spec updates: `npm run generate:schemas` (updates `src/generated/vrchat-schemas.ts`; do not edit manually).
 - Regenerate mock test schemas after spec tweaks: `npm run generate:test-schemas` (updates `test/generated/mock-schemas.ts`; do not edit manually).
-- **`specs/vrchat-openapi.yaml` is the community spec, not VRChat's, and drifts from the live API continuously.** [`docs/spec-drift.md`](docs/spec-drift.md) is the source of truth wherever they disagree — read it before trusting a spec constraint, and add an entry whenever you find a new divergence. Fix drift in `scripts/postprocess-schemas.ts`, not in the spec: the spec file is gitignored, so edits there are local-only and vanish on a fresh clone.
+- **`specs/vrchat-openapi.yaml` is the community spec, not VRChat's, and drifts from the live API continuously.** [`docs/spec-drift.md`](docs/spec-drift.md) logs divergences we have observed so nobody re-investigates them — it is a record, not an authority; the live API is the source of truth. Read it before trusting a spec constraint, re-verify any entry you are about to depend on for a substantive change, and add an entry whenever you find a new divergence. Fix drift in `scripts/postprocess-schemas.ts`, not in the spec: the spec file is gitignored, so edits there are local-only and vanish on a fresh clone.
 
 ## Tool ergonomics goals (distilled)
 
