@@ -124,7 +124,18 @@ describe('updateAvatarMetadata', () => {
     vi.mocked(callReadOperationParsed).mockResolvedValueOnce({ data: owned } as never);
     await expect(
       updateAvatarMetadata({ avatar: 'Nope', addTags: ['content_sex'] } as never)
-    ).rejects.toThrow('No avatar of yours is named');
+    ).rejects.toThrow('No avatar of yours is exactly named');
+  });
+
+  it('refuses a differently-cased name rather than guessing', async () => {
+    vi.mocked(callReadOperationParsed).mockResolvedValueOnce({
+      data: [{ id: 'avtr_a', name: 'Cutie' }],
+    } as never);
+
+    await expect(
+      updateAvatarMetadata({ avatar: 'cutie', addTags: ['content_sex'] } as never)
+    ).rejects.toThrow('No avatar of yours is exactly named');
+    expect(callWriteOperationParsed).not.toHaveBeenCalled();
   });
 
   it('pages through owned avatars before deciding a name is unambiguous', async () => {

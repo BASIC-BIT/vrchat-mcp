@@ -63,13 +63,20 @@ function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
 }
 
 /**
- * Edit avatar metadata. Only name, description, releaseStatus and content tags are reachable —
- * assetUrl, unityPackageUrl, unityVersion and version are never written, because a bad value
- * there points an avatar at the wrong build with no undo.
- *
- * Tags are merged against a freshly-read list rather than replaced, so unrelated tags (author
- * tags in particular) survive. `updateAvatar` overwrites the whole array otherwise.
+ * Carries the structured payload the tool layer needs to return actionable guidance rather
+ * than a bare string, so a client can follow the recovery path programmatically.
  */
+export class AvatarLookupError extends Error {
+  constructor(
+    message: string,
+    readonly status: 'not_found' | 'ambiguous' | 'too_many_to_search',
+    readonly nextSteps: string[]
+  ) {
+    super(message);
+    this.name = 'AvatarLookupError';
+  }
+}
+
 /** Accepts an avtr_ ID or the exact name of one of the caller's own avatars. */
 async function resolveAvatarId(avatar: string): Promise<string> {
   if (avatar.startsWith('avtr_')) return avatar;
@@ -100,24 +107,28 @@ async function resolveAvatarId(avatar: string): Promise<string> {
     await sleep(AVATAR_PAGE_DELAY_MS);
   }
   if (page === maxPages) {
-    throw new Error(
-      `Could not list all of your avatars within ${maxPages * pageSize} results, so a name cannot be resolved safely. Pass the avtr_ ID instead.`
+    throw new AvatarLookupError(
+      `Could not list all of your avatars within ${maxPages * pageSize} results, so a name cannot be resolved safely.`,
+      'too_many_to_search',
+      ['Call this tool again with the avtr_ ID.']
     );
   }
-  const exact = owned.filter((a) => a.name === avatar);
-  const matches = exact.length
-    ? exact
-    : owned.filter((a) => a.name?.toLowerCase() === avatar.toLowerCase());
+  // Exact only. A case-insensitive fallback would let a mistyped "cutie" mutate "Cutie",
+  // and the schema advertises an exact name.
+  const matches = owned.filter((a) => a.name === avatar);
 
   if (matches.length === 0) {
-    throw new Error(
-      `No avatar of yours is named "${avatar}". Pass an avtr_ ID, or list your avatars with vrchat_read using operationId searchAvatars and user="me".`
-    );
+    throw new AvatarLookupError(`No avatar of yours is exactly named "${avatar}".`, 'not_found', [
+      'List your avatars with vrchat_read using operationId searchAvatars and user="me".',
+      'Then call this tool again with the avtr_ ID.',
+    ]);
   }
   if (matches.length > 1) {
     const ids = matches.map((m) => m.id).join(', ');
-    throw new Error(
-      `"${avatar}" matches ${matches.length} of your avatars (${ids}). Pass the avtr_ ID you mean.`
+    throw new AvatarLookupError(
+      `"${avatar}" matches ${matches.length} of your avatars.`,
+      'ambiguous',
+      [`Call this tool again with one of these avtr_ IDs: ${ids}.`]
     );
   }
   return matches[0].id!;
@@ -146,6 +157,14 @@ function changedFieldsOnly(
   return body;
 }
 
+/**
+ * Edit avatar metadata. Only name, description, releaseStatus and content tags are reachable —
+ * assetUrl, unityPackageUrl, unityVersion and version are never written, because a bad value
+ * there points an avatar at the wrong build with no undo.
+ *
+ * Tags are merged against a freshly-read list rather than replaced, so unrelated tags (author
+ * tags in particular) survive. `updateAvatar` overwrites the whole array otherwise.
+ */
 export async function updateAvatarMetadata(
   input: AvatarUpdateInput
 ): Promise<AvatarUpdateOutput> {
@@ -170,8 +189,15 @@ export async function updateAvatarMetadata(
     return { avatarId, name, dryRun, status: 'updated', changes: body, tags };
   }
 
-  const updated = await callWriteOperationParsed('updateAvatar', { avatarId }, body);
-  cacheManager.invalidateByTag('avatars:profile');
+  // finally, not after: VRChat may apply the update and still return a body the generated
+  // parser rejects. Skipping invalidation there would leave a stale cached profile that a
+  // retry cannot repair, because the fresh merge read then reports "unchanged".
+  let updated;
+  try {
+    updated = await callWriteOperationParsed('updateAvatar', { avatarId }, body);
+  } finally {
+    cacheManager.invalidateByTag('avatars:profile');
+  }
   return {
     avatarId,
     name: (updated.data?.name as string | undefined) ?? name,

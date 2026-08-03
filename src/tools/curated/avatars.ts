@@ -7,7 +7,11 @@ import {
   AvatarUpdateInputSchema,
   AvatarUpdateOutputSchema,
 } from '../../models/avatars.js';
-import { getAvatarProfile, updateAvatarMetadata } from '../../services/avatars/index.js';
+import {
+  AvatarLookupError,
+  getAvatarProfile,
+  updateAvatarMetadata,
+} from '../../services/avatars/index.js';
 import { getVrcxAvatarMemo } from '../../services/vrcx/index.js';
 import { destructiveToolAnnotations, readOnlyToolAnnotations } from '../../utils/toolAnnotations.js';
 import { toolName } from '../../utils/toolNames.js';
@@ -94,6 +98,14 @@ export function registerCuratedAvatarTools(server: McpServer): void {
           structuredContent: payload as unknown as Record<string, unknown>,
         };
       } catch (err) {
+        if (err instanceof AvatarLookupError) {
+          // Structured so a client can follow the recovery path without parsing prose.
+          return toolError(err.message, {
+            status: err.status,
+            message: err.message,
+            nextSteps: err.nextSteps,
+          });
+        }
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
