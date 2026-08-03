@@ -9,6 +9,16 @@ import {
   toGroupSummary,
 } from '../../src/models/groups.js';
 
+describe('group schema nullability', () => {
+  it('accepts a null transferTargetId', () => {
+    // Groups with no pending ownership transfer return null here; a strict string
+    // schema rejects it and takes the whole getGroup response down.
+    expect(() =>
+      schemas.Group.parse({ id: 'grp_1', name: 'Test', transferTargetId: null })
+    ).not.toThrow();
+  });
+});
+
 describe('group model mappers', () => {
   it('maps group summary fields with rounded member count', () => {
     const summary = toGroupSummary(

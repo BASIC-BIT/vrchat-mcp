@@ -13,6 +13,19 @@ import { callOperation } from '../../../src/core/client.js';
 import { callReadOperation } from '../../../src/core/readTools.js';
 import { resolveUserId } from '../../../src/services/users/index.js';
 import { getCurrentStatus, updateStatus } from '../../../src/services/status/curated.js';
+import { STATUS_FROM_COLOR } from '../../../src/models/status.js';
+
+describe('status color mapping', () => {
+  it('maps blue to join me and green to active', () => {
+    // Matches the VRChat client UI; the OpenAPI spec does not define colors.
+    expect(STATUS_FROM_COLOR).toEqual({
+      blue: 'join me',
+      green: 'active',
+      orange: 'ask me',
+      red: 'busy',
+    });
+  });
+});
 
 describe('status curated service', () => {
   beforeEach(() => {

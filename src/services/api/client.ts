@@ -35,6 +35,7 @@ const readParsers = {
     parseArrayWithSchema(schemas.FavoritedWorld.partial(), data, 'getFavoritedWorlds'),
   getFavoritedAvatars: (data: unknown) =>
     parseArrayWithSchema(AvatarSchema, data, 'getFavoritedAvatars'),
+  searchAvatars: (data: unknown) => parseArrayWithSchema(AvatarSchema, data, 'searchAvatars'),
   getFavorites: (data: unknown) => parseArrayWithSchema(FavoriteSchema, data, 'getFavorites'),
   getFavoriteGroups: (data: unknown) =>
     parseArrayWithSchema(FavoriteGroupSchema, data, 'getFavoriteGroups'),
@@ -76,6 +77,7 @@ const writeParsers = {
   createInstance: (data: unknown) => parseNullable(InstanceSchema, data, 'createInstance'),
   inviteMyselfTo: (data: unknown) => parseNullable(SentNotificationSchema, data, 'inviteMyselfTo'),
   inviteUser: (data: unknown) => parseNullable(SentNotificationSchema, data, 'inviteUser'),
+  updateAvatar: (data: unknown) => parseNullable(schemas.Avatar.partial(), data, 'updateAvatar'),
   updateUser: (data: unknown) => parseNullable(CurrentUserSchema, data, 'updateUser'),
   createGroupCalendarEvent: (data: unknown) =>
     parseNullable(CalendarEventSchema, data, 'createGroupCalendarEvent'),

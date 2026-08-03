@@ -23,6 +23,7 @@ vi.mock('../../../src/core/readTools.js', () => ({
 }));
 
 import { registerCuratedGroupTools } from '../../../src/tools/curated/groups.js';
+import { GroupRolesManageToolSchema } from '../../../src/models/groups.js';
 import {
   checkGroupAllowed,
   getGroupEvent,
@@ -305,6 +306,27 @@ describe('curated group tools', () => {
         roleIds: ['role_1'],
       },
     });
+  });
+
+  it('advertises an object input schema so typed fields survive the wire contract', () => {
+    const server = new FakeServer();
+    registerCuratedGroupTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_group_roles_manage');
+
+    // A discriminatedUnion here publishes `properties: {}`, so clients stringify arrays.
+    const shape = (tool!.config.inputSchema as { shape?: Record<string, unknown> }).shape;
+    expect(shape).toBeDefined();
+    expect(Object.keys(shape!)).toEqual(
+      expect.arrayContaining(['action', 'permissions', 'groupRoleId'])
+    );
+    expect(() =>
+      GroupRolesManageToolSchema.parse({
+        action: 'update_role',
+        groupId: 'grp_00000000-0000-0000-0000-000000000000',
+        groupRoleId: 'grol_00000000-0000-0000-0000-000000000000',
+        permissions: ['group-instance-moderate'],
+      })
+    ).not.toThrow();
   });
 
   it('blocks group role management when group allowlist denies it', async () => {

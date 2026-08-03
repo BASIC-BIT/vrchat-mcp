@@ -15,9 +15,43 @@ export const InviteSelfOutputSchema = z.object({
 
 export const InviteUserSchema = z.object({
   userId: schemas.UserID,
-  instanceId: schemas.InstanceID.optional(),
-  location: z.string().optional(),
+  worldId: schemas.WorldID.optional().describe(
+    'World of the target instance. Pair with instanceId.'
+  ),
+  instanceId: schemas.InstanceID.optional().describe(
+    'Instance to invite into. Pair with worldId, or pass the full "wrld_:instance" string here. VRChat rejects a bare instance ID on its own.'
+  ),
+  location: z
+    .string()
+    .optional()
+    .describe('Full location string like "wrld_:instance". Simplest option when you have it.'),
   messageSlot: z.number().int().min(0).max(11).optional(),
+}).superRefine((input, ctx) => {
+  // Silently preferring location over an explicit pair would invite people to a different
+  // instance than the caller named, so make the forms mutually exclusive.
+  if (input.location && (input.worldId || input.instanceId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Provide either location, or worldId + instanceId — not both.',
+      path: ['location'],
+    });
+  }
+  if (input.worldId && !input.instanceId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'worldId requires instanceId.',
+      path: ['instanceId'],
+    });
+  }
+  // Pairing them would build "wrld_a:wrld_a:inst_1"; instanceId already carries the world.
+  if (input.worldId && input.instanceId?.includes(':')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        'instanceId is already a full "wrld_:instance" location, so drop worldId — or pass the bare instance ID alongside it.',
+      path: ['worldId'],
+    });
+  }
 });
 
 export const InviteUserOutputSchema = z.object({

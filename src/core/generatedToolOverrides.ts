@@ -56,6 +56,7 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['createGroupRole', toToolName('vrchat.group.roles.manage')],
   ['updateGroupRole', toToolName('vrchat.group.roles.manage')],
   ['deleteGroupRole', toToolName('vrchat.group.roles.manage')],
+  ['updateAvatar', toToolName('vrchat.avatar.update')],
   ['updateUser', toToolName('vrchat.profile.update')],
   ['logout', toToolName('vrchat.auth.logout')],
 ]);

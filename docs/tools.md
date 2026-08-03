@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-30T16:08:13.535Z
+Generated: 2026-08-03T05:13:46.752Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -97,6 +97,132 @@ Output schema:
     "avatarId",
     "stale",
     "avatar"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_avatar_update
+Edit your own avatar metadata: name, description, releaseStatus, and content tags. Asset fields (assetUrl, unityPackageUrl, unityVersion, version) are unreachable - a bad value there repoints the avatar at the wrong build with no undo. Content tags: content_sex, content_adult, content_violence, content_gore, content_horror. Tags merge rather than replace, so author tags survive; clearContentTags strips every content_* tag, including ones this build does not know. CAUTION - releaseStatus is risky in BOTH directions; confirm intent before changing it. Going public can expose a creators work against their terms, leak a private avatar, or breach VRChats content policy depending on what the avatar contains. Going private breaks the avatar for everyone currently wearing it. Use dryRun to preview. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatar": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Avatar to edit: an avtr_ ID, or the exact name of one of your own avatars."
+    },
+    "name": {
+      "description": "New name for the avatar.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "New description. Pass \"\" to clear it.",
+      "type": "string"
+    },
+    "releaseStatus": {
+      "description": "Publication state. Risky in both directions — see the tool description before changing it.",
+      "type": "string",
+      "enum": [
+        "public",
+        "private",
+        "hidden"
+      ]
+    },
+    "addTags": {
+      "description": "Content tags to add. Merged into the existing tags; nothing else is removed.",
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "content_sex",
+          "content_adult",
+          "content_violence",
+          "content_gore",
+          "content_horror"
+        ]
+      }
+    },
+    "removeTags": {
+      "description": "Content tags to remove. Other tags, including author tags, are left alone.",
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "content_sex",
+          "content_adult",
+          "content_violence",
+          "content_gore",
+          "content_horror"
+        ]
+      }
+    },
+    "clearContentTags": {
+      "description": "Remove every content_* tag, including any this build does not know about.",
+      "type": "boolean"
+    },
+    "dryRun": {
+      "description": "Compute and return the exact change without writing it.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "avatar"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "updated",
+        "unchanged"
+      ]
+    },
+    "changes": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "avatarId",
+    "dryRun",
+    "status",
+    "tags"
   ],
   "additionalProperties": false
 }
@@ -4721,6 +4847,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
@@ -4776,6 +4904,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
@@ -4825,6 +4955,8 @@ Output schema:
                     "group-default-role-manage",
                     "group-galleries-manage",
                     "group-instance-age-gated-create",
+                    "group-instance-announcement-create",
+                    "group-instance-bypass-avatar-performance",
                     "group-instance-calendar-link",
                     "group-instance-join",
                     "group-instance-manage",
@@ -4872,221 +5004,98 @@ Input schema:
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "oneOf": [
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "assign_member_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "userId": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "userId",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "assign_member_role",
+        "remove_member_role",
+        "create_role",
+        "update_role",
+        "delete_role"
+      ]
     },
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "remove_member_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "userId": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "userId",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "groupId": {
+      "description": "Target group. Provide groupId or shortCode.",
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "*",
-              "group-announcement-manage",
-              "group-audit-view",
-              "group-bans-manage",
-              "group-calendar-manage",
-              "group-data-manage",
-              "group-default-role-manage",
-              "group-galleries-manage",
-              "group-instance-age-gated-create",
-              "group-instance-calendar-link",
-              "group-instance-join",
-              "group-instance-manage",
-              "group-instance-moderate",
-              "group-instance-open-create",
-              "group-instance-plus-create",
-              "group-instance-plus-portal",
-              "group-instance-plus-portal-unlocked",
-              "group-instance-public-create",
-              "group-instance-queue-priority",
-              "group-instance-restricted-create",
-              "group-invites-manage",
-              "group-members-manage",
-              "group-members-remove",
-              "group-members-viewall",
-              "group-roles-assign",
-              "group-roles-manage"
-            ]
-          }
-        },
-        "isSelfAssignable": {
-          "type": "boolean"
-        },
-        "action": {
-          "type": "string",
-          "const": "create_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "roleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action"
-      ],
-      "additionalProperties": false
+    "shortCode": {
+      "description": "Target group short code. Provide groupId or shortCode.",
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "*",
-              "group-announcement-manage",
-              "group-audit-view",
-              "group-bans-manage",
-              "group-calendar-manage",
-              "group-data-manage",
-              "group-default-role-manage",
-              "group-galleries-manage",
-              "group-instance-age-gated-create",
-              "group-instance-calendar-link",
-              "group-instance-join",
-              "group-instance-manage",
-              "group-instance-moderate",
-              "group-instance-open-create",
-              "group-instance-plus-create",
-              "group-instance-plus-portal",
-              "group-instance-plus-portal-unlocked",
-              "group-instance-public-create",
-              "group-instance-queue-priority",
-              "group-instance-restricted-create",
-              "group-invites-manage",
-              "group-members-manage",
-              "group-members-remove",
-              "group-members-viewall",
-              "group-roles-assign",
-              "group-roles-manage"
-            ]
-          }
-        },
-        "isSelfAssignable": {
-          "type": "boolean"
-        },
-        "action": {
-          "type": "string",
-          "const": "update_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        },
-        "order": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "action",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "userId": {
+      "description": "Member to act on. REQUIRED for assign_member_role and remove_member_role.",
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "delete_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "groupRoleId": {
+      "description": "Existing role to act on. REQUIRED for assign_member_role, remove_member_role, update_role and delete_role. Not used by create_role.",
+      "type": "string"
+    },
+    "roleId": {
+      "description": "create_role only, and optional there: requests a specific ID for the new role instead of letting VRChat assign one. This is NOT the role being edited — that is groupRoleId.",
+      "type": "string"
+    },
+    "name": {
+      "description": "Role name. Used by create_role and update_role.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Role description. Used by create_role and update_role.",
+      "type": "string"
+    },
+    "permissions": {
+      "description": "Complete permission list for the role, replacing the previous one. Used by create_role and update_role. Note group-members-remove and group-bans-manage each require group-members-manage on the same role.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "*",
+          "group-announcement-manage",
+          "group-audit-view",
+          "group-bans-manage",
+          "group-calendar-manage",
+          "group-data-manage",
+          "group-default-role-manage",
+          "group-galleries-manage",
+          "group-instance-age-gated-create",
+          "group-instance-announcement-create",
+          "group-instance-bypass-avatar-performance",
+          "group-instance-calendar-link",
+          "group-instance-join",
+          "group-instance-manage",
+          "group-instance-moderate",
+          "group-instance-open-create",
+          "group-instance-plus-create",
+          "group-instance-plus-portal",
+          "group-instance-plus-portal-unlocked",
+          "group-instance-public-create",
+          "group-instance-queue-priority",
+          "group-instance-restricted-create",
+          "group-invites-manage",
+          "group-members-manage",
+          "group-members-remove",
+          "group-members-viewall",
+          "group-roles-assign",
+          "group-roles-manage"
+        ]
+      }
+    },
+    "isSelfAssignable": {
+      "description": "Whether members can assign this role to themselves. create_role and update_role.",
+      "type": "boolean"
+    },
+    "order": {
+      "description": "Display order of the role. update_role only.",
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
     }
-  ]
+  },
+  "required": [
+    "action"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -5148,6 +5157,8 @@ Output schema:
                   "group-default-role-manage",
                   "group-galleries-manage",
                   "group-instance-age-gated-create",
+                  "group-instance-announcement-create",
+                  "group-instance-bypass-avatar-performance",
                   "group-instance-calendar-link",
                   "group-instance-join",
                   "group-instance-manage",
@@ -5218,6 +5229,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
@@ -5724,7 +5737,7 @@ Output schema:
 ```
 
 ### vrchat_invite
-Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Supports here=true, full location, worldId+instanceId, or bare instanceId for user invites. (write)
+Invite yourself or one/many users to an instance. Users may be usr_ ids or exact display names. Destination is here=true, a full location like "wrld_:instance", or worldId+instanceId. A bare instanceId is not accepted: VRChat needs the worldId and rejects the stripped form. (write)
 
 Input schema:
 
@@ -6026,10 +6039,16 @@ Input schema:
     "userId": {
       "type": "string"
     },
+    "worldId": {
+      "description": "World of the target instance. Pair with instanceId.",
+      "type": "string"
+    },
     "instanceId": {
+      "description": "Instance to invite into. Pair with worldId, or pass the full \"wrld_:instance\" string here. VRChat rejects a bare instance ID on its own.",
       "type": "string"
     },
     "location": {
+      "description": "Full location string like \"wrld_:instance\". Simplest option when you have it.",
       "type": "string"
     },
     "messageSlot": {

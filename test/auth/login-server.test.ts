@@ -92,6 +92,27 @@ describe.sequential('auth login server', () => {
     expect(body).toContain('Invalid token');
   });
 
+  it('keeps the browser Origin intact on same-origin form posts', async () => {
+    const authManager = await getAuthManager();
+    const { url } = await authManager.startLoginServer();
+    const parsed = new URL(url);
+
+    // 'no-referrer' makes browsers serialize the form POST Origin as `null`,
+    // which the loopback origin check then rejects.
+    const page = await fetch(parsed.toString());
+    expect(page.headers.get('referrer-policy')).not.toBe('no-referrer');
+
+    const post = (origin: string) =>
+      fetch(new URL('/submit' + parsed.search, parsed.origin).toString(), {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', origin },
+        body: 'username=&password=',
+      });
+
+    expect((await post(parsed.origin)).status).toBe(200);
+    expect((await post('null')).status).toBe(403);
+  });
+
   it('renders the login form on GET', async () => {
     const authManager = await getAuthManager();
     const { url } = await authManager.startLoginServer();

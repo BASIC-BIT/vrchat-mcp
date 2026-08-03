@@ -8,8 +8,10 @@ export const STATUS_FROM_COLOR: Record<
   z.infer<typeof StatusColorSchema>,
   z.infer<typeof StatusSchema>
 > = {
-  blue: 'active',
-  green: 'join me',
+  // VRChat's client shows Join Me as blue and Active as green. The OpenAPI spec does not
+  // describe colors at all, so this mapping tracks the client UI, not the schema.
+  blue: 'join me',
+  green: 'active',
   orange: 'ask me',
   red: 'busy',
 };

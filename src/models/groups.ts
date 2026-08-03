@@ -186,6 +186,51 @@ export const GroupRolesManageInputSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
+// The MCP SDK only serializes ZodObject shapes into the advertised JSON Schema; a
+// discriminatedUnion publishes `properties: {}`, which strips typed fields like
+// `permissions` from the wire contract and makes clients send them as strings.
+// Advertise this flat superset, and keep the union above as the real validator.
+export const GroupRolesManageToolSchema = z.object({
+  action: z.enum([
+    'assign_member_role',
+    'remove_member_role',
+    'create_role',
+    'update_role',
+    'delete_role',
+  ]),
+  groupId: schemas.GroupID.optional().describe('Target group. Provide groupId or shortCode.'),
+  shortCode: z.string().optional().describe('Target group short code. Provide groupId or shortCode.'),
+  userId: schemas.UserID
+    .optional()
+    .describe('Member to act on. REQUIRED for assign_member_role and remove_member_role.'),
+  groupRoleId: schemas.GroupRoleID
+    .optional()
+    .describe(
+      'Existing role to act on. REQUIRED for assign_member_role, remove_member_role, update_role and delete_role. Not used by create_role.'
+    ),
+  roleId: schemas.GroupRoleID
+    .optional()
+    .describe(
+      'create_role only, and optional there: requests a specific ID for the new role instead of letting VRChat assign one. This is NOT the role being edited — that is groupRoleId.'
+    ),
+  name: z.string().optional().describe('Role name. Used by create_role and update_role.'),
+  description: z
+    .string()
+    .optional()
+    .describe('Role description. Used by create_role and update_role.'),
+  permissions: z
+    .array(schemas.GroupPermissions)
+    .optional()
+    .describe(
+      'Complete permission list for the role, replacing the previous one. Used by create_role and update_role. Note group-members-remove and group-bans-manage each require group-members-manage on the same role.'
+    ),
+  isSelfAssignable: z
+    .boolean()
+    .optional()
+    .describe('Whether members can assign this role to themselves. create_role and update_role.'),
+  order: z.number().int().optional().describe('Display order of the role. update_role only.'),
+});
+
 export const GroupRolesManageOutputSchema = z.object({
   action: z.string(),
   groupId: schemas.GroupID,

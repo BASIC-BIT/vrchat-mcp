@@ -1,7 +1,7 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { callOperation, CallError, type CallInput } from '../core/client.js';
-import { getBlockedOperationReason } from '../core/operationPolicy.js';
+import { getBlockedOperationReason, getCuratedOnlyReason } from '../core/operationPolicy.js';
 import { CallInputSchema } from '../schemas/call.js';
 import { writeToolAnnotations } from '../utils/toolAnnotations.js';
 import { toolName } from '../utils/toolNames.js';
@@ -28,6 +28,11 @@ export function registerRawTools(server: McpServer): void {
         return toolError(
           `Operation ${args.operationId} is disabled: ${blockedReason}`
         );
+      }
+
+      const curatedOnlyReason = getCuratedOnlyReason(args.operationId);
+      if (curatedOnlyReason) {
+        return toolError(curatedOnlyReason);
       }
 
       try {
