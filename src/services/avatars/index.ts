@@ -71,7 +71,7 @@ async function resolveAvatarId(avatar: string): Promise<string> {
     n: 100,
     releaseStatus: 'all',
   });
-  const owned = (result.data ?? []) as Array<{ id?: string; name?: string }>;
+  const owned = (result.data ?? []) as { id?: string; name?: string }[];
   const exact = owned.filter((a) => a.name === avatar);
   const matches = exact.length
     ? exact
