@@ -72,13 +72,32 @@ export function resolveInviteLocation(args: InviteSelfInput): InviteLocation {
   throw new Error('Provide location or worldId + instanceId.');
 }
 
+/**
+ * POST /invite/{userId} needs the full `worldId:instanceId~...` string, even though the spec
+ * documents InstanceID as the bare instance part. A stripped ID gets "400: Invalid location",
+ * so every user-invite path must build its request through here. See docs/spec-drift.md.
+ *
+ * `inviteMyselfTo` is unaffected — that endpoint takes worldId and instanceId as separate path
+ * params and legitimately wants them split.
+ */
+export function toInviteTarget(args: {
+  location?: string;
+  worldId?: string;
+  instanceId?: string;
+}): string {
+  if (args.location?.includes(':')) return args.location;
+  if (args.worldId && args.instanceId) return `${args.worldId}:${args.instanceId}`;
+  if (args.instanceId?.includes(':')) return args.instanceId;
+  throw new Error(
+    'User invites need the full worldId:instanceId location; VRChat rejects a bare instance ID. Provide location, or worldId + instanceId.',
+  );
+}
+
 export function resolveInviteInstanceId(args: { instanceId?: string; location?: string }): string {
-  if (args.instanceId) return args.instanceId;
-  // POST /invite/{userId} needs the full `worldId:instanceId~...` string, even though the
-  // spec documents InstanceID as the bare instance part. Splitting the worldId off makes
-  // VRChat answer "400: Invalid location", so pass a location through verbatim.
-  if (args.location) return args.location;
-  throw new Error('Provide instanceId or location.');
+  if (!args.instanceId && !args.location) {
+    throw new Error('Provide instanceId or location.');
+  }
+  return toInviteTarget(args);
 }
 
 export function prepareInviteUser(input: InviteUserInput): InviteUserPreparation {
@@ -158,7 +177,7 @@ export async function inviteUserToCurrentInstance(input: InviteUserToMeInput): P
   notification: SentNotification | null;
 }> {
   const current = await resolveCurrentInviteLocation();
-  const request: InviteRequest = { instanceId: current.instanceId };
+  const request: InviteRequest = { instanceId: toInviteTarget(current) };
   if (typeof input.messageSlot === 'number') {
     request.messageSlot = input.messageSlot;
   }
@@ -182,14 +201,18 @@ async function resolveInviteDestination(input: UnifiedInviteInput): Promise<Reso
   const styles = [hasHere, hasLocation, hasWorldId || hasInstanceId].filter(Boolean).length;
 
   if (styles !== 1) {
-    throw new Error('Provide exactly one destination: here=true, location="wrld_:instance", worldId + instanceId, or bare instanceId for user invites.');
+    throw new Error('Provide exactly one destination: here=true, location="wrld_:instance", or worldId + instanceId.');
   }
   if (hasWorldId && !hasInstanceId) {
     throw new Error('worldId requires instanceId.');
   }
   if (!hasWorldId && hasInstanceId) {
-    if (input.self) {
-      throw new Error('Self-invite requires a full destination because VRChat needs worldId and instanceId. Use here=true, location="wrld_:instance", or worldId + instanceId. Bare instanceId is only valid when inviting other users.');
+    // VRChat rejects a bare instance ID on user invites too, not just self-invites — the
+    // endpoint wants the full worldId:instanceId string. See docs/spec-drift.md.
+    if (!input.instanceId!.includes(':')) {
+      throw new Error(
+        'A bare instanceId is not accepted by VRChat. Use here=true, location="wrld_:instance", or worldId + instanceId.',
+      );
     }
     return { destination: { kind: 'instance', instanceId: input.instanceId } };
   }
@@ -236,7 +259,7 @@ function inviteRequestForDestination(
   if (!destination.instanceId) {
     throw new Error('Unable to resolve invite instanceId.');
   }
-  const request: InviteRequest = { instanceId: destination.instanceId };
+  const request: InviteRequest = { instanceId: toInviteTarget(destination) };
   if (typeof messagePlan?.slot === 'number') request.messageSlot = messagePlan.slot;
   return request;
 }

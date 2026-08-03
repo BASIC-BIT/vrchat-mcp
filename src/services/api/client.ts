@@ -35,6 +35,7 @@ const readParsers = {
     parseArrayWithSchema(schemas.FavoritedWorld.partial(), data, 'getFavoritedWorlds'),
   getFavoritedAvatars: (data: unknown) =>
     parseArrayWithSchema(AvatarSchema, data, 'getFavoritedAvatars'),
+  searchAvatars: (data: unknown) => parseArrayWithSchema(AvatarSchema, data, 'searchAvatars'),
   getFavorites: (data: unknown) => parseArrayWithSchema(FavoriteSchema, data, 'getFavorites'),
   getFavoriteGroups: (data: unknown) =>
     parseArrayWithSchema(FavoriteGroupSchema, data, 'getFavoriteGroups'),

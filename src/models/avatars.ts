@@ -38,8 +38,13 @@ export const AVATAR_CONTENT_TAGS = [
 
 export const AvatarUpdateInputSchema = z
   .object({
-    avatarId: schemas.AvatarID,
-    name: z.string().min(1).optional(),
+    // Matches the `user` convention on vrchat_boop / vrchat_friend_request: a human-readable
+    // name is first-class, the ID is there for precision and for disambiguation.
+    avatar: z
+      .string()
+      .min(1)
+      .describe('Avatar to edit: an avtr_ ID, or the exact name of one of your own avatars.'),
+    name: z.string().min(1).optional().describe('New name for the avatar.'),
     description: z.string().optional(),
     releaseStatus: schemas.ReleaseStatus.optional(),
     // Merge semantics, never a blind replace: `updateAvatar` overwrites the whole tags array, so

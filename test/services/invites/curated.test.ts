@@ -13,6 +13,7 @@ import {
   resolveCurrentInviteLocation,
   resolveInviteLocation,
   resolveInviteInstanceId,
+  toInviteTarget,
   sendSelfInvite,
   sendUserInvite,
 } from '../../../src/services/invites/curated.js';
@@ -50,9 +51,19 @@ describe('invites curated service', () => {
     expect(prepared).toMatchObject({ ok: false });
   });
 
-  it('extracts instanceId from location without delimiter', () => {
-    const instanceId = resolveInviteInstanceId({ location: 'inst_only' });
-    expect(instanceId).toBe('inst_only');
+  it('builds a full invite target from every destination shape', () => {
+    expect(toInviteTarget({ location: 'wrld_1:inst_2~private' })).toBe('wrld_1:inst_2~private');
+    expect(toInviteTarget({ worldId: 'wrld_1', instanceId: 'inst_2' })).toBe('wrld_1:inst_2');
+    expect(toInviteTarget({ instanceId: 'wrld_1:inst_2' })).toBe('wrld_1:inst_2');
+    expect(() => toInviteTarget({ instanceId: 'inst_2' })).toThrow('bare instance ID');
+  });
+
+  it('refuses a location with no worldId', () => {
+    // VRChat rejects a bare instance ID with "400: Invalid location", so failing here beats
+    // shipping a request that cannot succeed.
+    expect(() => resolveInviteInstanceId({ location: 'inst_only' })).toThrow(
+      'full worldId:instanceId'
+    );
   });
 
   it('keeps the worldId prefix on a full location', () => {
@@ -126,7 +137,8 @@ describe('invites curated service', () => {
     expect(callOperation).toHaveBeenNthCalledWith(2, {
       operationId: 'inviteUser',
       params: { userId: 'usr_target' },
-      body: { instanceId: 'inst_2', messageSlot: 4 },
+      // Full location, not the stripped instance ID — a bare one 400s.
+      body: { instanceId: 'wrld_1:inst_2', messageSlot: 4 },
     });
     expect(result).toMatchObject({
       status: 'sent',
@@ -173,12 +185,12 @@ describe('invites curated service', () => {
     expect(callOperation).toHaveBeenNthCalledWith(3, {
       operationId: 'inviteUser',
       params: { userId: 'usr_1' },
-      body: { instanceId: 'inst_2', messageSlot: 3 },
+      body: { instanceId: 'wrld_1:inst_2', messageSlot: 3 },
     });
     expect(callOperation).toHaveBeenNthCalledWith(4, {
       operationId: 'inviteUser',
       params: { userId: 'usr_2' },
-      body: { instanceId: 'inst_2', messageSlot: 3 },
+      body: { instanceId: 'wrld_1:inst_2', messageSlot: 3 },
     });
     expect(result).toMatchObject({
       status: 'completed',
@@ -201,7 +213,7 @@ describe('invites curated service', () => {
       });
 
     await expect(
-      inviteUsers({ instanceId: 'inst_1', user: 'usr_1', message: 'new text' })
+      inviteUsers({ location: 'wrld_1:inst_1', user: 'usr_1', message: 'new text' })
     ).rejects.toThrow('Provide overwriteMessageSlot');
   });
 
@@ -225,7 +237,7 @@ describe('invites curated service', () => {
       });
 
     const result = await inviteUsers({
-      instanceId: 'inst_1',
+      location: 'wrld_1:inst_1',
       user: 'usr_1',
       message: 'new text',
       overwriteMessageSlot: 2,
@@ -249,7 +261,7 @@ describe('invites curated service', () => {
       });
 
     const result = await inviteUsers({
-      instanceId: 'inst_1',
+      location: 'wrld_1:inst_1',
       user: 'usr_1',
       retry: { maxAttempts: 2, baseDelayMs: 0, maxDelayMs: 0 },
     });
@@ -270,7 +282,7 @@ describe('invites curated service', () => {
       .mockRejectedValueOnce(Object.assign(new Error('blocked'), { status: 400 }));
 
     const result = await inviteUsers({
-      instanceId: 'inst_1',
+      location: 'wrld_1:inst_1',
       users: ['usr_1', 'usr_2', 'usr_3'],
       continueOnError: false,
     });
@@ -287,7 +299,7 @@ describe('invites curated service', () => {
 
   it('rejects self invite with bare instance id', async () => {
     await expect(inviteUsers({ self: true, instanceId: 'inst_1' })).rejects.toThrow(
-      'Self-invite requires a full destination'
+      'A bare instanceId is not accepted by VRChat'
     );
   });
 

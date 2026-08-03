@@ -198,16 +198,37 @@ export const GroupRolesManageToolSchema = z.object({
     'update_role',
     'delete_role',
   ]),
-  groupId: schemas.GroupID.optional(),
-  shortCode: z.string().optional(),
-  userId: schemas.UserID.optional(),
-  groupRoleId: schemas.GroupRoleID.optional(),
-  roleId: schemas.GroupRoleID.optional(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  permissions: z.array(schemas.GroupPermissions).optional(),
-  isSelfAssignable: z.boolean().optional(),
-  order: z.number().int().optional(),
+  groupId: schemas.GroupID.optional().describe('Target group. Provide groupId or shortCode.'),
+  shortCode: z.string().optional().describe('Target group short code. Provide groupId or shortCode.'),
+  userId: schemas.UserID
+    .optional()
+    .describe('Member to act on. REQUIRED for assign_member_role and remove_member_role.'),
+  groupRoleId: schemas.GroupRoleID
+    .optional()
+    .describe(
+      'Existing role to act on. REQUIRED for assign_member_role, remove_member_role, update_role and delete_role. Not used by create_role.'
+    ),
+  roleId: schemas.GroupRoleID
+    .optional()
+    .describe(
+      'create_role only, and optional there: requests a specific ID for the new role instead of letting VRChat assign one. This is NOT the role being edited — that is groupRoleId.'
+    ),
+  name: z.string().optional().describe('Role name. Used by create_role and update_role.'),
+  description: z
+    .string()
+    .optional()
+    .describe('Role description. Used by create_role and update_role.'),
+  permissions: z
+    .array(schemas.GroupPermissions)
+    .optional()
+    .describe(
+      'Complete permission list for the role, replacing the previous one. Used by create_role and update_role. Note group-members-remove and group-bans-manage each require group-members-manage on the same role.'
+    ),
+  isSelfAssignable: z
+    .boolean()
+    .optional()
+    .describe('Whether members can assign this role to themselves. create_role and update_role.'),
+  order: z.number().int().optional().describe('Display order of the role. update_role only.'),
 });
 
 export const GroupRolesManageOutputSchema = z.object({

@@ -51,10 +51,16 @@ content = content.replace(
 // returns both of these, and without them any role update using them fails input validation
 // before it ever reaches VRChat. The spec file is gitignored, so patching it there would not
 // survive a fresh clone.
-if (!content.includes("'group-instance-announcement-create'")) {
+// Each value is guarded independently: if the spec ever adds one but not the other, using the
+// first as a proxy would silently skip injecting the second.
+for (const permission of [
+  'group-instance-announcement-create',
+  'group-instance-bypass-avatar-performance',
+]) {
+  if (content.includes(`'${permission}'`)) continue;
   content = content.replace(
     /(const GroupPermissions = z\.enum\(\[[\s\S]*?\n {2}'group-instance-age-gated-create',\n)/,
-    "$1  'group-instance-announcement-create',\n  'group-instance-bypass-avatar-performance',\n",
+    `$1  '${permission}',\n`,
   );
 }
 

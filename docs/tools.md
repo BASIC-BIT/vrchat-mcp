@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-08-03T02:46:35.140Z
+Generated: 2026-08-03T03:21:20.624Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -112,10 +112,13 @@ Input schema:
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "avatarId": {
-      "type": "string"
+    "avatar": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Avatar to edit: an avtr_ ID, or the exact name of one of your own avatars."
     },
     "name": {
+      "description": "New name for the avatar.",
       "type": "string",
       "minLength": 1
     },
@@ -167,7 +170,7 @@ Input schema:
     }
   },
   "required": [
-    "avatarId"
+    "avatar"
   ],
   "additionalProperties": false
 }
@@ -5006,27 +5009,35 @@ Input schema:
       ]
     },
     "groupId": {
+      "description": "Target group. Provide groupId or shortCode.",
       "type": "string"
     },
     "shortCode": {
+      "description": "Target group short code. Provide groupId or shortCode.",
       "type": "string"
     },
     "userId": {
+      "description": "Member to act on. REQUIRED for assign_member_role and remove_member_role.",
       "type": "string"
     },
     "groupRoleId": {
+      "description": "Existing role to act on. REQUIRED for assign_member_role, remove_member_role, update_role and delete_role. Not used by create_role.",
       "type": "string"
     },
     "roleId": {
+      "description": "create_role only, and optional there: requests a specific ID for the new role instead of letting VRChat assign one. This is NOT the role being edited — that is groupRoleId.",
       "type": "string"
     },
     "name": {
+      "description": "Role name. Used by create_role and update_role.",
       "type": "string"
     },
     "description": {
+      "description": "Role description. Used by create_role and update_role.",
       "type": "string"
     },
     "permissions": {
+      "description": "Complete permission list for the role, replacing the previous one. Used by create_role and update_role. Note group-members-remove and group-bans-manage each require group-members-manage on the same role.",
       "type": "array",
       "items": {
         "type": "string",
@@ -5063,9 +5074,11 @@ Input schema:
       }
     },
     "isSelfAssignable": {
+      "description": "Whether members can assign this role to themselves. create_role and update_role.",
       "type": "boolean"
     },
     "order": {
+      "description": "Display order of the role. update_role only.",
       "type": "integer",
       "minimum": -9007199254740991,
       "maximum": 9007199254740991

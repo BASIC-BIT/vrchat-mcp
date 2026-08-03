@@ -47,7 +47,9 @@ function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
     tags = tags.filter((tag) => !input.removeTags!.includes(tag as never));
   }
   if (input.addTags?.length) {
-    tags = [...tags, ...input.addTags.filter((tag) => !tags.includes(tag))];
+    // Dedupe against the accumulating list, not the pre-addition snapshot, so a caller passing
+    // the same tag twice cannot write it twice.
+    tags = [...new Set([...tags, ...input.addTags])];
   }
   return tags;
 }
@@ -60,10 +62,39 @@ function nextTagsFor(existing: string[], input: AvatarUpdateInput): string[] {
  * Tags are merged against a freshly-read list rather than replaced, so unrelated tags (author
  * tags in particular) survive. `updateAvatar` overwrites the whole array otherwise.
  */
+/** Accepts an avtr_ ID or the exact name of one of the caller's own avatars. */
+async function resolveAvatarId(avatar: string): Promise<string> {
+  if (avatar.startsWith('avtr_')) return avatar;
+
+  const result = await callReadOperationParsed('searchAvatars', {
+    user: 'me',
+    n: 100,
+    releaseStatus: 'all',
+  });
+  const owned = (result.data ?? []) as Array<{ id?: string; name?: string }>;
+  const exact = owned.filter((a) => a.name === avatar);
+  const matches = exact.length
+    ? exact
+    : owned.filter((a) => a.name?.toLowerCase() === avatar.toLowerCase());
+
+  if (matches.length === 0) {
+    throw new Error(
+      `No avatar of yours is named "${avatar}". Pass an avtr_ ID, or check the name with vrchat_avatar_profile.`
+    );
+  }
+  if (matches.length > 1) {
+    const ids = matches.map((m) => m.id).join(', ');
+    throw new Error(
+      `"${avatar}" matches ${matches.length} of your avatars (${ids}). Pass the avtr_ ID you mean.`
+    );
+  }
+  return matches[0].id!;
+}
+
 export async function updateAvatarMetadata(
   input: AvatarUpdateInput
 ): Promise<AvatarUpdateOutput> {
-  const { avatarId } = input;
+  const avatarId = await resolveAvatarId(input.avatar);
   const dryRun = input.dryRun ?? false;
 
   // Read uncached — a stale tag list would silently drop tags on write.
