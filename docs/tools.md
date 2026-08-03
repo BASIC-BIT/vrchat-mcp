@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-07-30T16:08:13.535Z
+Generated: 2026-08-03T02:46:35.140Z
 
 Spec: VRChat API Documentation (1.20.7)
 
@@ -97,6 +97,121 @@ Output schema:
     "avatarId",
     "stale",
     "avatar"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_avatar_update
+Edit your own avatar metadata: name, description, releaseStatus, and content tags. Asset fields (assetUrl, unityPackageUrl, unityVersion, version) are unreachable - a bad value there repoints the avatar at the wrong build with no undo. Content tags: content_sex, content_adult, content_violence, content_gore, content_horror. Tags merge rather than replace, so author tags survive; clearContentTags strips every content_* tag, including ones this build does not know. CAUTION - releaseStatus is risky in BOTH directions; confirm intent before changing it. Going public can expose a creators work against their terms, leak a private avatar, or breach VRChats content policy depending on what the avatar contains. Going private breaks the avatar for everyone currently wearing it. Use dryRun to preview. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "releaseStatus": {
+      "type": "string",
+      "enum": [
+        "all",
+        "hidden",
+        "private",
+        "public"
+      ]
+    },
+    "addTags": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "content_sex",
+          "content_adult",
+          "content_violence",
+          "content_gore",
+          "content_horror"
+        ]
+      }
+    },
+    "removeTags": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "content_sex",
+          "content_adult",
+          "content_violence",
+          "content_gore",
+          "content_horror"
+        ]
+      }
+    },
+    "clearContentTags": {
+      "type": "boolean"
+    },
+    "dryRun": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "avatarId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "avatarId": {
+      "type": "string"
+    },
+    "dryRun": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "updated",
+        "unchanged"
+      ]
+    },
+    "changes": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "avatarId",
+    "dryRun",
+    "status",
+    "tags"
   ],
   "additionalProperties": false
 }
@@ -4721,6 +4836,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
@@ -4776,6 +4893,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
@@ -4825,6 +4944,8 @@ Output schema:
                     "group-default-role-manage",
                     "group-galleries-manage",
                     "group-instance-age-gated-create",
+                    "group-instance-announcement-create",
+                    "group-instance-bypass-avatar-performance",
                     "group-instance-calendar-link",
                     "group-instance-join",
                     "group-instance-manage",
@@ -4872,221 +4993,88 @@ Input schema:
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "oneOf": [
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "assign_member_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "userId": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "userId",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "assign_member_role",
+        "remove_member_role",
+        "create_role",
+        "update_role",
+        "delete_role"
+      ]
     },
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "remove_member_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "userId": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "userId",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "groupId": {
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "*",
-              "group-announcement-manage",
-              "group-audit-view",
-              "group-bans-manage",
-              "group-calendar-manage",
-              "group-data-manage",
-              "group-default-role-manage",
-              "group-galleries-manage",
-              "group-instance-age-gated-create",
-              "group-instance-calendar-link",
-              "group-instance-join",
-              "group-instance-manage",
-              "group-instance-moderate",
-              "group-instance-open-create",
-              "group-instance-plus-create",
-              "group-instance-plus-portal",
-              "group-instance-plus-portal-unlocked",
-              "group-instance-public-create",
-              "group-instance-queue-priority",
-              "group-instance-restricted-create",
-              "group-invites-manage",
-              "group-members-manage",
-              "group-members-remove",
-              "group-members-viewall",
-              "group-roles-assign",
-              "group-roles-manage"
-            ]
-          }
-        },
-        "isSelfAssignable": {
-          "type": "boolean"
-        },
-        "action": {
-          "type": "string",
-          "const": "create_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "roleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action"
-      ],
-      "additionalProperties": false
+    "shortCode": {
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "*",
-              "group-announcement-manage",
-              "group-audit-view",
-              "group-bans-manage",
-              "group-calendar-manage",
-              "group-data-manage",
-              "group-default-role-manage",
-              "group-galleries-manage",
-              "group-instance-age-gated-create",
-              "group-instance-calendar-link",
-              "group-instance-join",
-              "group-instance-manage",
-              "group-instance-moderate",
-              "group-instance-open-create",
-              "group-instance-plus-create",
-              "group-instance-plus-portal",
-              "group-instance-plus-portal-unlocked",
-              "group-instance-public-create",
-              "group-instance-queue-priority",
-              "group-instance-restricted-create",
-              "group-invites-manage",
-              "group-members-manage",
-              "group-members-remove",
-              "group-members-viewall",
-              "group-roles-assign",
-              "group-roles-manage"
-            ]
-          }
-        },
-        "isSelfAssignable": {
-          "type": "boolean"
-        },
-        "action": {
-          "type": "string",
-          "const": "update_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        },
-        "order": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "action",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "userId": {
+      "type": "string"
     },
-    {
-      "type": "object",
-      "properties": {
-        "action": {
-          "type": "string",
-          "const": "delete_role"
-        },
-        "groupId": {
-          "type": "string"
-        },
-        "shortCode": {
-          "type": "string"
-        },
-        "groupRoleId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "action",
-        "groupRoleId"
-      ],
-      "additionalProperties": false
+    "groupRoleId": {
+      "type": "string"
+    },
+    "roleId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "*",
+          "group-announcement-manage",
+          "group-audit-view",
+          "group-bans-manage",
+          "group-calendar-manage",
+          "group-data-manage",
+          "group-default-role-manage",
+          "group-galleries-manage",
+          "group-instance-age-gated-create",
+          "group-instance-announcement-create",
+          "group-instance-bypass-avatar-performance",
+          "group-instance-calendar-link",
+          "group-instance-join",
+          "group-instance-manage",
+          "group-instance-moderate",
+          "group-instance-open-create",
+          "group-instance-plus-create",
+          "group-instance-plus-portal",
+          "group-instance-plus-portal-unlocked",
+          "group-instance-public-create",
+          "group-instance-queue-priority",
+          "group-instance-restricted-create",
+          "group-invites-manage",
+          "group-members-manage",
+          "group-members-remove",
+          "group-members-viewall",
+          "group-roles-assign",
+          "group-roles-manage"
+        ]
+      }
+    },
+    "isSelfAssignable": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
     }
-  ]
+  },
+  "required": [
+    "action"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -5148,6 +5136,8 @@ Output schema:
                   "group-default-role-manage",
                   "group-galleries-manage",
                   "group-instance-age-gated-create",
+                  "group-instance-announcement-create",
+                  "group-instance-bypass-avatar-performance",
                   "group-instance-calendar-link",
                   "group-instance-join",
                   "group-instance-manage",
@@ -5218,6 +5208,8 @@ Output schema:
                 "group-default-role-manage",
                 "group-galleries-manage",
                 "group-instance-age-gated-create",
+                "group-instance-announcement-create",
+                "group-instance-bypass-avatar-performance",
                 "group-instance-calendar-link",
                 "group-instance-join",
                 "group-instance-manage",
