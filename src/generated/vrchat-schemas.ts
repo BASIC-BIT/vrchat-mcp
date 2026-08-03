@@ -1484,6 +1484,8 @@ const GroupPermissions = z.enum([
   'group-default-role-manage',
   'group-galleries-manage',
   'group-instance-age-gated-create',
+  'group-instance-announcement-create',
+  'group-instance-bypass-avatar-performance',
   'group-instance-calendar-link',
   'group-instance-join',
   'group-instance-manage',
@@ -1577,7 +1579,7 @@ const Group = z
     rules: z.string().nullable(),
     shortCode: GroupShortCode,
     tags: z.array(Tag),
-    transferTargetId: UserID,
+    transferTargetId: UserID.nullish(),
     updatedAt: z.string().datetime({ offset: true }),
   })
   .partial()

@@ -17,6 +17,7 @@ import {
   GroupProfileOutputSchema,
   GroupRolesInputSchema,
   GroupRolesManageInputSchema,
+  GroupRolesManageToolSchema,
   GroupRolesManageOutputSchema,
   GroupRolesOutputSchema,
   GroupSearchInputSchema,
@@ -221,7 +222,7 @@ export function registerCuratedGroupTools(server: McpServer): void {
     toolName('vrchat.group.roles.manage'),
     {
       description: 'Assign/remove member roles or create/update/delete group role definitions.',
-      inputSchema: GroupRolesManageInputSchema,
+      inputSchema: GroupRolesManageToolSchema,
       outputSchema: GroupRolesManageOutputSchema,
       annotations: destructiveToolAnnotations,
     },

@@ -41,7 +41,7 @@ describe('invites curated service', () => {
     expect(prepared).toMatchObject({
       ok: true,
       userId: 'usr_1',
-      request: { instanceId: 'inst_2', messageSlot: 3 },
+      request: { instanceId: 'wrld_2:inst_2', messageSlot: 3 },
     });
   });
 
@@ -53,6 +53,16 @@ describe('invites curated service', () => {
   it('extracts instanceId from location without delimiter', () => {
     const instanceId = resolveInviteInstanceId({ location: 'inst_only' });
     expect(instanceId).toBe('inst_only');
+  });
+
+  it('keeps the worldId prefix on a full location', () => {
+    // Stripping worldId here makes VRChat answer "400: Invalid location".
+    const location = 'wrld_abc:85261~group(grp_abc)~groupAccessType(plus)~region(use)';
+    expect(resolveInviteInstanceId({ location })).toBe(location);
+    expect(prepareInviteUser({ userId: 'usr_1', location })).toMatchObject({
+      ok: true,
+      request: { instanceId: location },
+    });
   });
 
   it('sends self invite via API', async () => {

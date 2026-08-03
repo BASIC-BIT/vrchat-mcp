@@ -47,6 +47,23 @@ content = content.replace(
   /instances: z\.array\(z\.array\(z\.unknown\(\)\)\.min\(2\)\.max\(2\)\)\.optional\(\),/g,
   'instances: z.array(z.array(z.unknown()).min(2)).optional(),',
 );
+// The vendored spec's GroupPermissions enum lags the live API. GET /groups/{groupId}/permissions
+// returns both of these, and without them any role update using them fails input validation
+// before it ever reaches VRChat. The spec file is gitignored, so patching it there would not
+// survive a fresh clone.
+if (!content.includes("'group-instance-announcement-create'")) {
+  content = content.replace(
+    /(const GroupPermissions = z\.enum\(\[[\s\S]*?\n {2}'group-instance-age-gated-create',\n)/,
+    "$1  'group-instance-announcement-create',\n  'group-instance-bypass-avatar-performance',\n",
+  );
+}
+
+// Groups with no pending ownership transfer return `transferTargetId: null`, which the
+// generated UserID string schema rejects and takes getGroup down with it.
+content = content.replace(
+  /(const Group = z[\s\S]*?\n\s+transferTargetId: )UserID(,)/,
+  '$1UserID.nullish()$2',
+);
 content = content.replace(
   /(const GroupPost = z[\s\S]*?\n\s+editorId: )UserID(,)/,
   '$1UserID.nullish()$2',

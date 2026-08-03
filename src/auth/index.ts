@@ -325,7 +325,10 @@ class AuthManager {
 
   private renderPage(res: ServerResponse, body: string) {
     res.setHeader('content-type', 'text/html; charset=utf-8');
-    res.setHeader('referrer-policy', 'no-referrer');
+    // 'no-referrer' makes browsers send `Origin: null` on the login form POST
+    // (Fetch: append-a-request-Origin-header), which our own origin check rejects.
+    // 'same-origin' keeps the token out of cross-origin Referers and preserves Origin.
+    res.setHeader('referrer-policy', 'same-origin');
     res.setHeader('x-frame-options', 'DENY');
     res.setHeader(
       'content-security-policy',

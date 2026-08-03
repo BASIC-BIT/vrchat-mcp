@@ -186,6 +186,30 @@ export const GroupRolesManageInputSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
+// The MCP SDK only serializes ZodObject shapes into the advertised JSON Schema; a
+// discriminatedUnion publishes `properties: {}`, which strips typed fields like
+// `permissions` from the wire contract and makes clients send them as strings.
+// Advertise this flat superset, and keep the union above as the real validator.
+export const GroupRolesManageToolSchema = z.object({
+  action: z.enum([
+    'assign_member_role',
+    'remove_member_role',
+    'create_role',
+    'update_role',
+    'delete_role',
+  ]),
+  groupId: schemas.GroupID.optional(),
+  shortCode: z.string().optional(),
+  userId: schemas.UserID.optional(),
+  groupRoleId: schemas.GroupRoleID.optional(),
+  roleId: schemas.GroupRoleID.optional(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  permissions: z.array(schemas.GroupPermissions).optional(),
+  isSelfAssignable: z.boolean().optional(),
+  order: z.number().int().optional(),
+});
+
 export const GroupRolesManageOutputSchema = z.object({
   action: z.string(),
   groupId: schemas.GroupID,

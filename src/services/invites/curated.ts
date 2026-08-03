@@ -74,13 +74,10 @@ export function resolveInviteLocation(args: InviteSelfInput): InviteLocation {
 
 export function resolveInviteInstanceId(args: { instanceId?: string; location?: string }): string {
   if (args.instanceId) return args.instanceId;
-  if (args.location) {
-    const parts = args.location.split(':');
-    if (parts.length >= 2) {
-      return parts.slice(1).join(':');
-    }
-    return args.location;
-  }
+  // POST /invite/{userId} needs the full `worldId:instanceId~...` string, even though the
+  // spec documents InstanceID as the bare instance part. Splitting the worldId off makes
+  // VRChat answer "400: Invalid location", so pass a location through verbatim.
+  if (args.location) return args.location;
   throw new Error('Provide instanceId or location.');
 }
 
