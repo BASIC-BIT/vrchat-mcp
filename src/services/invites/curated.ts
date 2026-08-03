@@ -85,6 +85,13 @@ export function toInviteTarget(args: {
   worldId?: string;
   instanceId?: string;
 }): string {
+  // Guard here rather than in each schema: every user-invite path funnels through this, so one
+  // check covers the legacy tool, the unified tool, here=true, and anything added later.
+  if (args.worldId && args.instanceId?.includes(':')) {
+    throw new Error(
+      'instanceId is already a full "wrld_:instance" location, so drop worldId — pairing them builds a doubled world prefix.',
+    );
+  }
   if (args.location?.includes(':')) return args.location;
   if (args.worldId && args.instanceId) return `${args.worldId}:${args.instanceId}`;
   if (args.instanceId?.includes(':')) return args.instanceId;

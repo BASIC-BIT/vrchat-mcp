@@ -56,6 +56,16 @@ describe('invites curated service', () => {
     expect(toInviteTarget({ worldId: 'wrld_1', instanceId: 'inst_2' })).toBe('wrld_1:inst_2');
     expect(toInviteTarget({ instanceId: 'wrld_1:inst_2' })).toBe('wrld_1:inst_2');
     expect(() => toInviteTarget({ instanceId: 'inst_2' })).toThrow('bare instance ID');
+    // Pairing them would build "wrld_1:wrld_1:inst_2"; refuse rather than silently pick one.
+    expect(() => toInviteTarget({ worldId: 'wrld_1', instanceId: 'wrld_1:inst_2' })).toThrow(
+      'already a full'
+    );
+  });
+
+  it('rejects a doubled world prefix on the unified path too', async () => {
+    await expect(
+      inviteUsers({ worldId: 'wrld_1', instanceId: 'wrld_1:inst_2', user: 'usr_1' })
+    ).rejects.toThrow('already a full');
   });
 
   it('refuses a location with no worldId', () => {
