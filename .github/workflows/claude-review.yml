@@ -106,7 +106,7 @@ jobs:
 
     steps:
       - name: Check out PR head
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -214,7 +214,7 @@ jobs:
       - name: Review with Claude
         id: claude_review
         # Pinned from anthropics/claude-code-action v1.0.167. Update deliberately.
-        uses: anthropics/claude-code-action@0fe28cdb64e23015219b0e478100b7105fd7dfa1
+        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
