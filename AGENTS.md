@@ -8,7 +8,7 @@ Guidance for coding agents:
 - If you need just one step, use `npm run lint`, `npm run typecheck`, or `npm test`.
 - After making a change, run at least one relevant targeted test (or add/edit one) and confirm it passes before reporting back.
 - For PR review workflow: before pushing any new commits, respond to each open review comment (reply or reaction) and resolve the thread.
-- Claude reviews non-draft, non-fork PRs automatically and rewrites one sticky comment per PR. Calibration lives in `REVIEW.md`; add the `skip-claude-review` label to opt a PR out.
+- Claude reviews non-draft, non-fork PRs automatically and rewrites one sticky comment per PR. The review job uses GitHub OIDC to retrieve BASIC's canonical Claude OAuth token from AWS Secrets Manager; there is no repository copy to rotate. Calibration lives in `REVIEW.md`; add the `skip-claude-review` label to opt a PR out.
 - Keep stdout reserved for MCP protocol; log to stderr only.
 - Config defaults live in `src/config/defaults.json`; override via `VRCHAT_MCP_CONFIG_FILE` (env overrides still supported).
 - Prefer the local harness over Codex MCP hosting for dev iteration:
