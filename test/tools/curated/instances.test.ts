@@ -6,14 +6,20 @@ import { FakeServer } from '../../helpers/fake-server.js';
 vi.mock('../../../src/services/instances/index.js', () => ({
   prepareInstanceCreate: vi.fn(),
   createInstance: vi.fn(),
+  linkInstanceToCalendarEvent: vi.fn(),
 }));
 
-import { createInstance, prepareInstanceCreate } from '../../../src/services/instances/index.js';
+import {
+  createInstance,
+  linkInstanceToCalendarEvent,
+  prepareInstanceCreate,
+} from '../../../src/services/instances/index.js';
 
 describe('curated instance tools', () => {
   beforeEach(() => {
     vi.mocked(prepareInstanceCreate).mockReset();
     vi.mocked(createInstance).mockReset();
+    vi.mocked(linkInstanceToCalendarEvent).mockReset();
   });
 
   it('creates instance', async () => {
@@ -109,5 +115,54 @@ describe('curated instance tools', () => {
         groupAccessType: 'members',
       }),
     );
+  });
+
+  it('links an instance to a group event', async () => {
+    vi.mocked(linkInstanceToCalendarEvent).mockResolvedValue({
+      status: 'linked',
+      eventTitle: 'VIBE',
+      instanceName: 'VIBE Doors Open',
+    });
+
+    const server = new FakeServer();
+    registerCuratedInstanceTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_instance_link_event');
+    expect(tool).toBeTruthy();
+
+    const args = {
+      groupId: 'grp_1',
+      calendarId: 'cal_1',
+      worldId: 'wrld_1',
+      instanceId: '123~group(grp_1)',
+    };
+    const result = await tool!.handler(args);
+
+    expect(linkInstanceToCalendarEvent).toHaveBeenCalledWith(args);
+    expect(result).toMatchObject({
+      structuredContent: {
+        status: 'linked',
+        groupId: 'grp_1',
+        calendarId: 'cal_1',
+        eventTitle: 'VIBE',
+        location: 'wrld_1:123~group(grp_1)',
+        instanceName: 'VIBE Doors Open',
+      },
+    });
+  });
+
+  it('rejects a full location passed as instanceId', async () => {
+    const server = new FakeServer();
+    registerCuratedInstanceTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_instance_link_event');
+
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'cal_1',
+      worldId: 'wrld_1',
+      instanceId: 'wrld_1:123',
+    });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(linkInstanceToCalendarEvent).not.toHaveBeenCalled();
   });
 });

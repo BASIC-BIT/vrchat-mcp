@@ -135,8 +135,7 @@ describe('callOperation behavior', () => {
     expect((captured as Error).message).toBe('VRChat API returned 400: Current Password required');
     expect(captured && typeof captured === 'object').toBe(true);
     const payload = (captured as { payload?: unknown }).payload as
-      | { status?: number; error?: unknown; headers?: unknown }
-      | undefined;
+      { status?: number; error?: unknown; headers?: unknown } | undefined;
     expect(payload?.status).toBe(400);
     expect(payload?.error).toEqual(errorBody);
     expect(payload?.headers).toBeUndefined();
@@ -186,6 +185,30 @@ describe('callOperation behavior', () => {
       expect(init.headers.get('content-type')).toBe('application/json');
     }
     expect(init?.body).toBe(JSON.stringify({ worldId: 'wrld_1' }));
+  });
+
+  it('uses the observed live instance-update route when the community spec lacks it', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    const headers = new Headers();
+    vi.mocked(undiciFetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers,
+      text: () => Promise.resolve('{"calendarEntryId":"cal_1"}'),
+    } as Response);
+
+    const callOperation = await loadCallOperation();
+    await callOperation({
+      operationId: 'updateInstance',
+      params: { worldId: 'wrld_1', instanceId: '123~group(grp_1)' },
+      body: { calendarEntryId: 'cal_1' },
+    });
+
+    const [url, init] = vi.mocked(undiciFetch).mock.calls[0] ?? [];
+    if (typeof url !== 'string') throw new Error('Expected fetch URL to be a string.');
+    expect(url).toContain('/instances/wrld_1:123~group(grp_1)');
+    expect(init?.method).toBe('PUT');
+    expect(init?.body).toBe(JSON.stringify({ calendarEntryId: 'cal_1' }));
   });
 
   it('throws on unknown operationId', async () => {

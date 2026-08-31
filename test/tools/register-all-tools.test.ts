@@ -50,6 +50,7 @@ describe('registerAllTools', () => {
       'vrchat_favorite_remove',
       'vrchat_notifications_recent',
       'vrchat_instance_create',
+      'vrchat_instance_link_event',
       'vrchat_invite',
       'vrchat_group_invite',
       'vrchat_friend_request',

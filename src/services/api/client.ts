@@ -75,6 +75,7 @@ const readParsers = {
 
 const writeParsers = {
   createInstance: (data: unknown) => parseNullable(InstanceSchema, data, 'createInstance'),
+  updateInstance: (data: unknown) => parseNullable(InstanceSchema, data, 'updateInstance'),
   inviteMyselfTo: (data: unknown) => parseNullable(SentNotificationSchema, data, 'inviteMyselfTo'),
   inviteUser: (data: unknown) => parseNullable(SentNotificationSchema, data, 'inviteUser'),
   updateAvatar: (data: unknown) => parseNullable(schemas.Avatar.partial(), data, 'updateAvatar'),

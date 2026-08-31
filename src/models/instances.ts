@@ -59,6 +59,25 @@ export const InstanceCreateOutputSchema = z.object({
   instance: InstanceSummarySchema.nullable().optional(),
 });
 
+export const InstanceLinkEventSchema = z.object({
+  groupId: schemas.GroupID.describe('Owning group.'),
+  calendarId: schemas.CalendarID.describe('Group event.'),
+  worldId: schemas.WorldID.describe('Instance world.'),
+  instanceId: schemas.InstanceID.refine((value) => !value.includes(':'), {
+    message: 'instanceId must be the instance portion only, without the worldId prefix.',
+  }).describe('Bare instance.'),
+});
+
+export const InstanceLinkEventOutputSchema = z.object({
+  status: z.enum(['linked', 'already_linked']),
+  groupId: schemas.GroupID,
+  calendarId: schemas.CalendarID,
+  eventTitle: z.string(),
+  location: z.string(),
+  instanceName: z.string(),
+});
+
 export type InstanceCreateInput = z.infer<typeof InstanceCreateSchema>;
+export type InstanceLinkEventInput = z.infer<typeof InstanceLinkEventSchema>;
 export type InstanceSummary = z.infer<typeof InstanceSummarySchema>;
 export type InstanceCreateRequest = z.input<typeof schemas.CreateInstanceRequest>;

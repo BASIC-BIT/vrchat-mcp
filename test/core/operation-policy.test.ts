@@ -34,6 +34,12 @@ describe('operation policy', () => {
     expect(getCuratedOnlyReason('selectAvatar')).toBeUndefined();
   });
 
+  it('keeps instance updates behind the narrow event-link tool', () => {
+    expect(getBlockedOperationReason('updateInstance')).toBeUndefined();
+    expect(getCuratedWriteToolName('updateInstance')).toBe('vrchat_instance_link_event');
+    expect(getCuratedOnlyReason('updateInstance')).toContain('vrchat_instance_link_event');
+  });
+
   it('does not block ordinary avatar selection', () => {
     expect(getBlockedOperationReason('selectAvatar')).toBeUndefined();
     expect(getBlockedOperationReason('selectFallbackAvatar')).toBeUndefined();

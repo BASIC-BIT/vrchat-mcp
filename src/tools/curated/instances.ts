@@ -1,7 +1,13 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { InstanceCreateOutputSchema, InstanceCreateSchema } from '../../models/instances.js';
+import {
+  InstanceCreateOutputSchema,
+  InstanceCreateSchema,
+  InstanceLinkEventOutputSchema,
+  InstanceLinkEventSchema,
+} from '../../models/instances.js';
 import {
   createInstance,
+  linkInstanceToCalendarEvent,
   prepareInstanceCreate,
 } from '../../services/instances/index.js';
 import { writeToolAnnotations } from '../../utils/toolAnnotations.js';
@@ -37,6 +43,37 @@ export function registerCuratedInstanceTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
+    }
+  );
+
+  server.registerTool(
+    toolName('vrchat.instance.link_event'),
+    {
+      description: 'Link an allowlisted group instance to its event without notifying.',
+      inputSchema: InstanceLinkEventSchema,
+      outputSchema: InstanceLinkEventOutputSchema,
+      annotations: writeToolAnnotations,
     },
+    async (args) => {
+      try {
+        const input = InstanceLinkEventSchema.parse(args);
+        const result = await linkInstanceToCalendarEvent(input);
+        const payload = {
+          status: result.status,
+          groupId: input.groupId,
+          calendarId: input.calendarId,
+          eventTitle: result.eventTitle,
+          location: `${input.worldId}:${input.instanceId}`,
+          instanceName: result.instanceName,
+        };
+        return {
+          content: textContent(JSON.stringify(payload, null, 2)),
+          structuredContent: payload as Record<string, unknown>,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return toolError(message);
+      }
+    }
   );
 }

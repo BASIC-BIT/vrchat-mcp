@@ -193,6 +193,7 @@ Common curated tools include:
 - `vrchat_group_profile`
 - `vrchat_events_upcoming`
 - `vrchat_notifications_recent`
+- `vrchat_instance_link_event`
 - `vrchat_invite`
 - `vrchat_group_invite`
 - `vrchat_friend_request`

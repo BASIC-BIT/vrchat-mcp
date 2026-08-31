@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add curated `vrchat_instance_link_event` for linking an existing group instance to a group calendar event through VRChat's undocumented live `PUT /instances/{worldId}:{instanceId}` endpoint.
+- Require the configured group allowlist plus matching event and instance ownership, serialize same-instance links, refuse non-group instances and replacement of a different existing link, and keep the broader instance-update body unreachable through raw and generated write tools.
+- Return the group ID and readable event and instance labels, and invalidate affected caches on linked, idempotent, and conflicting-link results.
+- Record the live six-hour link window and the observed unlink behavior without exposing unlink in the curated tool.
+
 ## 0.1.10 - 2026-08-03
 
 - Add curated `vrchat_avatar_update` for avatar metadata: `name`, `description`, `releaseStatus`, and content tags. Content tags previously had no write path at all.
