@@ -107,9 +107,10 @@ replace one another after both read an unlinked instance. Re-linking the same ev
 idempotent no-op that still invalidates the relevant caches. The result includes the group and
 event IDs plus readable event and instance names for safe follow-up calls. The tool can only set
 `calendarEntryId`; it cannot unlink an event or change any other instance field, and it does not
-send invitations or notifications. VRChat accepts the link only when the event starts within six
-hours or ended within the previous six hours. Like other account-changing tools, approval belongs
-at the MCP client or agent-harness boundary.
+send invitations or notifications. A conflicting existing link is rejected after invalidating the
+same caches so later reads see that fresh state. VRChat accepts the link only when the event starts
+within six hours or ended within the previous six hours. Like other account-changing tools,
+approval belongs at the MCP client or agent-harness boundary.
 
 Groups and social writes:
 

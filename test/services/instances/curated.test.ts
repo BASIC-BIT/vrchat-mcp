@@ -277,6 +277,8 @@ describe('instances curated service', () => {
       })
     ).rejects.toThrow('Refusing to replace existing calendar link cal_other');
     expect(callOperation).toHaveBeenCalledTimes(2);
+    expect(invalidateByTagMock).toHaveBeenCalledWith('instances:wrld_1');
+    expect(invalidateByTagMock).toHaveBeenCalledWith('groups:grp_1');
   });
 
   it('returns already_linked without repeating the write', async () => {

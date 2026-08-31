@@ -151,6 +151,7 @@ async function applyInstanceCalendarLink(input: InstanceLinkEventInput) {
     return { status: 'already_linked' as const, ...resultDetails };
   }
   if (instance.calendarEntryId) {
+    invalidateInstanceLinkCaches(input);
     throw new Error(
       `Refusing to replace existing calendar link ${instance.calendarEntryId} on instance ${input.worldId}:${input.instanceId}.`
     );
