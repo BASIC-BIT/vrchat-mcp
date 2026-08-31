@@ -120,6 +120,8 @@ describe('curated instance tools', () => {
   it('links an instance to a group event', async () => {
     vi.mocked(linkInstanceToCalendarEvent).mockResolvedValue({
       status: 'linked',
+      eventTitle: 'VIBE',
+      instanceName: 'VIBE Doors Open',
     });
 
     const server = new FakeServer();
@@ -139,8 +141,11 @@ describe('curated instance tools', () => {
     expect(result).toMatchObject({
       structuredContent: {
         status: 'linked',
+        groupId: 'grp_1',
         calendarId: 'cal_1',
+        eventTitle: 'VIBE',
         location: 'wrld_1:123~group(grp_1)',
+        instanceName: 'VIBE Doors Open',
       },
     });
   });

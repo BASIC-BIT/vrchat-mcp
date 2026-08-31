@@ -102,11 +102,14 @@ Instances and invites (write):
 `vrchat_instance_link_event` accepts an explicit group, event, world, and instance ID. It first
 checks `groups.allowlist`, then freshly reads both objects and requires the event and group-type
 instance to have that same group owner. It refuses to replace a different existing event link.
-Re-linking the same event is an idempotent no-op. The tool can only set `calendarEntryId`; it
-cannot unlink an event or change any other instance field, and it does not send invitations or
-notifications. VRChat accepts the link only when the event starts within six hours or ended
-within the previous six hours. Like other account-changing tools, approval belongs at the MCP
-client or agent-harness boundary.
+Calls targeting one instance are serialized within the MCP process so concurrent requests cannot
+replace one another after both read an unlinked instance. Re-linking the same event is an
+idempotent no-op that still invalidates the relevant caches. The result includes the group and
+event IDs plus readable event and instance names for safe follow-up calls. The tool can only set
+`calendarEntryId`; it cannot unlink an event or change any other instance field, and it does not
+send invitations or notifications. VRChat accepts the link only when the event starts within six
+hours or ended within the previous six hours. Like other account-changing tools, approval belongs
+at the MCP client or agent-harness boundary.
 
 Groups and social writes:
 

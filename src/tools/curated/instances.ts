@@ -49,8 +49,7 @@ export function registerCuratedInstanceTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.instance.link_event'),
     {
-      description:
-        'Link an allowlisted group instance to its group event. No invite or notification.',
+      description: 'Link an allowlisted group instance to its event without notifying.',
       inputSchema: InstanceLinkEventSchema,
       outputSchema: InstanceLinkEventOutputSchema,
       annotations: writeToolAnnotations,
@@ -61,8 +60,11 @@ export function registerCuratedInstanceTools(server: McpServer): void {
         const result = await linkInstanceToCalendarEvent(input);
         const payload = {
           status: result.status,
+          groupId: input.groupId,
           calendarId: input.calendarId,
+          eventTitle: result.eventTitle,
           location: `${input.worldId}:${input.instanceId}`,
+          instanceName: result.instanceName,
         };
         return {
           content: textContent(JSON.stringify(payload, null, 2)),

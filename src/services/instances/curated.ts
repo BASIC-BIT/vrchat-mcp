@@ -19,6 +19,22 @@ type InstanceRecord = WriteOperationData<'createInstance'>;
 
 type OwnerIdResolution = { ok: true; ownerId: string | null } | { ok: false; reason: string };
 
+const instanceLinkLocks = new Map<string, Promise<unknown>>();
+
+function withInstanceLinkLock<T>(location: string, run: () => Promise<T>): Promise<T> {
+  const prior = instanceLinkLocks.get(location) ?? Promise.resolve();
+  const result = prior.then(run, run);
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  );
+  instanceLinkLocks.set(location, settled);
+  void settled.then(() => {
+    if (instanceLinkLocks.get(location) === settled) instanceLinkLocks.delete(location);
+  });
+  return result;
+}
+
 function resolveOwnerId(input: InstanceCreateInput): OwnerIdResolution {
   if (input.type === 'group') {
     const groupId = input.groupId ?? input.ownerId ?? null;
@@ -97,10 +113,12 @@ export async function createInstance(
   return result.data ?? null;
 }
 
-export async function linkInstanceToCalendarEvent(input: InstanceLinkEventInput) {
-  const allowed = checkGroupAllowed(input.groupId);
-  if (!allowed.ok) throw new Error(allowed.reason);
+function invalidateInstanceLinkCaches(input: InstanceLinkEventInput): void {
+  cacheManager.invalidateByTag(`instances:${input.worldId}`);
+  cacheManager.invalidateByTag(`groups:${input.groupId}`);
+}
 
+async function applyInstanceCalendarLink(input: InstanceLinkEventInput) {
   const eventResult = await callReadOperationParsed('getGroupCalendarEvent', {
     groupId: input.groupId,
     calendarId: input.calendarId,
@@ -124,8 +142,13 @@ export async function linkInstanceToCalendarEvent(input: InstanceLinkEventInput)
       `Refusing to link instance ${input.worldId}:${input.instanceId}: it is not owned by group ${input.groupId}.`
     );
   }
+  const resultDetails = {
+    eventTitle: event.title,
+    instanceName: instance.displayName ?? instance.name,
+  };
   if (instance.calendarEntryId === input.calendarId) {
-    return { status: 'already_linked' as const };
+    invalidateInstanceLinkCaches(input);
+    return { status: 'already_linked' as const, ...resultDetails };
   }
   if (instance.calendarEntryId) {
     throw new Error(
@@ -133,12 +156,23 @@ export async function linkInstanceToCalendarEvent(input: InstanceLinkEventInput)
     );
   }
 
-  await callWriteOperationParsed(
-    'updateInstance',
-    { worldId: input.worldId, instanceId: input.instanceId },
-    { calendarEntryId: input.calendarId }
+  try {
+    await callWriteOperationParsed(
+      'updateInstance',
+      { worldId: input.worldId, instanceId: input.instanceId },
+      { calendarEntryId: input.calendarId }
+    );
+  } finally {
+    invalidateInstanceLinkCaches(input);
+  }
+  return { status: 'linked' as const, ...resultDetails };
+}
+
+export async function linkInstanceToCalendarEvent(input: InstanceLinkEventInput) {
+  const allowed = checkGroupAllowed(input.groupId);
+  if (!allowed.ok) throw new Error(allowed.reason);
+
+  return withInstanceLinkLock(`${input.worldId}:${input.instanceId}`, () =>
+    applyInstanceCalendarLink(input)
   );
-  cacheManager.invalidateByTag(`instances:${input.worldId}`);
-  cacheManager.invalidateByTag(`groups:${input.groupId}`);
-  return { status: 'linked' as const };
 }

@@ -162,10 +162,14 @@ describe('instances curated service', () => {
   it('links an allowlisted group instance to an event owned by the same group', async () => {
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
     vi.mocked(callOperation)
-      .mockResolvedValueOnce({ data: { id: 'cal_1', ownerId: 'grp_1' } })
+      .mockResolvedValueOnce({
+        data: { id: 'cal_1', ownerId: 'grp_1', title: 'VIBE' },
+      })
       .mockResolvedValueOnce({
         data: {
           id: '123~group(grp_1)',
+          name: 'The Great Pug',
+          displayName: 'VIBE Doors Open',
           type: 'group',
           ownerId: 'grp_1',
           calendarEntryId: null,
@@ -194,7 +198,11 @@ describe('instances curated service', () => {
     });
     expect(invalidateByTagMock).toHaveBeenCalledWith('instances:wrld_1');
     expect(invalidateByTagMock).toHaveBeenCalledWith('groups:grp_1');
-    expect(result).toEqual({ status: 'linked' });
+    expect(result).toEqual({
+      status: 'linked',
+      eventTitle: 'VIBE',
+      instanceName: 'VIBE Doors Open',
+    });
   });
 
   it('rejects event linking before reads when the group is not allowlisted', async () => {
@@ -274,9 +282,18 @@ describe('instances curated service', () => {
   it('returns already_linked without repeating the write', async () => {
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
     vi.mocked(callOperation)
-      .mockResolvedValueOnce({ data: { id: 'cal_1', ownerId: 'grp_1' } })
       .mockResolvedValueOnce({
-        data: { id: '123', type: 'group', ownerId: 'grp_1', calendarEntryId: 'cal_1' },
+        data: { id: 'cal_1', ownerId: 'grp_1', title: 'VIBE' },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: '123',
+          name: 'The Great Pug',
+          displayName: null,
+          type: 'group',
+          ownerId: 'grp_1',
+          calendarEntryId: 'cal_1',
+        },
       });
 
     const result = await linkInstanceToCalendarEvent({
@@ -286,8 +303,83 @@ describe('instances curated service', () => {
       instanceId: '123',
     });
 
-    expect(result.status).toBe('already_linked');
+    expect(result).toEqual({
+      status: 'already_linked',
+      eventTitle: 'VIBE',
+      instanceName: 'The Great Pug',
+    });
     expect(callOperation).toHaveBeenCalledTimes(2);
-    expect(invalidateByTagMock).not.toHaveBeenCalled();
+    expect(invalidateByTagMock).toHaveBeenCalledWith('instances:wrld_1');
+    expect(invalidateByTagMock).toHaveBeenCalledWith('groups:grp_1');
+  });
+
+  it('serializes competing links to the same instance', async () => {
+    vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
+    let linkedCalendarId: string | null = null;
+    let releaseWrite!: () => void;
+    let markWriteStarted!: () => void;
+    const writeStarted = new Promise<void>((resolve) => {
+      markWriteStarted = resolve;
+    });
+    const writeReleased = new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    });
+
+    vi.mocked(callOperation).mockImplementation(async ({ operationId, params, body }) => {
+      if (operationId === 'getGroupCalendarEvent') {
+        const calendarId = (params as { calendarId: string }).calendarId;
+        return {
+          data: { id: calendarId, ownerId: 'grp_1', title: `Event ${calendarId}` },
+        } as never;
+      }
+      if (operationId === 'getInstance') {
+        return {
+          data: {
+            id: '123',
+            name: 'The Great Pug',
+            displayName: null,
+            type: 'group',
+            ownerId: 'grp_1',
+            calendarEntryId: linkedCalendarId,
+          },
+        } as never;
+      }
+      if (operationId === 'updateInstance') {
+        markWriteStarted();
+        await writeReleased;
+        linkedCalendarId = (body as { calendarEntryId: string }).calendarEntryId;
+        return { data: null } as never;
+      }
+      throw new Error(`Unexpected operation ${operationId}`);
+    });
+
+    const first = linkInstanceToCalendarEvent({
+      groupId: 'grp_1',
+      calendarId: 'cal_1',
+      worldId: 'wrld_1',
+      instanceId: '123',
+    });
+    await writeStarted;
+    const second = linkInstanceToCalendarEvent({
+      groupId: 'grp_1',
+      calendarId: 'cal_2',
+      worldId: 'wrld_1',
+      instanceId: '123',
+    });
+
+    expect(
+      vi
+        .mocked(callOperation)
+        .mock.calls.filter(([request]) => request.operationId === 'updateInstance')
+    ).toHaveLength(1);
+    releaseWrite();
+
+    await expect(first).resolves.toMatchObject({ status: 'linked' });
+    await expect(second).rejects.toThrow('Refusing to replace existing calendar link cal_1');
+    expect(
+      vi
+        .mocked(callOperation)
+        .mock.calls.filter(([request]) => request.operationId === 'updateInstance')
+    ).toHaveLength(1);
   });
 });

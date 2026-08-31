@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-08-31T19:51:28.735Z
+Generated: 2026-08-31T20:31:03.518Z
 
 Spec: VRChat API Documentation (1.20.8)
 
@@ -5737,7 +5737,7 @@ Output schema:
 ```
 
 ### vrchat_instance_link_event
-Link an allowlisted group instance to its group event. No invite or notification. (write)
+Link an allowlisted group instance to its event without notifying. (write)
 
 Input schema:
 
@@ -5747,13 +5747,16 @@ Input schema:
   "type": "object",
   "properties": {
     "groupId": {
-      "type": "string"
+      "type": "string",
+      "description": "Owning group."
     },
     "calendarId": {
-      "type": "string"
+      "type": "string",
+      "description": "Group event."
     },
     "worldId": {
-      "type": "string"
+      "type": "string",
+      "description": "Instance world."
     },
     "instanceId": {
       "type": "string",
@@ -5784,17 +5787,29 @@ Output schema:
         "already_linked"
       ]
     },
+    "groupId": {
+      "type": "string"
+    },
     "calendarId": {
       "type": "string"
     },
+    "eventTitle": {
+      "type": "string"
+    },
     "location": {
+      "type": "string"
+    },
+    "instanceName": {
       "type": "string"
     }
   },
   "required": [
     "status",
+    "groupId",
     "calendarId",
-    "location"
+    "eventTitle",
+    "location",
+    "instanceName"
   ],
   "additionalProperties": false
 }
