@@ -45,6 +45,10 @@ export function getBlockedOperationReason(operationId: string): string | undefin
  */
 const CURATED_ONLY_OPERATION_IDS = new Map<string, string>([
   [
+    'updateInstance',
+    'use vrchat_instance_link_event, which only links an allowlisted group instance to an event owned by that same group.',
+  ],
+  [
     'updateAvatar',
     'use vrchat_avatar_update, which cannot write assetUrl, unityPackageUrl, unityVersion or version.',
   ],

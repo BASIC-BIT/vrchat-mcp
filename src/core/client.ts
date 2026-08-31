@@ -53,6 +53,33 @@ export class CallError extends Error {
 
 const ALLOW_WRITES = config.writes.allow;
 
+// The community OpenAPI spec does not yet describe this live endpoint. Keep the
+// fallback here so the curated instance-event linker can use the normal auth,
+// write-disable, validation, retry, and error-handling path. The raw call tool
+// blocks this operation and the generated write router never advertises it.
+const CURATED_LIVE_OPERATION_FALLBACKS = new Map<string, OperationDef>([
+  [
+    'updateInstance',
+    {
+      operationId: 'updateInstance',
+      method: 'PUT',
+      path: '/instances/{worldId}:{instanceId}',
+      parameters: [
+        { name: 'worldId', in: 'path', required: true },
+        { name: 'instanceId', in: 'path', required: true },
+      ],
+      hasRequestBody: true,
+      requestBodyRequired: true,
+      requestBodySchema: {
+        type: 'object',
+        properties: { calendarEntryId: { type: 'string' } },
+        required: ['calendarEntryId'],
+        additionalProperties: false,
+      },
+    },
+  ],
+]);
+
 function stringifyParam(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
@@ -173,7 +200,7 @@ function getOperationOrThrow(
   index: Awaited<ReturnType<typeof getSpecIndex>>,
   operationId: string
 ): OperationDef {
-  const op = index.operations.get(operationId);
+  const op = index.operations.get(operationId) ?? CURATED_LIVE_OPERATION_FALLBACKS.get(operationId);
   if (!op) {
     throw new CallError(`Unknown operationId: ${operationId}`);
   }

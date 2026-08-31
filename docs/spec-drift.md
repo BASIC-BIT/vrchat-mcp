@@ -60,6 +60,24 @@ role, otherwise `PUT /groups/{groupId}/roles/{roleId}` returns
 The spec defines the enum but says nothing about colors, because they are a client-UI concept.
 For reference: **Join Me = blue, Active = green, Ask Me = orange, Busy = red.**
 
+### Existing instances can be linked to calendar events with an undocumented `PUT`
+*Observed and re-verified 2026-08-31 · handled by the curated instance linker*
+
+The community spec has no update operation for an existing instance. The live API accepts
+`PUT /instances/{worldId}:{instanceId}` with `{"calendarEntryId":"cal_..."}` and returns the
+updated `Instance`. `PATCH` on the same path returned `405`.
+
+VRChat returned `400` when the event was outside its link window, with the rule that an event
+must start within six hours or have ended within the previous six hours. Moving the test event
+inside that window made the same `PUT` return `200`. Sending `{"calendarEntryId":null}` also
+returned `200` and removed the link, but the curated tool intentionally exposes linking only.
+
+Verified live with an owned disposable test group, event, and group-only instance. No invitation
+or announcement was sent. Because the endpoint is missing from the spec, `core/client.ts` carries
+a narrow operation fallback until the community spec catches up. Raw access is blocked and the
+curated tool sends only `calendarEntryId` after checking the configured group allowlist and both
+objects' ownership.
+
 ---
 
 ## Suspected, not yet verified

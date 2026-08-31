@@ -39,6 +39,7 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['boop', toToolName('vrchat.boop')],
   ['createGroupInvite', toToolName('vrchat.group.invite')],
   ['createInstance', toToolName('vrchat.instance.create')],
+  ['updateInstance', toToolName('vrchat.instance.link_event')],
   ['friend', toToolName('vrchat.friend.request')],
   ['inviteMyselfTo', toToolName('vrchat.invite.self')],
   ['inviteUser', toToolName('vrchat.invite.user')],

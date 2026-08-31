@@ -1,6 +1,15 @@
-import type { InstanceCreateInput, InstanceCreateRequest } from '../../models/instances.js';
+import type {
+  InstanceCreateInput,
+  InstanceCreateRequest,
+  InstanceLinkEventInput,
+} from '../../models/instances.js';
 import { checkGroupAllowed } from '../groups/allowlist.js';
-import { callWriteOperationParsed, type WriteOperationData } from '../api/client.js';
+import {
+  callReadOperationParsed,
+  callWriteOperationParsed,
+  type WriteOperationData,
+} from '../api/client.js';
+import { cacheManager } from '../cache.js';
 
 export type InstanceCreatePreparation =
   | { ok: true; request: InstanceCreateRequest }
@@ -86,4 +95,50 @@ export async function createInstance(
 ): Promise<InstanceRecord | null> {
   const result = await callWriteOperationParsed('createInstance', undefined, request);
   return result.data ?? null;
+}
+
+export async function linkInstanceToCalendarEvent(input: InstanceLinkEventInput) {
+  const allowed = checkGroupAllowed(input.groupId);
+  if (!allowed.ok) throw new Error(allowed.reason);
+
+  const eventResult = await callReadOperationParsed('getGroupCalendarEvent', {
+    groupId: input.groupId,
+    calendarId: input.calendarId,
+  });
+  const event = eventResult.data;
+  if (!event) throw new Error(`Calendar event ${input.calendarId} not found.`);
+  if (event.ownerId !== input.groupId) {
+    throw new Error(
+      `Refusing to link calendar event ${input.calendarId}: it is not owned by group ${input.groupId}.`
+    );
+  }
+
+  const instanceResult = await callReadOperationParsed('getInstance', {
+    worldId: input.worldId,
+    instanceId: input.instanceId,
+  });
+  const instance = instanceResult.data;
+  if (!instance) throw new Error(`Instance ${input.worldId}:${input.instanceId} not found.`);
+  if (instance.type !== 'group' || instance.ownerId !== input.groupId) {
+    throw new Error(
+      `Refusing to link instance ${input.worldId}:${input.instanceId}: it is not owned by group ${input.groupId}.`
+    );
+  }
+  if (instance.calendarEntryId === input.calendarId) {
+    return { status: 'already_linked' as const };
+  }
+  if (instance.calendarEntryId) {
+    throw new Error(
+      `Refusing to replace existing calendar link ${instance.calendarEntryId} on instance ${input.worldId}:${input.instanceId}.`
+    );
+  }
+
+  await callWriteOperationParsed(
+    'updateInstance',
+    { worldId: input.worldId, instanceId: input.instanceId },
+    { calendarEntryId: input.calendarId }
+  );
+  cacheManager.invalidateByTag(`instances:${input.worldId}`);
+  cacheManager.invalidateByTag(`groups:${input.groupId}`);
+  return { status: 'linked' as const };
 }
