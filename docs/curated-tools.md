@@ -125,22 +125,92 @@ Group posts (write):
 - `vrchat_group_post_update`
 - `vrchat_group_post_delete`
 
-Group image intake (write):
+Account gallery image intake (write):
 
-- `vrchat_group_image_upload`
+- `vrchat_gallery_image_upload`
 
-`vrchat_group_image_upload` accepts a `groupId` or `shortCode` plus an absolute `imagePath`.
-It checks the global write guard and the resolved group allowlist before opening the file. The path
+`vrchat_gallery_image_upload` accepts only an absolute `imagePath`; its strict schema rejects group
+selectors, caller-controlled upload purposes, and other unknown fields. It checks the global write
+guard before opening the file, but does not resolve, fetch, or authorize a group because the
+upstream resource belongs to the signed-in account's personal gallery. The path
 must remain inside a configured `uploads.allowedRoots` directory after canonical resolution. The
 tool opens and reads one regular file handle, rejects symbolic links, junction escapes, replacement
 races, and unstable file identity, then validates a static PNG with CRC checking and a
 dimension-derived IDAT decompression limit. APNG content, compressed color profiles,
 more than 4096 PNG chunks, trailing data, dimensions outside 65 through 2048 pixels per side,
 and files over 10 MiB are rejected. Valid images are sent as multipart form data to VRChat's live
-image endpoint with the `gallery` tag. The result includes the new `fileId` for a later post or
-event call; uploading alone does not attach the image or notify group members. If the connection
+image endpoint with the fixed `gallery` tag. The result includes the new personal-gallery `fileId`
+and compact file and validated-image metadata for a later post or event call; it does not expose
+the absolute local path. Uploading alone does not attach the image or notify group members. The
+post or event tool independently enforces its group allowlist before attaching the file ID. If the connection
 fails before a response is received, the tool reports that the upload may have succeeded and must
 not be retried automatically.
+
+The former `vrchat_group_image_upload` name was removed instead of retained as an alias because its
+group selector did not constrain the upstream upload. Deployments with an external tool-name
+allowlist must replace `vrchat_group_image_upload` with `vrchat_gallery_image_upload`; the server
+does not rewrite client or deployment allowlists.
+
+Before (removed in the release after 0.1.12):
+
+```json
+{
+  "tool": "vrchat_group_image_upload",
+  "arguments": {
+    "groupId": "grp_example",
+    "imagePath": "C:\\VRChat Uploads\\poster.png"
+  },
+  "result": {
+    "status": "uploaded",
+    "groupId": "grp_example",
+    "fileId": "file_example",
+    "image": {
+      "fileName": "poster.png",
+      "byteSize": 123456,
+      "width": 1024,
+      "height": 512
+    },
+    "file": {
+      "id": "file_example",
+      "ownerId": "usr_example",
+      "name": "poster.png",
+      "mimeType": "image/png",
+      "extension": ".png",
+      "version": 1
+    }
+  }
+}
+```
+
+After:
+
+```json
+{
+  "tool": "vrchat_gallery_image_upload",
+  "arguments": {
+    "imagePath": "C:\\VRChat Uploads\\poster.png"
+  },
+  "result": {
+    "fileId": "file_example",
+    "ownerId": "usr_example",
+    "name": "poster.png",
+    "mimeType": "image/png",
+    "extension": ".png",
+    "version": 1,
+    "image": {
+      "fileName": "poster.png",
+      "byteSize": 123456,
+      "width": 1024,
+      "height": 512
+    }
+  }
+}
+```
+
+The upstream file fields are optional because VRChat may omit them. `image.fileName` is the
+validated local basename, not the absolute input path. A deployment that previously allowed only
+`vrchat_group_image_upload` must replace that exact name with `vrchat_gallery_image_upload`; leaving
+the old name in place exposes no upload tool.
 
 Neither create nor update notifies group members unless `sendNotification` is explicitly set, because a single post can ping the whole group.
 

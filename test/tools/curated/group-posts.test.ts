@@ -125,9 +125,18 @@ describe('curated group post tools', () => {
     it.each([
       [
         'vrchat_group_post_create',
-        { groupId: 'grp_1', title: 'T', text: 'B', visibility: 'group' },
+        {
+          groupId: 'grp_1',
+          title: 'T',
+          text: 'B',
+          visibility: 'group',
+          imageId: 'file_1',
+        },
       ],
-      ['vrchat_group_post_update', { groupId: 'grp_1', postId: 'not_1', text: 'B' }],
+      [
+        'vrchat_group_post_update',
+        { groupId: 'grp_1', postId: 'not_1', text: 'B', imageId: 'file_1' },
+      ],
       ['vrchat_group_post_delete', { groupId: 'grp_1', postId: 'not_1' }],
     ])('blocks %s when the group allowlist denies it', async (name, args) => {
       vi.mocked(checkGroupAllowed).mockReturnValue({ ok: false, reason: 'not allowed' });

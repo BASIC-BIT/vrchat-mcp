@@ -396,7 +396,7 @@ function buildApiUrl(apiPath: string): string {
 }
 
 /**
- * Narrow multipart path for the curated group image tool. This deliberately does not make
+ * Narrow multipart path for the curated account-gallery image tool. This deliberately does not make
  * multipart bodies available through vrchat_write or vrchat_call.
  */
 export async function uploadGalleryImageMultipart(

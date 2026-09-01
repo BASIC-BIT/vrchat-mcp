@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Breaking:** replace `vrchat_group_image_upload` with the strict account-scoped `vrchat_gallery_image_upload`. The upload endpoint creates a file in the signed-in user's personal gallery and has no group authorization relationship, so the old group-scoped contract has been removed rather than retained as a deprecated alias.
+- Keep the existing write guard, configured upload-root containment, static-PNG validation, multipart `tag=gallery` transport, bounded response metadata, and indeterminate-failure protection. Group post and event tools continue enforcing their own group allowlists before attaching an uploaded file ID.
+
 ## 0.1.12 - 2026-09-01
 
 - Add individually grantable `vrchat_group_image_upload` for uploading a validated static PNG to the signed-in account gallery without attaching it to a group post or event. The supplied group is an authorization boundary, not the upload destination.

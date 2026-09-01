@@ -194,6 +194,7 @@ Common curated tools include:
 - `vrchat_events_upcoming`
 - `vrchat_notifications_recent`
 - `vrchat_instance_link_event`
+- `vrchat_gallery_image_upload`
 - `vrchat_invite`
 - `vrchat_group_invite`
 - `vrchat_friend_request`
@@ -236,6 +237,8 @@ To force read-only mode, add this `env` fragment inside the server entry for you
 ```
 
 Only use write tools when you intend this local MCP server to perform VRChat account actions. Bulk social tools are capped and back off on 429s, but you are responsible for avoiding spam, harassment, or unwanted automation.
+
+`vrchat_gallery_image_upload` uploads a validated static PNG to the signed-in account's personal gallery. It accepts only `imagePath`; group authorization is enforced later by the group post or event tool that attaches the returned file ID. Configure at least one absolute `uploads.allowedRoots` entry before using it.
 
 For group write tools, you can restrict writes to specific group IDs with a JSON config file:
 
