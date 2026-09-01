@@ -26,6 +26,7 @@ import { registerCuratedInviteTools } from '../src/tools/curated/invites.js';
 import { registerCuratedNotificationTools } from '../src/tools/curated/notifications.js';
 import { registerCuratedStatusTools } from '../src/tools/curated/status.js';
 import { registerCuratedUserTools } from '../src/tools/curated/users.js';
+import { registerCuratedUploadTools } from '../src/tools/curated/uploads.js';
 import { registerCuratedVrcxTools } from '../src/tools/curated/vrcx/index.js';
 import { registerCuratedWorldTools } from '../src/tools/curated/worlds.js';
 import { registerRawTools } from '../src/tools/raw.js';
@@ -215,6 +216,7 @@ async function main() {
   registerCuratedNotificationTools(collector.createServer('curated'));
   registerCuratedStatusTools(collector.createServer('curated'));
   registerCuratedUserTools(collector.createServer('curated'));
+  registerCuratedUploadTools(collector.createServer('curated'));
   registerCuratedWorldTools(collector.createServer('curated'));
   registerCuratedVrcxTools(collector.createServer('curated'));
   registerCacheTools(collector.createServer('cache'));

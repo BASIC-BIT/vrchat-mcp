@@ -263,6 +263,7 @@ Common environment variables:
 | `VRCHAT_MCP_COOKIE_STORE`                 | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
 | `VRCHAT_MCP_COOKIE_FILE`                  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
 | `VRCHAT_MCP_ALLOW_WRITES`                 | Set to `false` for read-only mode.                       |
+| `VRCHAT_MCP_UPLOAD_ROOTS`                 | Absolute roots allowed for local PNG uploads.            |
 | `VRCHAT_MCP_TRANSPORT`                    | `stdio` (default) or `http`.                             |
 | `VRCHAT_MCP_HTTP_BEARER_TOKEN`            | Required 32+ character secret for HTTP mode.             |
 | `VRCHAT_MCP_HTTP_PORT`                    | Loopback HTTP port. Defaults to `8765`.                  |
@@ -285,6 +286,7 @@ Example JSON config:
     "sessionIdleTimeoutMs": 1800000
   },
   "groups": { "allowlist": ["grp_abc123"] },
+  "uploads": { "allowedRoots": ["C:\\Users\\you\\Pictures\\VRChat Uploads"] },
   "cache": { "enabled": true },
   "vrcx": { "enabled": true }
 }

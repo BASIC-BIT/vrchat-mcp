@@ -21,7 +21,7 @@ vi.mock('../../src/services/groups/index.js', () => ({
   checkGroupAllowed: vi.fn(() => ({ ok: true })),
 }));
 
-import { fetch as undiciFetch, Headers } from 'undici';
+import { fetch as undiciFetch, Headers, Request } from 'undici';
 import { authManager } from '../../src/auth/index.js';
 import { checkGroupAllowed } from '../../src/services/groups/index.js';
 
@@ -35,6 +35,11 @@ async function loadCallOperation() {
   clearSpecCache();
   const mod = await import('../../src/core/client.js');
   return mod.callOperation;
+}
+
+async function loadUploadGalleryImageMultipart() {
+  const mod = await import('../../src/core/client.js');
+  return mod.uploadGalleryImageMultipart;
 }
 
 describe('callOperation behavior', () => {
@@ -185,6 +190,60 @@ describe('callOperation behavior', () => {
       expect(init.headers.get('content-type')).toBe('application/json');
     }
     expect(init?.body).toBe(JSON.stringify({ worldId: 'wrld_1' }));
+  });
+
+  it('builds the verified gallery multipart request without setting content-type manually', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    getCookieHeaderSpy.mockResolvedValue('auth=token');
+    vi.mocked(undiciFetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      text: () => Promise.resolve('{"id":"file_1"}'),
+    } as Response);
+
+    const upload = await loadUploadGalleryImageMultipart();
+    await upload('poster.png', Uint8Array.from([1, 2, 3]));
+
+    const [url, init] = vi.mocked(undiciFetch).mock.calls[0] ?? [];
+    expect(url).toContain('/api/1/file/image');
+    expect(init?.method).toBe('POST');
+    expect((init?.headers as Headers).get('content-type')).toBeNull();
+    expect((init?.headers as Headers).get('cookie')).toBe('auth=token');
+    const request = new Request(url, init);
+    expect(request.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+    const body = await request.text();
+    expect(body).toContain('name="file"; filename="poster.png"');
+    expect(body).toContain('Content-Type: image/png');
+    expect(body).toContain('name="tag"');
+    expect(body).toContain('gallery');
+  });
+
+  it('blocks gallery multipart before cookie or fetch when writes are disabled', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'false';
+    const upload = await loadUploadGalleryImageMultipart();
+    await expect(upload('poster.png', Uint8Array.from([1]))).rejects.toThrow(
+      'Write operations are disabled'
+    );
+    expect(getCookieHeaderSpy).not.toHaveBeenCalled();
+    expect(undiciFetch).not.toHaveBeenCalled();
+  });
+
+  it('treats an indeterminate gallery upload transport failure as non-retryable', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    vi.mocked(undiciFetch).mockRejectedValueOnce(new Error('socket closed'));
+
+    const upload = await loadUploadGalleryImageMultipart();
+    let captured: unknown;
+    try {
+      await upload('poster.png', Uint8Array.from([1, 2, 3]));
+    } catch (err) {
+      captured = err;
+    }
+
+    expect(captured).toBeInstanceOf(Error);
+    expect((captured as Error).message).toContain('may have succeeded');
+    expect((captured as { retryable?: unknown }).retryable).toBe(false);
   });
 
   it('uses the observed live instance-update route when the community spec lacks it', async () => {

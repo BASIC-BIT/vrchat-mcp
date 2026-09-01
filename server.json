@@ -64,6 +64,13 @@
           "default": "true",
           "isRequired": false,
           "isSecret": false
+        },
+        {
+          "name": "VRCHAT_MCP_UPLOAD_ROOTS",
+          "description": "Absolute directories from which local PNG uploads may be read. Separate multiple roots with the platform path delimiter.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
         }
       ]
     }

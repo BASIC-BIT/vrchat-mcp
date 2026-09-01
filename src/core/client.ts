@@ -1,5 +1,6 @@
 import { authManager } from '../auth/index.js';
-import { fetch, Headers, type RequestInit } from 'undici';
+import { File } from 'node:buffer';
+import { fetch, FormData, Headers, type RequestInit } from 'undici';
 import { getSpecIndex, type OperationDef } from './spec.js';
 import { getConfig } from '../config/index.js';
 import { logger } from '../infra/logger.js';
@@ -52,6 +53,14 @@ export class CallError extends Error {
 }
 
 const ALLOW_WRITES = config.writes.allow;
+
+export function assertWritesAllowed(method = 'POST'): void {
+  if (!ALLOW_WRITES) {
+    throw new CallError(
+      `Write operations are disabled (blocked ${method}). Enable writes in config (writes.allow).`
+    );
+  }
+}
 
 // The community OpenAPI spec does not yet describe this live endpoint. Keep the
 // fallback here so the curated instance-event linker can use the normal auth,
@@ -244,11 +253,7 @@ function enforceOperationPolicy(
     throw new CallError(`Operation ${op.operationId} is disabled: ${blockedReason}`);
   }
 
-  if (!ALLOW_WRITES && op.method !== 'GET') {
-    throw new CallError(
-      `Write operations are disabled (blocked ${op.method}). Enable writes in config (writes.allow).`
-    );
-  }
+  if (op.method !== 'GET') assertWritesAllowed(op.method);
 
   if (op.method === 'GET') return;
   const groupId = isGroupOperation(op)
@@ -341,6 +346,7 @@ async function executeRequestWithHandling(input: {
   url: string;
   init: RequestInit;
   options?: CallOptions;
+  indeterminateFailureMessage?: string;
 }): Promise<CallResult> {
   try {
     const res = await fetch(input.url, input.init);
@@ -370,8 +376,57 @@ async function executeRequestWithHandling(input: {
       message: (err as Error).message,
     });
     if (err instanceof CallError) throw err;
+    if (input.indeterminateFailureMessage) {
+      throw new CallError(input.indeterminateFailureMessage);
+    }
     throw new CallError('Network or fetch error', undefined, undefined, undefined, true);
   }
+}
+
+function buildApiUrl(apiPath: string): string {
+  if (!apiPath.startsWith('/') || apiPath.startsWith('//')) {
+    throw new CallError(`Invalid VRChat API path: ${apiPath}`);
+  }
+  const base = new URL(DEFAULT_BASE_URL);
+  const basePath = base.pathname.replace(/\/+$/, '');
+  base.pathname = `${basePath}/${apiPath.replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/');
+  base.search = '';
+  base.hash = '';
+  return base.toString();
+}
+
+/**
+ * Narrow multipart path for the curated group image tool. This deliberately does not make
+ * multipart bodies available through vrchat_write or vrchat_call.
+ */
+export async function uploadGalleryImageMultipart(
+  fileName: string,
+  bytes: Uint8Array
+): Promise<CallResult> {
+  assertWritesAllowed('POST');
+  const url = buildApiUrl('/file/image');
+  const headers = new Headers();
+  headers.set('user-agent', DEFAULT_USER_AGENT);
+  const cookieHeader = await authManager.getCookieHeader(url);
+  if (cookieHeader) headers.set('cookie', cookieHeader);
+
+  const form = new FormData();
+  // Copy into an ordinary ArrayBuffer-backed view so node:buffer's File cannot
+  // retain a caller-owned SharedArrayBuffer or mutable view.
+  form.append('file', new File([Uint8Array.from(bytes)], fileName, { type: 'image/png' }));
+  form.append('tag', 'gallery');
+
+  return executeRequestWithHandling({
+    operationId: 'uploadImage',
+    url,
+    indeterminateFailureMessage:
+      'The image upload response could not be received. The upload may have succeeded; do not retry automatically.',
+    init: {
+      method: 'POST',
+      headers,
+      body: form,
+    },
+  });
 }
 
 export async function callOperation(input: CallInput): Promise<CallResult> {

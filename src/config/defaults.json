@@ -41,6 +41,9 @@
   "groups": {
     "allowlist": []
   },
+  "uploads": {
+    "allowedRoots": []
+  },
   "rawTools": {
     "enabled": false
   },
