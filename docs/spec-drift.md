@@ -46,6 +46,21 @@ The spec describes `InstanceID` as the bare instance part
 
 Verified live: full string → `200`, worldId stripped → `400`.
 
+### `CreateInstanceRequest.canRequestInvite` is restricted to private instances
+*Observed 2026-09-01 · handled in `services/instances/curated.ts`*
+
+The community schema permits `canRequestInvite` for every instance type. The live API accepts
+`true` only when `type` is `private`; a group instance returns
+`400: Cannot add canRequestInvite to non-private instances.` The same group instance succeeds
+when the field is omitted or set to `false`.
+
+### Single calendar events report `occurrenceKind: "single"`
+*Observed 2026-09-01 · handled in `services/events/curated.ts`*
+
+The generated `CalendarEvent` schema does not declare `occurrenceKind`. The live group calendar
+event endpoint reports `"single"` for a confirmed non-recurring event, while the curated delete
+tool deliberately exposes the more explicit `targetKind: "single_event"` safety value.
+
 ### Role permissions have undocumented prerequisites
 *Observed 2026-08-02, not re-verified since*
 

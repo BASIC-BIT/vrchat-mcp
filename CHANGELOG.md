@@ -6,6 +6,8 @@
 - Require the configured group allowlist plus matching event and instance ownership, serialize same-instance links, refuse non-group instances and replacement of a different existing link, and keep the broader instance-update body unreachable through raw and generated write tools.
 - Return the group ID and readable event and instance labels, and invalidate affected caches on linked, idempotent, and conflicting-link results.
 - Record the live six-hour link window and the observed unlink behavior without exposing unlink in the curated tool.
+- Reject `canRequestInvite: true` for non-private instances before VRChat returns a 400, while continuing to support omitted and false values for group instances.
+- Accept the live `occurrenceKind: "single"` response when `vrchat_event_delete` verifies a `single_event` target, while continuing to fail closed for unknown event kinds.
 
 ## 0.1.10 - 2026-08-03
 
