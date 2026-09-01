@@ -61,4 +61,3 @@ export async function uploadGroupImage(
   const result = await uploadGalleryImageMultipart(image.fileName, image.bytes);
   return { image, file: summarizeUploadedFile(result.data) };
 }
-

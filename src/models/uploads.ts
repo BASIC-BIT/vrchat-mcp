@@ -36,4 +36,3 @@ export const GroupImageUploadOutputSchema = z.object({
 });
 
 export type GroupImageUploadInput = z.infer<typeof GroupImageUploadInputSchema>;
-
