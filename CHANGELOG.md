@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.11 - 2026-09-01
 
 - Add curated `vrchat_instance_link_event` for linking an existing group instance to a group calendar event through VRChat's undocumented live `PUT /instances/{worldId}:{instanceId}` endpoint.
 - Require the configured group allowlist plus matching event and instance ownership, serialize same-instance links, refuse non-group instances and replacement of a different existing link, and keep the broader instance-update body unreachable through raw and generated write tools.
