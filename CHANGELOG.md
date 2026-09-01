@@ -1,10 +1,13 @@
 # Changelog
 
+## 0.1.12 - 2026-09-01
+
+- Add individually grantable `vrchat_group_image_upload` for uploading a validated static PNG to the signed-in account gallery without attaching it to a group post or event. The supplied group is an authorization boundary, not the upload destination.
+- Require the write guard, resolved group allowlist, and absolute `uploads.allowedRoots` containment before local file intake; reject symbolic links, junction escapes, replacement races, malformed PNGs, APNG, compressed-profile, excessive-chunk, and IDAT decompression bombs, width or height outside 65 through 2048 pixels inclusive, and files over 10 MiB. Treat upload transport failures as indeterminate and do not retry automatically because the upstream write may already have succeeded; reconcile the gallery before retrying.
+- Keep both generic image upload operations out of raw and generated write surfaces, and use the verified multipart `POST /file/image` route only through the curated tool.
+
 ## 0.1.11 - 2026-09-01
 
-- Add individually grantable `vrchat_group_image_upload` for uploading a validated static PNG to the signed-in account gallery without attaching it to a group post or event.
-- Require the write guard, resolved group allowlist, and absolute `uploads.allowedRoots` containment before local file intake; reject links, path escapes, replacement races, malformed PNGs, APNG, compressed-profile, excessive-chunk, and IDAT decompression bombs, dimensions outside 65 through 2048 pixels, and files over 10 MiB. Treat upload transport failures as indeterminate and non-retryable because the upstream write may already have succeeded.
-- Keep both generic image upload operations out of raw and generated write surfaces, and use the verified multipart `POST /file/image` route only through the curated tool.
 - Add curated `vrchat_instance_link_event` for linking an existing group instance to a group calendar event through VRChat's undocumented live `PUT /instances/{worldId}:{instanceId}` endpoint.
 - Require the configured group allowlist plus matching event and instance ownership, serialize same-instance links, refuse non-group instances and replacement of a different existing link, and keep the broader instance-update body unreachable through raw and generated write tools.
 - Return the group ID and readable event and instance labels, and invalidate affected caches on linked, idempotent, and conflicting-link results.
