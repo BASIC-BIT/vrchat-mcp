@@ -346,6 +346,7 @@ async function executeRequestWithHandling(input: {
   url: string;
   init: RequestInit;
   options?: CallOptions;
+  indeterminateFailureMessage?: string;
 }): Promise<CallResult> {
   try {
     const res = await fetch(input.url, input.init);
@@ -375,6 +376,9 @@ async function executeRequestWithHandling(input: {
       message: (err as Error).message,
     });
     if (err instanceof CallError) throw err;
+    if (input.indeterminateFailureMessage) {
+      throw new CallError(input.indeterminateFailureMessage);
+    }
     throw new CallError('Network or fetch error', undefined, undefined, undefined, true);
   }
 }
@@ -415,6 +419,8 @@ export async function uploadGalleryImageMultipart(
   return executeRequestWithHandling({
     operationId: 'uploadImage',
     url,
+    indeterminateFailureMessage:
+      'The image upload response could not be received. The upload may have succeeded; do not retry automatically.',
     init: {
       method: 'POST',
       headers,

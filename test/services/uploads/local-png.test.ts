@@ -60,6 +60,16 @@ function replaceIdat(bytes: Buffer, compressedData: Buffer): Buffer {
   return Buffer.concat(chunks);
 }
 
+function insertEmptyIdatChunks(bytes: Buffer, count: number): Buffer {
+  const idat = bytes.indexOf(Buffer.from('IDAT')) - 4;
+  const chunks = Array.from({ length: count }, () => {
+    const chunk = Buffer.alloc(12);
+    chunk.write('IDAT', 4, 'ascii');
+    return chunk;
+  });
+  return Buffer.concat([bytes.subarray(0, idat), ...chunks, bytes.subarray(idat)]);
+}
+
 afterEach(() => {
   for (const directory of tempDirs.splice(0)) {
     fs.rmSync(directory, { recursive: true, force: true });
@@ -179,6 +189,12 @@ describe('static PNG validation', () => {
     const expectedRgbaBytes = (65 * 4 + 1) * 65;
     const bomb = replaceIdat(png(), deflateSync(Buffer.alloc(expectedRgbaBytes + 1)));
     expect(() => validateStaticPngBuffer(bomb)).toThrow('dimension-derived limit');
+  });
+
+  it('caps PNG chunk count before retaining excessive IDAT views', () => {
+    expect(() => validateStaticPngBuffer(insertEmptyIdatChunks(png(), 4096))).toThrow(
+      'too many chunks'
+    );
   });
 
   it('rejects compressed color profiles before the full decoder can inflate them', () => {

@@ -8,6 +8,7 @@ export const MAX_PNG_BYTES = 10 * 1024 * 1024;
 export const MIN_PNG_DIMENSION = 65;
 export const MAX_PNG_DIMENSION = 2048;
 export const MAX_PNG_PIXELS = MAX_PNG_DIMENSION * MAX_PNG_DIMENSION;
+const MAX_PNG_CHUNKS = 4096;
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const APNG_CHUNKS = new Set(['acTL', 'fcTL', 'fdAT']);
@@ -370,6 +371,7 @@ export function validateStaticPngBuffer(bytes: Buffer): { width: number; height:
   }
 
   let offset = PNG_SIGNATURE.length;
+  let chunkCount = 0;
   const state: PngScanState = {
     width: 0,
     height: 0,
@@ -384,6 +386,10 @@ export function validateStaticPngBuffer(bytes: Buffer): { width: number; height:
   };
 
   while (offset < bytes.length) {
+    chunkCount += 1;
+    if (chunkCount > MAX_PNG_CHUNKS) {
+      throw new Error(`PNG contains too many chunks (maximum ${MAX_PNG_CHUNKS}).`);
+    }
     if (offset + 12 > bytes.length) {
       throw new Error('PNG ends in a truncated chunk.');
     }

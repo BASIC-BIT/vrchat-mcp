@@ -229,6 +229,23 @@ describe('callOperation behavior', () => {
     expect(undiciFetch).not.toHaveBeenCalled();
   });
 
+  it('treats an indeterminate gallery upload transport failure as non-retryable', async () => {
+    process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
+    vi.mocked(undiciFetch).mockRejectedValueOnce(new Error('socket closed'));
+
+    const upload = await loadUploadGalleryImageMultipart();
+    let captured: unknown;
+    try {
+      await upload('poster.png', Uint8Array.from([1, 2, 3]));
+    } catch (err) {
+      captured = err;
+    }
+
+    expect(captured).toBeInstanceOf(Error);
+    expect((captured as Error).message).toContain('may have succeeded');
+    expect((captured as { retryable?: unknown }).retryable).toBe(false);
+  });
+
   it('uses the observed live instance-update route when the community spec lacks it', async () => {
     process.env.VRCHAT_MCP_ALLOW_WRITES = 'true';
     const headers = new Headers();
