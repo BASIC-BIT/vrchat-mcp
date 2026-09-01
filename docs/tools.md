@@ -1,8 +1,8 @@
 # Tool Catalog (generated)
 
-Generated: 2026-09-01T23:24:19.300Z
+Generated: 2026-09-01T09:25:52.032Z
 
-Spec: VRChat API Documentation (1.20.7)
+Spec: VRChat API Documentation (1.20.8)
 
 This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read/write replacements are omitted).
 
@@ -9586,7 +9586,11 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getCSS` via `vrchat_read` (GET /css/app.css) - Read VRChat API: Download CSS.
 - `getCurrentOnlineUsers` via `vrchat_read` (GET /visits) - Read VRChat API: Current Online Users.
 - `getCurrentSubscriptions` via `vrchat_read` (GET /auth/user/subscription) - Read VRChat API: Get Current Subscriptions.
+- `getEarningsMetrics` via `vrchat_read` (GET /economy/metrics/earnings) - Read VRChat API: Get Earnings Metrics.
 - `getEconomyAccount` via `vrchat_read` (GET /user/{userId}/economy/account) - Read VRChat API: Get Economy Account.
+- `getEconomyBalances` via `vrchat_read` (GET /user/{userId}/economy/balances) - Read VRChat API: Get Economy Balances.
+- `getEconomyPayouts` via `vrchat_read` (GET /user/{userId}/economy/payouts/list) - Read VRChat API: Get Economy Payouts.
+- `getEconomyPayoutStatus` via `vrchat_read` (GET /user/{userId}/economy/payouts/status) - Read VRChat API: Get Economy Payout Status.
 - `getFeaturedCalendarEvents` via `vrchat_read` (GET /calendar/featured) - Read VRChat API: List featured calendar events.
 - `getFile` via `vrchat_read` (GET /file/{fileId}) - Read VRChat API: Show File.
 - `getFileAnalysis` via `vrchat_read` (GET /analysis/{fileId}/{versionId}) - Read VRChat API: Get File Version Analysis.
@@ -9637,16 +9641,22 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getPermission` via `vrchat_read` (GET /permissions/{permissionId}) - Read VRChat API: Get Permission.
 - `getPlayerModerations` via `vrchat_read` (GET /auth/user/playermoderations) - Read VRChat API: Search Player Moderations.
 - `getPrint` via `vrchat_read` (GET /prints/{printId}) - Read VRChat API: Get Print.
+- `getPrivateProfile` via `vrchat_read` (GET /profile/{userId}/private) - Read VRChat API: Get Private Profile.
 - `getProductListing` via `vrchat_read` (GET /listing/{productId}) - Read VRChat API: Get Product Listing.
 - `getProductListingAlternate` via `vrchat_read` (GET /products/{productId}) - Read VRChat API: Get Product Listing (alternate).
 - `getProductListings` via `vrchat_read` (GET /user/{userId}/listings) - Read VRChat API: Get User Product Listings.
+- `getProductPurchase` via `vrchat_read` (GET /economy/purchases/{productPurchaseId}) - Read VRChat API: Get Product Purchase.
+- `getProductPurchaseHistory` via `vrchat_read` (GET /user/{userId}/economy/transactions) - Read VRChat API: Get Product Purchase History.
 - `getProductPurchases` via `vrchat_read` (GET /economy/purchases) - Read VRChat API: Get Product Purchases.
+- `getProductPurchaseStacks` via `vrchat_read` (GET /economy/purchases/{productPurchaseId}/stacks) - Read VRChat API: Get Product Purchase Stacks.
 - `getProp` via `vrchat_read` (GET /props/{propId}) - Read VRChat API: Get Prop.
 - `getPropPublishStatus` via `vrchat_read` (GET /props/{propId}/publish) - Read VRChat API: Get Prop Publish Status.
+- `getPublicProfile` via `vrchat_read` (GET /profile/{userId}) - Read VRChat API: Get Public Profile.
 - `getRecentLocations` via `vrchat_read` (GET /instances/recent) - Read VRChat API: List Recent Locations.
 - `getRecentSubscription` via `vrchat_read` (GET /user/subscription/recent) - Read VRChat API: Get Recent Subscription.
 - `getRecentWorlds` via `vrchat_read` (GET /worlds/recent) - Read VRChat API: List Recent Worlds.
 - `getRecoveryCodes` via `vrchat_read` (GET /auth/user/twofactorauth/otp) - Read VRChat API: Get 2FA Recovery codes.
+- `getSellerEligibility` via `vrchat_read` (GET /economy/seller/eligibility) - Read VRChat API: Get Seller Eligibility.
 - `getShortName` via `vrchat_read` (GET /instances/{worldId}:{instanceId}/shortName) - Read VRChat API: Get Instance Short Name.
 - `getSteamTransaction` via `vrchat_read` (GET /Steam/transactions/{transactionId}) - Read VRChat API: Get Steam Transaction.
 - `getSteamTransactions` via `vrchat_read` (GET /Steam/transactions) - Read VRChat API: List Steam Transactions.
@@ -9657,7 +9667,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getTiliaTos` via `vrchat_read` (GET /user/{userId}/tilia/tos) - Read VRChat API: Get Tilia TOS Agreement Status.
 - `getTokenBundles` via `vrchat_read` (GET /tokenBundles) - Read VRChat API: List Token Bundles.
 - `getUserAllGroupPermissions` via `vrchat_read` (GET /users/{userId}/groups/permissions) - Read VRChat API: Get user's permissions for all joined groups.
-- `getUserCreditsEligible` via `vrchat_read` (GET /users/{userId}/credits/eligible) - Read VRChat API: Get User Credits Eligiblity.
+- `getUserCreditsEligible` via `vrchat_read` (GET /users/{userId}/credits/eligible) - Read VRChat API: Get User Credits Eligibility.
 - `getUserFeedback` via `vrchat_read` (GET /users/{userId}/feedback) - Read VRChat API: Get User Feedback.
 - `getUserGroupInstances` via `vrchat_read` (GET /users/{userId}/instances/groups) - Read VRChat API: Get User Group Instances.
 - `getUserGroupInstancesForGroup` via `vrchat_read` (GET /users/{userId}/instances/groups/{groupId}) - Read VRChat API: Get User Group Instances for a specific Group.
@@ -9667,11 +9677,15 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getUserNotes` via `vrchat_read` (GET /userNotes) - Read VRChat API: Get User Notes.
 - `getUserPrints` via `vrchat_read` (GET /prints/user/{userId}) - Read VRChat API: Get Own Prints.
 - `getUserRepresentedGroup` via `vrchat_read` (GET /users/{userId}/groups/represented) - Read VRChat API: Get user's current represented group.
-- `getUserSubscriptionEligible` via `vrchat_read` (GET /users/{userId}/subscription/eligible) - Read VRChat API: Get User Subscription Eligiblity.
+- `getUserSubscriptionEligible` via `vrchat_read` (GET /users/{userId}/subscription/eligible) - Read VRChat API: Get User Subscription Eligibility.
+- `getUserTiliaKyc` via `vrchat_read` (GET /user/{userId}/tilia/kyc) - Read VRChat API: Get User Tilia KYC.
+- `getUserTutorialStatus` via `vrchat_read` (GET /users/{userId}/tutorial) - Read VRChat API: Get User Tutorial Status.
 - `getWorldInstance` via `vrchat_read` (GET /worlds/{worldId}/{instanceId}) - Read VRChat API: Get World Instance.
 - `getWorldMetadata` via `vrchat_read` (GET /worlds/{worldId}/metadata) - Read VRChat API: Get World Metadata.
 - `getWorldPublishStatus` via `vrchat_read` (GET /worlds/{worldId}/publish) - Read VRChat API: Get World Publish Status.
 - `listProps` via `vrchat_read` (GET /props) - Read VRChat API: List Props.
+- `listStores` via `vrchat_read` (GET /economy/stores) - Read VRChat API: List Stores.
+- `listUserProducts` via `vrchat_read` (GET /user/{userId}/products) - Read VRChat API: List User Products.
 - `searchAvatars` via `vrchat_read` (GET /avatars) - Read VRChat API: Search Avatars.
 - `searchGroupMembers` via `vrchat_read` (GET /groups/{groupId}/members/search) - Read VRChat API: Search Group Members.
 - `searchUsers` via `vrchat_read` (GET /users) - Read VRChat API: Search All Users.
@@ -9751,6 +9765,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `acknowledgeNotificationV2` via `vrchat_write` (POST /notifications/{notificationId}/see) - Write VRChat API: Acknowledge NotificationV2.
 - `addGroupGalleryImage` via `vrchat_write` (POST /groups/{groupId}/galleries/{groupGalleryId}/images) - Write VRChat API: Add Group Gallery Image.
 - `addTags` via `vrchat_write` (POST /users/{userId}/addTags) - Write VRChat API: Add User Tags.
+- `addWorldTags` via `vrchat_write` (POST /worlds/{worldId}/addTags) - Write VRChat API: Add World Tags.
 - `banGroupMember` via `vrchat_write` (POST /groups/{groupId}/bans) - Write VRChat API: Ban Group Member.
 - `blockGroup` via `vrchat_write` (POST /groups/{groupId}/block) - Write VRChat API: Block Group.
 - `clearNotifications` via `vrchat_write` (PUT /auth/user/notifications/clear) - Write VRChat API: Clear All Notifications.
@@ -9760,6 +9775,8 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `createGlobalAvatarModeration` via `vrchat_write` (POST /auth/user/avatarmoderations) - Write VRChat API: Create Global Avatar Moderation.
 - `createGroup` via `vrchat_write` (POST /groups) - Write VRChat API: Create Group.
 - `createGroupGallery` via `vrchat_write` (POST /groups/{groupId}/galleries) - Write VRChat API: Create Group Gallery.
+- `createProduct` via `vrchat_write` (POST /products) - Write VRChat API: Create Product.
+- `createProductListingDirect` via `vrchat_write` (POST /listing) - Write VRChat API: Create Product Listing.
 - `createProp` via `vrchat_write` (POST /props) - Write VRChat API: Create Prop.
 - `declineGroupInvite` via `vrchat_write` (PUT /groups/{groupId}/invites) - Write VRChat API: Decline Invite from Group.
 - `deleteNotification` via `vrchat_write` (PUT /auth/user/notifications/{notificationId}/hide) - Write VRChat API: Delete Notification.
@@ -9776,8 +9793,10 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `moderateUser` via `vrchat_write` (POST /auth/user/playermoderations) - Write VRChat API: Moderate User.
 - `publishProp` via `vrchat_write` (PUT /props/{propId}/publish) - Write VRChat API: Publish Prop.
 - `purchaseProductListing` via `vrchat_write` (POST /economy/purchase/listing) - Write VRChat API: Purchase Product Listing.
+- `redeemReward` via `vrchat_write` (POST /reward/redeem) - Write VRChat API: Redeem Reward.
 - `registerUserAccount` via `vrchat_write` (POST /auth/register) - Write VRChat API: Register User Account.
 - `removeTags` via `vrchat_write` (POST /users/{userId}/removeTags) - Write VRChat API: Remove User Tags.
+- `removeWorldTags` via `vrchat_write` (POST /worlds/{worldId}/removeTags) - Write VRChat API: Remove World Tags.
 - `replyNotificationV2` via `vrchat_write` (POST /notifications/{notificationId}/reply) - Write VRChat API: Reply NotificationV2.
 - `requestInvite` via `vrchat_write` (POST /requestInvite/{userId}) - Write VRChat API: Request Invite.
 - `resendEmailConfirmation` via `vrchat_write` (POST /auth/user/resendEmail) - Write VRChat API: Resend Email Confirmation.
@@ -9791,6 +9810,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `shareInventoryItemDirect` via `vrchat_write` (POST /inventory/cloning/direct) - Write VRChat API: Share Inventory Item Direct.
 - `startFileDataUpload` via `vrchat_write` (PUT /file/{fileId}/{versionId}/{fileType}/start) - Write VRChat API: Start FileData Upload.
 - `submitContentAgreement` via `vrchat_write` (POST /agreement) - Write VRChat API: Submit Content Agreement.
+- `submitJamContent` via `vrchat_write` (POST /jams/{jamId}/submissions) - Write VRChat API: Submit Jam Content.
 - `submitModerationReport` via `vrchat_write` (POST /moderationReports) - Write VRChat API: Submit Moderation Report.
 - `unmoderateUser` via `vrchat_write` (PUT /auth/user/unplayermoderate) - Write VRChat API: Unmoderate User.
 - `updateAssetReviewNotes` via `vrchat_write` (PUT /assetReview/{assetReviewId}/notes) - Write VRChat API: Update Asset Review Notes.
@@ -9802,6 +9822,8 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `updateGroupRepresentation` via `vrchat_write` (PUT /groups/{groupId}/representation) - Write VRChat API: Update Group Representation.
 - `updateInviteMessage` via `vrchat_write` (PUT /message/{userId}/{messageType}/{slot}) - Write VRChat API: Update Invite Message.
 - `updateOwnInventoryItem` via `vrchat_write` (PUT /inventory/{inventoryItemId}) - Write VRChat API: Update Own Inventory Item.
+- `updateProduct` via `vrchat_write` (PUT /products/{productId}) - Write VRChat API: Update Product.
+- `updateProductListingDirect` via `vrchat_write` (PUT /listing/{productId}) - Write VRChat API: Update Product Listing.
 - `updateProp` via `vrchat_write` (PUT /props/{propId}) - Write VRChat API: Update Prop.
 - `updateTiliaTos` via `vrchat_write` (PUT /user/{userId}/tilia/tos) - Write VRChat API: Update Tilia TOS Agreement Status.
 - `updateUserNote` via `vrchat_write` (POST /userNotes) - Write VRChat API: Update User Note.
@@ -9896,12 +9918,16 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `deleteGroupGalleryImage` via `vrchat_delete` (DELETE /groups/{groupId}/galleries/{groupGalleryId}/images/{groupGalleryImageId}) - Write VRChat API: Delete Group Gallery Image.
 - `deleteGroupInvite` via `vrchat_delete` (DELETE /groups/{groupId}/invites/{userId}) - Write VRChat API: Delete User Invite.
 - `deleteImpostor` via `vrchat_delete` (DELETE /avatars/{avatarId}/impostor) - Write VRChat API: Delete generated Impostor.
+- `deleteJamSubmission` via `vrchat_delete` (DELETE /jams/{jamId}/submissions/{jamSubmissionId}) - Write VRChat API: Delete Jam Submission.
 - `deleteModerationReport` via `vrchat_delete` (DELETE /moderationReports/{moderationReportId}) - Write VRChat API: Delete Moderation Report.
 - `deleteNotificationV2` via `vrchat_delete` (DELETE /notifications/{notificationId}) - Write VRChat API: Delete NotificationV2.
 - `deleteOwnInventoryItem` via `vrchat_delete` (DELETE /inventory/{inventoryItemId}) - Write VRChat API: Delete Own Inventory Item.
 - `deletePrint` via `vrchat_delete` (DELETE /prints/{printId}) - Write VRChat API: Delete Print.
+- `deleteProduct` via `vrchat_delete` (DELETE /products/{productId}) - Write VRChat API: Delete Product.
+- `deleteProductListingDirect` via `vrchat_delete` (DELETE /listing/{productId}) - Write VRChat API: Delete Product Listing.
 - `deleteProp` via `vrchat_delete` (DELETE /props/{propId}) - Write VRChat API: Delete Prop.
 - `deleteUserPersistence` via `vrchat_delete` (DELETE /users/{userId}/{worldId}/persist) - Write VRChat API: Delete User Persistence.
+- `deleteWorldPlatform` via `vrchat_delete` (DELETE /worlds/{worldId}/platform/{publishedPlatform}) - Write VRChat API: Delete World Platform.
 - `disable2FA` via `vrchat_delete` (DELETE /auth/twofactorauth) - Write VRChat API: Disable 2FA.
 - `kickGroupMember` via `vrchat_delete` (DELETE /groups/{groupId}/members/{userId}) - Write VRChat API: Kick Group Member.
 - `resetInviteMessage` via `vrchat_delete` (DELETE /message/{userId}/{messageType}/{slot}) - Write VRChat API: Reset Invite Message.
