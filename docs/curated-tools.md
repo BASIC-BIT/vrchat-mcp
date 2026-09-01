@@ -133,7 +133,8 @@ Group image intake (write):
 It checks the global write guard and the resolved group allowlist before opening the file. The path
 must remain inside a configured `uploads.allowedRoots` directory after canonical resolution. The
 tool opens and reads one regular file handle, rejects symbolic links, junction escapes, replacement
-races, and unstable file identity, then validates a static PNG with CRC checking. APNG content,
+races, and unstable file identity, then validates a static PNG with CRC checking and a
+dimension-derived IDAT decompression limit. APNG content, compressed color profiles,
 trailing data, dimensions outside 65 through 2048 pixels per side, and files over 10 MiB are
 rejected. Valid images are sent as multipart form data to VRChat's live image endpoint with the
 `gallery` tag. The result includes the new `fileId` for a later post or event call; uploading alone

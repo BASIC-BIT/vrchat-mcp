@@ -1,6 +1,7 @@
 import { constants, type BigIntStats } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { inflateSync } from 'node:zlib';
 import { decode } from 'fast-png';
 
 export const MAX_PNG_BYTES = 10 * 1024 * 1024;
@@ -11,6 +12,20 @@ export const MAX_PNG_PIXELS = MAX_PNG_DIMENSION * MAX_PNG_DIMENSION;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const APNG_CHUNKS = new Set(['acTL', 'fcTL', 'fdAT']);
 const KNOWN_CRITICAL_CHUNKS = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
+const CHANNELS_BY_COLOR_TYPE = new Map<number, number>([
+  [0, 1],
+  [2, 3],
+  [3, 1],
+  [4, 2],
+  [6, 4],
+]);
+const BIT_DEPTHS_BY_COLOR_TYPE = new Map<number, Set<number>>([
+  [0, new Set([1, 2, 4, 8, 16])],
+  [2, new Set([8, 16])],
+  [3, new Set([1, 2, 4, 8])],
+  [4, new Set([8, 16])],
+  [6, new Set([8, 16])],
+]);
 
 interface SecureFileHandle {
   stat(options: { bigint: true }): Promise<BigIntStats>;
@@ -158,15 +173,27 @@ function chunkType(bytes: Buffer, offset: number): string {
 interface PngScanState {
   width: number;
   height: number;
+  bitDepth: number;
+  colorType: number;
+  interlaceMethod: number;
   seenHeader: boolean;
   seenImageData: boolean;
   imageDataEnded: boolean;
   seenEnd: boolean;
+  idatChunks: Buffer[];
 }
 
-function readAndValidateDimensions(bytes: Buffer, offset: number): { width: number; height: number } {
+function readAndValidateHeader(
+  bytes: Buffer,
+  offset: number
+): Pick<PngScanState, 'width' | 'height' | 'bitDepth' | 'colorType' | 'interlaceMethod'> {
   const width = bytes.readUInt32BE(offset + 8);
   const height = bytes.readUInt32BE(offset + 12);
+  const bitDepth = bytes[offset + 16];
+  const colorType = bytes[offset + 17];
+  const compressionMethod = bytes[offset + 18];
+  const filterMethod = bytes[offset + 19];
+  const interlaceMethod = bytes[offset + 20];
   const outsideDimensionRange =
     width < MIN_PNG_DIMENSION ||
     height < MIN_PNG_DIMENSION ||
@@ -177,7 +204,82 @@ function readAndValidateDimensions(bytes: Buffer, offset: number): { width: numb
       `PNG dimensions must be between ${MIN_PNG_DIMENSION}x${MIN_PNG_DIMENSION} and ${MAX_PNG_DIMENSION}x${MAX_PNG_DIMENSION} pixels.`
     );
   }
-  return { width, height };
+  if (!CHANNELS_BY_COLOR_TYPE.has(colorType)) {
+    throw new Error(`PNG contains an unsupported color type (${colorType}).`);
+  }
+  if (!BIT_DEPTHS_BY_COLOR_TYPE.get(colorType)?.has(bitDepth)) {
+    throw new Error(`PNG bit depth ${bitDepth} is invalid for color type ${colorType}.`);
+  }
+  if (compressionMethod !== 0 || filterMethod !== 0) {
+    throw new Error('PNG uses an unsupported compression or filter method.');
+  }
+  if (interlaceMethod !== 0 && interlaceMethod !== 1) {
+    throw new Error(`PNG contains an unsupported interlace method (${interlaceMethod}).`);
+  }
+  return { width, height, bitDepth, colorType, interlaceMethod };
+}
+
+function scanlineBytes(width: number, bitsPerPixel: number): number {
+  return Math.ceil((width * bitsPerPixel) / 8) + 1;
+}
+
+function adam7PassSize(
+  state: PngScanState,
+  xStart: number,
+  yStart: number,
+  xStep: number,
+  yStep: number,
+  bitsPerPixel: number
+): number {
+  const passWidth = state.width <= xStart ? 0 : Math.ceil((state.width - xStart) / xStep);
+  const passHeight = state.height <= yStart ? 0 : Math.ceil((state.height - yStart) / yStep);
+  return passWidth === 0 || passHeight === 0
+    ? 0
+    : scanlineBytes(passWidth, bitsPerPixel) * passHeight;
+}
+
+function expectedInflatedBytes(state: PngScanState): number {
+  const channels = CHANNELS_BY_COLOR_TYPE.get(state.colorType);
+  if (!channels) throw new Error('PNG color type was not validated.');
+  const bitsPerPixel = channels * state.bitDepth;
+  if (state.interlaceMethod === 0) {
+    return scanlineBytes(state.width, bitsPerPixel) * state.height;
+  }
+  const passes = [
+    [0, 0, 8, 8],
+    [4, 0, 8, 8],
+    [0, 4, 4, 8],
+    [2, 0, 4, 4],
+    [0, 2, 2, 4],
+    [1, 0, 2, 2],
+    [0, 1, 1, 2],
+  ] as const;
+  return passes.reduce(
+    (total, [xStart, yStart, xStep, yStep]) =>
+      total + adam7PassSize(state, xStart, yStart, xStep, yStep, bitsPerPixel),
+    0
+  );
+}
+
+function assertBoundedImageData(state: PngScanState): void {
+  const expectedBytes = expectedInflatedBytes(state);
+  let inflated: Buffer;
+  try {
+    inflated = inflateSync(Buffer.concat(state.idatChunks), {
+      maxOutputLength: expectedBytes,
+    });
+  } catch (err) {
+    if ((err as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE') {
+      throw new Error('PNG decompressed image data exceeds its dimension-derived limit.');
+    }
+    const message = err instanceof Error ? err.message : 'invalid compressed data';
+    throw new Error(`PNG image data could not be decompressed safely: ${message}`);
+  }
+  if (inflated.length !== expectedBytes) {
+    throw new Error(
+      `PNG decompressed image data has an unexpected length (${inflated.length} instead of ${expectedBytes}).`
+    );
+  }
 }
 
 function inspectChunk(
@@ -193,6 +295,9 @@ function inspectChunk(
   if (APNG_CHUNKS.has(type)) {
     throw new Error(`Animated PNG content is not supported (${type}).`);
   }
+  if (type === 'iCCP') {
+    throw new Error('Compressed PNG color profiles are not supported.');
+  }
   if (/^[A-Z]/.test(type) && !KNOWN_CRITICAL_CHUNKS.has(type)) {
     throw new Error(`PNG contains an unsupported critical chunk (${type}).`);
   }
@@ -202,14 +307,13 @@ function inspectChunk(
       throw new Error('PNG contains an invalid IHDR chunk.');
     }
     state.seenHeader = true;
-    const dimensions = readAndValidateDimensions(bytes, offset);
-    state.width = dimensions.width;
-    state.height = dimensions.height;
+    Object.assign(state, readAndValidateHeader(bytes, offset));
     return;
   }
   if (type === 'IDAT') {
     if (state.imageDataEnded) throw new Error('PNG IDAT chunks must be consecutive.');
     state.seenImageData = true;
+    state.idatChunks.push(bytes.subarray(offset + 8, offset + 8 + length));
     return;
   }
   if (state.seenImageData) state.imageDataEnded = true;
@@ -230,10 +334,14 @@ export function validateStaticPngBuffer(bytes: Buffer): { width: number; height:
   const state: PngScanState = {
     width: 0,
     height: 0,
+    bitDepth: 0,
+    colorType: -1,
+    interlaceMethod: -1,
     seenHeader: false,
     seenImageData: false,
     imageDataEnded: false,
     seenEnd: false,
+    idatChunks: [],
   };
 
   while (offset < bytes.length) {
@@ -260,6 +368,8 @@ export function validateStaticPngBuffer(bytes: Buffer): { width: number; height:
   if (!state.seenEnd) {
     throw new Error('PNG is missing its terminal IEND chunk.');
   }
+
+  assertBoundedImageData(state);
 
   try {
     const decoded = decode(bytes, { checkCrc: true });

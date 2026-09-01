@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { deflateSync } from 'node:zlib';
 import { afterEach, describe, expect, it } from 'vitest';
 import { encode } from 'fast-png';
 import {
@@ -32,6 +33,31 @@ function insertChunkBeforeIdat(bytes: Buffer, type: string): Buffer {
   chunk.writeUInt32BE(0, 0);
   chunk.write(type, 4, 'ascii');
   return Buffer.concat([bytes.subarray(0, idat), chunk, bytes.subarray(idat)]);
+}
+
+function replaceIdat(bytes: Buffer, compressedData: Buffer): Buffer {
+  const chunks: Buffer[] = [bytes.subarray(0, 8)];
+  let offset = 8;
+  let inserted = false;
+  while (offset < bytes.length) {
+    const length = bytes.readUInt32BE(offset);
+    const type = bytes.toString('ascii', offset + 4, offset + 8);
+    const end = offset + length + 12;
+    if (type === 'IDAT') {
+      if (!inserted) {
+        const replacement = Buffer.alloc(compressedData.length + 12);
+        replacement.writeUInt32BE(compressedData.length, 0);
+        replacement.write('IDAT', 4, 'ascii');
+        compressedData.copy(replacement, 8);
+        chunks.push(replacement);
+        inserted = true;
+      }
+    } else {
+      chunks.push(bytes.subarray(offset, end));
+    }
+    offset = end;
+  }
+  return Buffer.concat(chunks);
 }
 
 afterEach(() => {
@@ -119,6 +145,18 @@ describe('static PNG validation', () => {
     const corrupt = png();
     corrupt[corrupt.length - 1] ^= 0xff;
     expect(() => validateStaticPngBuffer(corrupt)).toThrow('decoder rejected');
+  });
+
+  it('bounds IDAT decompression using the validated image dimensions', () => {
+    const expectedRgbaBytes = (65 * 4 + 1) * 65;
+    const bomb = replaceIdat(png(), deflateSync(Buffer.alloc(expectedRgbaBytes + 1)));
+    expect(() => validateStaticPngBuffer(bomb)).toThrow('dimension-derived limit');
+  });
+
+  it('rejects compressed color profiles before the full decoder can inflate them', () => {
+    expect(() => validateStaticPngBuffer(insertChunkBeforeIdat(png(), 'iCCP'))).toThrow(
+      'Compressed PNG color profiles'
+    );
   });
 
   it('rejects files larger than the fixed 10 MiB cap before reading', async () => {
