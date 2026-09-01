@@ -133,6 +133,34 @@ describe('static PNG validation', () => {
     );
   });
 
+  it('rejects an allowed root replaced before the candidate is inspected', async () => {
+    const parent = makeTempDir();
+    const root = path.join(parent, 'allowed');
+    const originalRoot = path.join(parent, 'allowed-original');
+    const imagePath = path.join(root, 'poster.png');
+    await fsp.mkdir(root);
+    await fsp.writeFile(imagePath, png(80, 72));
+    let replaceOnCandidateLstat = true;
+    const fileSystem: SecureFileSystemOps = {
+      lstat: async (filePath) => {
+        if (filePath === imagePath && replaceOnCandidateLstat) {
+          replaceOnCandidateLstat = false;
+          await fsp.rename(root, originalRoot);
+          await fsp.mkdir(root);
+          await fsp.writeFile(imagePath, png(81, 73));
+        }
+        return fsp.lstat(filePath, { bigint: true });
+      },
+      stat: (filePath) => fsp.stat(filePath, { bigint: true }),
+      realpath: (filePath) => fsp.realpath(filePath),
+      open: (filePath, flags) => fsp.open(filePath, flags),
+    };
+
+    await expect(readValidatedStaticPng(imagePath, [root], fileSystem)).rejects.toThrow(
+      'upload root changed'
+    );
+  });
+
   it('rejects invalid signatures, APNG chunks, trailing bytes, dimensions, and CRC corruption', () => {
     expect(() => validateStaticPngBuffer(Buffer.from('not png'))).toThrow('not a PNG');
     expect(() => validateStaticPngBuffer(insertChunkBeforeIdat(png(), 'acTL'))).toThrow(

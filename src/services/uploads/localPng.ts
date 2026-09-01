@@ -78,14 +78,14 @@ function fileSystemMessage(err: unknown): string {
 async function canonicalizeRoots(
   roots: string[],
   fileSystem: SecureFileSystemOps
-): Promise<{ lexical: string; canonical: string }[]> {
+): Promise<{ lexical: string; canonical: string; identity: BigIntStats }[]> {
   if (roots.length === 0) {
     throw new Error(
       'Local image upload is disabled because uploads.allowedRoots is empty. Configure an absolute allowed root or VRCHAT_MCP_UPLOAD_ROOTS.'
     );
   }
 
-  const resolved: { lexical: string; canonical: string }[] = [];
+  const resolved: { lexical: string; canonical: string; identity: BigIntStats }[] = [];
   for (const configuredRoot of roots) {
     if (!path.isAbsolute(configuredRoot)) {
       throw new Error(`Upload root must be absolute: ${configuredRoot}`);
@@ -119,7 +119,7 @@ async function canonicalizeRoots(
     if (rootInfo.dev !== canonicalInfo.dev || rootInfo.ino !== canonicalInfo.ino) {
       throw new Error(`Upload root changed during canonical resolution: ${lexical}`);
     }
-    resolved.push({ lexical, canonical });
+    resolved.push({ lexical, canonical, identity: canonicalInfo });
   }
   return resolved;
 }
@@ -131,6 +131,17 @@ export function assertSameFileIdentity(opened: BigIntStats, resolved: BigIntStat
   if (opened.dev !== resolved.dev || opened.ino !== resolved.ino) {
     throw new Error('The image path changed after it was opened; upload was refused.');
   }
+}
+
+function hasSameIdentity(left: BigIntStats, right: BigIntStats): boolean {
+  return (
+    left.dev !== 0n &&
+    left.ino !== 0n &&
+    right.dev !== 0n &&
+    right.ino !== 0n &&
+    left.dev === right.dev &&
+    left.ino === right.ino
+  );
 }
 
 function assertFileUnchanged(before: BigIntStats, after: BigIntStats): void {
@@ -434,8 +445,26 @@ export async function readValidatedStaticPng(
     }
 
     canonicalPath = path.normalize(await fileSystem.realpath(candidate));
-    if (!roots.some((root) => isWithin(root.canonical, canonicalPath))) {
+    const canonicalMatches = lexicalMatches.filter((root) =>
+      isWithin(root.canonical, canonicalPath)
+    );
+    if (canonicalMatches.length === 0) {
       throw new Error('Image resolves outside uploads.allowedRoots.');
+    }
+    let stableRootFound = false;
+    for (const root of canonicalMatches) {
+      try {
+        const currentRootInfo = await fileSystem.stat(root.canonical);
+        if (currentRootInfo.isDirectory() && hasSameIdentity(root.identity, currentRootInfo)) {
+          stableRootFound = true;
+          break;
+        }
+      } catch {
+        // A missing or unreadable root cannot authorize the opened file.
+      }
+    }
+    if (!stableRootFound) {
+      throw new Error('The matched upload root changed before the image was opened; upload was refused.');
     }
     const resolvedInfo = await fileSystem.stat(canonicalPath);
     if (!resolvedInfo.isFile()) {
