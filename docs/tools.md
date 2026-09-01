@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-08-31T20:31:03.518Z
+Generated: 2026-09-01T09:25:52.032Z
 
 Spec: VRChat API Documentation (1.20.8)
 
@@ -3720,6 +3720,125 @@ Output schema:
     "stale",
     "segments",
     "events"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_group_image_upload
+Upload a static PNG to the signed-in VRChat account gallery for later use by an allowlisted group. This does not attach the image to a group post or event. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string",
+      "description": "Exact group ID. Provide groupId or shortCode."
+    },
+    "shortCode": {
+      "type": "string",
+      "description": "Exact group short code. Provide groupId or shortCode."
+    },
+    "imagePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute path to a static PNG inside uploads.allowedRoots. The image must be 65-2048 pixels per side and no larger than 10 MiB."
+    }
+  },
+  "required": [
+    "imagePath"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "uploaded"
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "fileId": {
+      "type": "string"
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "byteSize": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 65,
+          "maximum": 2048
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 65,
+          "maximum": 2048
+        }
+      },
+      "required": [
+        "fileName",
+        "byteSize",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "extension": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "status",
+    "groupId",
+    "fileId",
+    "image",
+    "file"
   ],
   "additionalProperties": false
 }
@@ -9738,9 +9857,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `updateProp` via `vrchat_write` (PUT /props/{propId}) - Write VRChat API: Update Prop.
 - `updateTiliaTos` via `vrchat_write` (PUT /user/{userId}/tilia/tos) - Write VRChat API: Update Tilia TOS Agreement Status.
 - `updateUserNote` via `vrchat_write` (POST /userNotes) - Write VRChat API: Update User Note.
-- `uploadGalleryImage` via `vrchat_write` (POST /gallery) - Write VRChat API: Upload gallery image.
 - `uploadIcon` via `vrchat_write` (POST /icon) - Write VRChat API: Upload icon.
-- `uploadImage` via `vrchat_write` (POST /file/image) - Write VRChat API: Upload gallery image, icon, emoji or sticker.
 - `uploadPrint` via `vrchat_write` (POST /prints) - Write VRChat API: Upload Print.
 - `verify2FA` via `vrchat_write` (POST /auth/twofactorauth/totp/verify) - Write VRChat API: Verify 2FA code.
 - `verify2FAEmailCode` via `vrchat_write` (POST /auth/twofactorauth/emailotp/verify) - Write VRChat API: Verify 2FA email code.

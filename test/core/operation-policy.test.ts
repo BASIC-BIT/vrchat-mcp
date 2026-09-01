@@ -40,6 +40,15 @@ describe('operation policy', () => {
     expect(getCuratedOnlyReason('updateInstance')).toContain('vrchat_instance_link_event');
   });
 
+  it('keeps image uploads behind the validated curated tool', () => {
+    expect(getCuratedWriteToolName('uploadImage')).toBe('vrchat_group_image_upload');
+    expect(getCuratedOnlyReason('uploadImage')).toContain('vrchat_group_image_upload');
+    expect(getBlockedOperationReason('uploadGalleryImage')).toContain(
+      'vrchat_group_image_upload'
+    );
+    expect(GENERATED_WRITE_SKIP_IDS).toContain('uploadGalleryImage');
+  });
+
   it('does not block ordinary avatar selection', () => {
     expect(getBlockedOperationReason('selectAvatar')).toBeUndefined();
     expect(getBlockedOperationReason('selectFallbackAvatar')).toBeUndefined();

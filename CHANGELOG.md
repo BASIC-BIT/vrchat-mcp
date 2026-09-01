@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add individually grantable `vrchat_group_image_upload` for uploading a validated static PNG to the signed-in account gallery without attaching it to a group post or event.
+- Require the write guard, resolved group allowlist, and absolute `uploads.allowedRoots` containment before local file intake; reject links, path escapes, replacement races, malformed PNGs, APNG, dimensions outside 65 through 2048 pixels, and files over 10 MiB.
+- Keep both generic image upload operations out of raw and generated write surfaces, and use the verified multipart `POST /file/image` route only through the curated tool.
 - Add curated `vrchat_instance_link_event` for linking an existing group instance to a group calendar event through VRChat's undocumented live `PUT /instances/{worldId}:{instanceId}` endpoint.
 - Require the configured group allowlist plus matching event and instance ownership, serialize same-instance links, refuse non-group instances and replacement of a different existing link, and keep the broader instance-update body unreachable through raw and generated write tools.
 - Return the group ID and readable event and instance labels, and invalidate affected caches on linked, idempotent, and conflicting-link results.

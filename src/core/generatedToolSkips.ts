@@ -8,5 +8,6 @@ export const GENERATED_WRITE_SKIP_IDS = [
   'deleteGroupAnnouncement',
   'inviteUserWithPhoto',
   'requestInviteWithPhoto',
+  'uploadGalleryImage',
   ...CONTENT_MANAGEMENT_OPERATION_IDS,
 ];

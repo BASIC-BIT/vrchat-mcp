@@ -36,6 +36,7 @@ describe('registerAllTools', () => {
       'vrchat_group_post_create',
       'vrchat_group_post_update',
       'vrchat_group_post_delete',
+      'vrchat_group_image_upload',
       'vrchat_group_events_list',
       'vrchat_group_event_get',
       'vrchat_group_events_upcoming',

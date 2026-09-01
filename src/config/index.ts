@@ -78,6 +78,11 @@ const ConfigBaseSchema = z
         allowlist: z.array(z.string()),
       })
       .strict(),
+    uploads: z
+      .object({
+        allowedRoots: z.array(z.string().min(1)),
+      })
+      .strict(),
     rawTools: z
       .object({
         enabled: z.boolean(),
@@ -116,6 +121,13 @@ const ConfigSchema = ConfigBaseSchema.transform((config) => {
     ? applyTemplate(next.pipeline.userAgent)
     : next.api.userAgent;
   next.auth.cookieFile = expandHome(next.auth.cookieFile);
+  next.uploads.allowedRoots = next.uploads.allowedRoots.map((root) => {
+    const expanded = expandHome(root);
+    if (!path.isAbsolute(expanded)) {
+      throw new Error(`Upload root must be absolute: ${root}`);
+    }
+    return path.normalize(expanded);
+  });
   next.vrcx.databasePath = expandHome(next.vrcx.databasePath);
   next.vrcx.worldDbPath = expandHome(next.vrcx.worldDbPath);
   return next;
@@ -171,6 +183,17 @@ const EnvAllowlist = z.preprocess((value) => {
     .filter(Boolean);
 }, z.array(z.string()).optional());
 
+const EnvPathList = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  return trimmed
+    .split(new RegExp(`[${path.delimiter === ';' ? ';' : ':'}\\n]`))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}, z.array(z.string().min(1)).optional());
+
 const EnvSchema = z
   .object({
     VRCHAT_MCP_API_BASE: EnvString,
@@ -183,6 +206,7 @@ const EnvSchema = z
     VRCHAT_MCP_CACHE_ENABLED: EnvBoolean,
     VRCHAT_MCP_PIPELINE_ENABLED: EnvBoolean,
     VRCHAT_MCP_GROUP_ALLOWLIST: EnvAllowlist,
+    VRCHAT_MCP_UPLOAD_ROOTS: EnvPathList,
     VRCHAT_MCP_ENABLE_RAW_CALL: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_READ_TOOLS: EnvBoolean,
     VRCHAT_MCP_DISABLE_GENERATED_WRITE_TOOLS: EnvBoolean,
@@ -336,6 +360,12 @@ function applyGroupEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValu
   }
 }
 
+function applyUploadEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
+  if (env.VRCHAT_MCP_UPLOAD_ROOTS !== undefined) {
+    overrides.uploads = { allowedRoots: env.VRCHAT_MCP_UPLOAD_ROOTS };
+  }
+}
+
 function applyToolingEnvOverrides(overrides: DeepPartial<ConfigBase>, env: EnvValues): void {
   if (env.VRCHAT_MCP_ENABLE_RAW_CALL !== undefined) {
     overrides.rawTools = { enabled: env.VRCHAT_MCP_ENABLE_RAW_CALL };
@@ -406,6 +436,7 @@ function readEnvOverrides(): {
   applyCacheEnvOverrides(overrides, env);
   applyPipelineEnvOverrides(overrides, env);
   applyGroupEnvOverrides(overrides, env);
+  applyUploadEnvOverrides(overrides, env);
   applyToolingEnvOverrides(overrides, env);
   applyHttpEnvOverrides(overrides, env);
 

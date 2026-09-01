@@ -129,6 +129,20 @@ describe('config loader', () => {
     expect(getConfig().groups.allowlist).toEqual(['grp_1', 'grp_2']);
   });
 
+  it('reads platform-delimited absolute upload roots and expands home', () => {
+    const second = path.join(os.tmpdir(), 'vrchat-mcp-second-root');
+    setEnv('VRCHAT_MCP_UPLOAD_ROOTS', `~/uploads${path.delimiter}${second}`);
+    expect(getConfig().uploads.allowedRoots).toEqual([
+      path.join(os.homedir(), 'uploads'),
+      path.normalize(second),
+    ]);
+  });
+
+  it('rejects relative upload roots', () => {
+    setEnv('VRCHAT_MCP_UPLOAD_ROOTS', 'relative/uploads');
+    expect(() => getConfig()).toThrow('Upload root must be absolute');
+  });
+
   it('supports boolean env parsing', () => {
     setEnv('VRCHAT_MCP_ALLOW_WRITES', 'yes');
     const config = getConfig();

@@ -25,6 +25,10 @@ const BLOCKED_OPERATION_REASONS = new Map<string, string>([
     'deleteGroupAnnouncement',
     'group announcement endpoints are deprecated and unsafe.',
   ],
+  [
+    'uploadGalleryImage',
+    'the legacy gallery upload operation is unverified and disabled. Use vrchat_group_image_upload, which uses the live image upload endpoint with strict local-file validation.',
+  ],
   ...CONTENT_MANAGEMENT_OPERATION_IDS.map(
     (operationId) =>
       [
@@ -51,6 +55,10 @@ const CURATED_ONLY_OPERATION_IDS = new Map<string, string>([
   [
     'updateAvatar',
     'use vrchat_avatar_update, which cannot write assetUrl, unityPackageUrl, unityVersion or version.',
+  ],
+  [
+    'uploadImage',
+    'use vrchat_group_image_upload, which accepts only validated static PNG files from configured roots and always uploads them with the gallery tag.',
   ],
 ]);
 

@@ -13,6 +13,7 @@ import { registerCuratedNotificationTools } from './curated/notifications.js';
 import { registerCuratedStatusPageTools } from './curated/statusPage.js';
 import { registerCuratedStatusTools } from './curated/status.js';
 import { registerCuratedUserTools } from './curated/users.js';
+import { registerCuratedUploadTools } from './curated/uploads.js';
 import { registerCuratedVrcxTools } from './curated/vrcx/index.js';
 import { registerCuratedWorldTools } from './curated/worlds.js';
 import { registerGeneratedTools } from './generated.js';
@@ -36,6 +37,7 @@ export async function registerAllTools(server: McpServer): Promise<void> {
   registerCuratedStatusTools(server);
   registerCuratedStatusPageTools(server);
   registerCuratedUserTools(server);
+  registerCuratedUploadTools(server);
   registerCuratedNotificationTools(server);
   registerCuratedWorldTools(server);
   registerCuratedVrcxTools(server);

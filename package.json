@@ -111,6 +111,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^13.0.1",
     "express": "^5.2.1",
+    "fast-png": "^8.0.0",
     "keytar": "^7.9.0",
     "tough-cookie": "^6.0.0",
     "undici": "^8.4.0",
