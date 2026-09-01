@@ -35,6 +35,14 @@ function withInstanceLinkLock<T>(location: string, run: () => Promise<T>): Promi
   return result;
 }
 
+function validateCanRequestInvite(input: InstanceCreateInput): InstanceCreatePreparation | null {
+  if (input.canRequestInvite !== true || input.type === 'private') return null;
+  return {
+    ok: false,
+    reason: `canRequestInvite cannot be true when type="${input.type}". Use type="private", or omit canRequestInvite or set it to false.`,
+  };
+}
+
 function resolveOwnerId(input: InstanceCreateInput): OwnerIdResolution {
   if (input.type === 'group') {
     const groupId = input.groupId ?? input.ownerId ?? null;
@@ -88,6 +96,9 @@ function applyGroupFields(
 }
 
 export function prepareInstanceCreate(input: InstanceCreateInput): InstanceCreatePreparation {
+  const canRequestInviteResult = validateCanRequestInvite(input);
+  if (canRequestInviteResult) return canRequestInviteResult;
+
   const ownerResult = resolveOwnerId(input);
   if (!ownerResult.ok) return ownerResult;
 

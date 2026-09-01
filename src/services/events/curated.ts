@@ -49,10 +49,17 @@ function invalidateGroupEventCaches(groupId: string): void {
 }
 
 // occurrenceKind is not in the generated CalendarEvent type, but the API returns it
-// and generated schemas currently preserve unknown fields via .passthrough().
-function getOccurrenceKind(event: GroupCalendarEvent): string | undefined {
-  const kind = (event as Record<string, unknown>).occurrenceKind;
-  return typeof kind === 'string' ? kind : undefined;
+// and generated schemas currently preserve unknown fields via .passthrough(). Only a
+// missing property represents the legacy single-event response shape. Every present
+// unrecognized value remains a mismatch so deletion fails closed.
+function getDeleteTargetKind(event: GroupCalendarEvent): string {
+  const record = event as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(record, 'occurrenceKind')) return 'single_event';
+
+  const kind = record.occurrenceKind;
+  if (kind === 'single') return 'single_event';
+  if (typeof kind === 'string') return kind;
+  return JSON.stringify(kind) ?? String(kind);
 }
 
 async function getGroupCalendarEventOrThrow(
@@ -76,13 +83,11 @@ function assertDeleteTargetKind(
   calendarId: string,
   targetKind: CalendarEventDeleteTargetKind,
 ): void {
-  const occurrenceKind = getOccurrenceKind(event);
-  if (targetKind === 'single_event' && occurrenceKind === undefined) return;
-  if (occurrenceKind === targetKind) return;
+  const eventTargetKind = getDeleteTargetKind(event);
+  if (eventTargetKind === targetKind) return;
 
-  const found = occurrenceKind ?? 'single_event';
   throw new Error(
-    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${found}".`,
+    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${eventTargetKind}".`,
   );
 }
 

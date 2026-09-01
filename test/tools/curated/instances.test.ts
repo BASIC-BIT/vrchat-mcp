@@ -81,6 +81,29 @@ describe('curated instance tools', () => {
     expect(result).toMatchObject({ isError: true });
   });
 
+  it('does not create an instance when canRequestInvite validation fails', async () => {
+    vi.mocked(prepareInstanceCreate).mockReturnValue({
+      ok: false,
+      reason:
+        'canRequestInvite cannot be true when type="group". Use type="private", or omit canRequestInvite or set it to false.',
+    });
+
+    const server = new FakeServer();
+    registerCuratedInstanceTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_instance_create');
+
+    const result = await tool!.handler({
+      worldId: 'wrld_1',
+      type: 'group',
+      region: 'us',
+      groupId: 'grp_1',
+      canRequestInvite: true,
+    });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(createInstance).not.toHaveBeenCalled();
+  });
+
   it('passes group instance request through', async () => {
     vi.mocked(prepareInstanceCreate).mockReturnValue({
       ok: true,

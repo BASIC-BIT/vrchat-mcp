@@ -308,6 +308,67 @@ describe('events curated service', () => {
     expect(result.event).toMatchObject({ id: 'cal_single' });
   });
 
+  it('normalizes live single occurrenceKind before verifying targetKind', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_single', occurrenceKind: 'single' },
+    });
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { status: 'success' } });
+
+    await deleteCalendarEvent('grp_1', 'cal_single', 'single_event');
+
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'deleteGroupCalendarEvent',
+      params: { groupId: 'grp_1', calendarId: 'cal_single' },
+      body: undefined,
+    });
+  });
+
+  it.each([
+    ['single', 'occurrence'],
+    ['single', 'series'],
+    ['occurrence', 'single_event'],
+    ['occurrence', 'series'],
+    ['series', 'single_event'],
+    ['series', 'occurrence'],
+  ] as const)('refuses occurrenceKind=%s when targetKind=%s', async (occurrenceKind, targetKind) => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_mismatch', occurrenceKind },
+    });
+
+    await expect(deleteCalendarEvent('grp_1', 'cal_mismatch', targetKind)).rejects.toThrow(
+      `expected targetKind "${targetKind}"`,
+    );
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+
+  it.each(['single_event', 'occurrence', 'series'] as const)(
+    'refuses an unknown occurrenceKind for targetKind=%s',
+    async (targetKind) => {
+      vi.mocked(callReadOperation).mockResolvedValueOnce({
+        data: { id: 'cal_unknown', occurrenceKind: 'future_kind' },
+      });
+
+      await expect(deleteCalendarEvent('grp_1', 'cal_unknown', targetKind)).rejects.toThrow(
+        'found "future_kind"',
+      );
+      expect(callOperation).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([undefined, null, '', 7, { unexpected: true }])(
+    'refuses a present malformed occurrenceKind value: %j',
+    async (occurrenceKind) => {
+      vi.mocked(callReadOperation).mockResolvedValueOnce({
+        data: { id: 'cal_malformed', occurrenceKind },
+      });
+
+      await expect(
+        deleteCalendarEvent('grp_1', 'cal_malformed', 'single_event'),
+      ).rejects.toThrow('Refusing to delete calendar event');
+      expect(callOperation).not.toHaveBeenCalled();
+    },
+  );
+
   it('refuses to delete when targetKind does not match', async () => {
     vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: { id: 'cal_series', occurrenceKind: 'series' },

@@ -69,6 +69,61 @@ describe('instances curated service', () => {
     expect(result).toMatchObject({ ok: false, reason: 'groupId is only valid when type=group.' });
   });
 
+  it.each(['friends', 'group', 'hidden', 'public'] as const)(
+    'rejects canRequestInvite=true when type=%s',
+    (type) => {
+      const result = prepareInstanceCreate({
+        worldId: 'wrld_1',
+        type,
+        region: 'us',
+        canRequestInvite: true,
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        reason: `canRequestInvite cannot be true when type="${type}". Use type="private", or omit canRequestInvite or set it to false.`,
+      });
+    },
+  );
+
+  it('keeps canRequestInvite=true for private instances', () => {
+    const result = prepareInstanceCreate({
+      worldId: 'wrld_private',
+      type: 'private',
+      region: 'us',
+      canRequestInvite: true,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      request: {
+        worldId: 'wrld_private',
+        type: 'private',
+        region: 'us',
+        canRequestInvite: true,
+      },
+    });
+  });
+
+  it.each([undefined, false])(
+    'keeps group instances valid when canRequestInvite=%s',
+    (canRequestInvite) => {
+      vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
+      const result = prepareInstanceCreate({
+        worldId: 'wrld_group',
+        type: 'group',
+        region: 'us',
+        groupId: 'grp_1',
+        canRequestInvite,
+      });
+
+      expect(result).toMatchObject({ ok: true });
+      if (result.ok) {
+        expect(result.request.canRequestInvite).toBe(canRequestInvite);
+      }
+    },
+  );
+
   it('accepts ownerId as group id and includes group options', () => {
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: true });
     const result = prepareInstanceCreate({
@@ -118,7 +173,7 @@ describe('instances curated service', () => {
   it('builds non-group request with ownerId and flags', () => {
     const result = prepareInstanceCreate({
       worldId: 'wrld_3',
-      type: 'friends',
+      type: 'private',
       region: 'us',
       ownerId: 'usr_123',
       displayName: 'Chill Hangout',
@@ -131,7 +186,7 @@ describe('instances curated service', () => {
       ok: true,
       request: {
         worldId: 'wrld_3',
-        type: 'friends',
+        type: 'private',
         region: 'us',
         ownerId: 'usr_123',
         displayName: 'Chill Hangout',
