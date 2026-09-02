@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.13 - 2026-09-01
 
 - **Breaking:** replace `vrchat_group_image_upload` with the strict account-scoped `vrchat_gallery_image_upload`. The upload endpoint creates a file in the signed-in user's personal gallery and has no group authorization relationship, so the old group-scoped contract has been removed rather than retained as a deprecated alias.
+- Migrate callers to the exact `{ imagePath }` input. Remove `groupId`, `shortCode`, and every other extra field because the new schema rejects unknown fields. The result no longer includes `status`, `groupId`, or the nested `file` object. `fileId` remains required and top-level; the former `file.ownerId`, `file.name`, `file.mimeType`, `file.extension`, and `file.version` metadata move to optional top-level fields. See `docs/curated-tools.md` for the complete before-and-after contract.
 - Keep the existing write guard, configured upload-root containment, static-PNG validation, multipart `tag=gallery` transport, bounded response metadata, and indeterminate-failure protection. Group post and event tools continue enforcing their own group allowlists before attaching an uploaded file ID.
 
 ## 0.1.12 - 2026-09-01
