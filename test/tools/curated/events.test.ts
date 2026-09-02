@@ -152,7 +152,7 @@ describe('curated event tools', () => {
     });
   });
 
-  it('blocks create when group is not allowlisted', async () => {
+  it('blocks create with an image before mutation when the group is not allowlisted', async () => {
     vi.mocked(checkGroupAllowed).mockReturnValue({ ok: false, reason: 'Nope' });
 
     const server = new FakeServer();
@@ -163,11 +163,13 @@ describe('curated event tools', () => {
       title: 'Test',
       description: 'Desc',
       category: 'performance',
+      imageId: 'file_1',
       startsAt: '2025-12-25T00:00:00Z',
       endsAt: '2025-12-25T01:00:00Z',
     });
 
     expect(result).toMatchObject({ isError: true });
+    expect(createCalendarEvent).not.toHaveBeenCalled();
   });
 
   it('updates events', async () => {
@@ -196,6 +198,22 @@ describe('curated event tools', () => {
     expect(result).toMatchObject({
       structuredContent: { status: 'updated' },
     });
+  });
+
+  it('blocks update with an image before mutation when the group is not allowlisted', async () => {
+    vi.mocked(checkGroupAllowed).mockReturnValue({ ok: false, reason: 'Nope' });
+
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_update');
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      calendarId: 'evt_9',
+      imageId: 'file_1',
+    });
+
+    expect(result).toMatchObject({ isError: true });
+    expect(updateCalendarEvent).not.toHaveBeenCalled();
   });
 
   it('deletes events', async () => {

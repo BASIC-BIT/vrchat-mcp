@@ -9,7 +9,7 @@ This is the human-oriented overview for how to use the tool surface. The full, g
 - Curated write tools are enabled by default for local full-capability use. Set `writes.allow = false` (or `VRCHAT_MCP_ALLOW_WRITES=false`) for read-only mode.
 - The MCP client or agent harness is expected to control approval/denial for account-changing tool calls.
 - Group write actions are restricted by `groups.allowlist` when set.
-- Local image uploads require an absolute path inside `uploads.allowedRoots`. Empty roots disable local upload intake.
+- Account-gallery image uploads require an absolute path inside `uploads.allowedRoots`. Empty roots disable local upload intake. Group authorization is enforced by the post or event tool that later attaches the returned file ID.
 - Do not expose this server as a hosted/public MCP service with VRChat cookies. Keep it local and user-controlled.
 
 ## Metadata budget

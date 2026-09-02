@@ -3235,6 +3235,95 @@ Output schema:
 }
 ```
 
+### vrchat_gallery_image_upload
+Upload a validated static PNG to the signed-in VRChat account gallery. This does not attach the image to a group post or event. (write)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "imagePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute path to a static PNG inside uploads.allowedRoots. The image must be 65-2048 pixels per side and no larger than 10 MiB."
+    }
+  },
+  "required": [
+    "imagePath"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fileId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "mimeType": {
+      "type": "string"
+    },
+    "extension": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "byteSize": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 65,
+          "maximum": 2048
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 65,
+          "maximum": 2048
+        }
+      },
+      "required": [
+        "fileName",
+        "byteSize",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "fileId",
+    "image"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_group_event_get
 Get a single group calendar event (read-only). (read-only)
 
@@ -3720,125 +3809,6 @@ Output schema:
     "stale",
     "segments",
     "events"
-  ],
-  "additionalProperties": false
-}
-```
-
-### vrchat_group_image_upload
-Upload a static PNG to the signed-in VRChat account gallery for later use by an allowlisted group. This does not attach the image to a group post or event. (write)
-
-Input schema:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "groupId": {
-      "type": "string",
-      "description": "Exact group ID. Provide groupId or shortCode."
-    },
-    "shortCode": {
-      "type": "string",
-      "description": "Exact group short code. Provide groupId or shortCode."
-    },
-    "imagePath": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Absolute path to a static PNG inside uploads.allowedRoots. The image must be 65-2048 pixels per side and no larger than 10 MiB."
-    }
-  },
-  "required": [
-    "imagePath"
-  ],
-  "additionalProperties": false
-}
-```
-
-Output schema:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "const": "uploaded"
-    },
-    "groupId": {
-      "type": "string"
-    },
-    "fileId": {
-      "type": "string"
-    },
-    "image": {
-      "type": "object",
-      "properties": {
-        "fileName": {
-          "type": "string"
-        },
-        "byteSize": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        },
-        "width": {
-          "type": "integer",
-          "minimum": 65,
-          "maximum": 2048
-        },
-        "height": {
-          "type": "integer",
-          "minimum": 65,
-          "maximum": 2048
-        }
-      },
-      "required": [
-        "fileName",
-        "byteSize",
-        "width",
-        "height"
-      ],
-      "additionalProperties": false
-    },
-    "file": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "mimeType": {
-          "type": "string"
-        },
-        "extension": {
-          "type": "string"
-        },
-        "ownerId": {
-          "type": "string"
-        },
-        "version": {
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
-        }
-      },
-      "required": [
-        "id"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "required": [
-    "status",
-    "groupId",
-    "fileId",
-    "image",
-    "file"
   ],
   "additionalProperties": false
 }

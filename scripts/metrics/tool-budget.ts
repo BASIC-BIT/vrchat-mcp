@@ -6,7 +6,7 @@ import { toJSONSchema, type ZodTypeAny } from 'zod';
 const DEFAULT_MAX_TOOLS = 75;
 const DEFAULT_MAX_ARGUMENTS = 500;
 const DEFAULT_MAX_ESTIMATED_TOKENS = 30_000;
-// Issue #103 adds one deliberately separate, individually grantable upload tool.
+// The curated account-gallery upload is deliberately separate and individually grantable.
 // Keep a small amount of headroom while retaining the other metadata budgets.
 const DEFAULT_MAX_LLM_INPUT_TOKENS = 12_500;
 const DEFAULT_MAX_MCP_WIRE_TOKENS = 32_000;

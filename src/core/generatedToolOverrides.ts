@@ -60,7 +60,7 @@ const CURATED_WRITE_TOOL_MAP = new Map<string, string>([
   ['updateAvatar', toToolName('vrchat.avatar.update')],
   ['updateUser', toToolName('vrchat.profile.update')],
   ['logout', toToolName('vrchat.auth.logout')],
-  ['uploadImage', toToolName('vrchat.group.image.upload')],
+  ['uploadImage', toToolName('vrchat.gallery.image.upload')],
 ]);
 
 export function getCuratedReadToolName(operationId: string): string | undefined {

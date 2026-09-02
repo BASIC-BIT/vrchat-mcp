@@ -41,10 +41,10 @@ describe('operation policy', () => {
   });
 
   it('keeps image uploads behind the validated curated tool', () => {
-    expect(getCuratedWriteToolName('uploadImage')).toBe('vrchat_group_image_upload');
-    expect(getCuratedOnlyReason('uploadImage')).toContain('vrchat_group_image_upload');
+    expect(getCuratedWriteToolName('uploadImage')).toBe('vrchat_gallery_image_upload');
+    expect(getCuratedOnlyReason('uploadImage')).toContain('vrchat_gallery_image_upload');
     expect(getBlockedOperationReason('uploadGalleryImage')).toContain(
-      'vrchat_group_image_upload'
+      'vrchat_gallery_image_upload'
     );
     expect(GENERATED_WRITE_SKIP_IDS).toContain('uploadGalleryImage');
   });

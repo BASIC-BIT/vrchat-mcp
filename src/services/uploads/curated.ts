@@ -1,5 +1,5 @@
 import { CallError, uploadGalleryImageMultipart } from '../../core/client.js';
-import type { GroupImageUploadInput } from '../../models/uploads.js';
+import type { GalleryImageUploadInput } from '../../models/uploads.js';
 import { readValidatedStaticPng, type ValidatedPng } from './localPng.js';
 
 interface UploadedFileSummary {
@@ -53,8 +53,8 @@ function summarizeUploadedFile(data: unknown): UploadedFileSummary {
   };
 }
 
-export async function uploadGroupImage(
-  input: Pick<GroupImageUploadInput, 'imagePath'>,
+export async function uploadGalleryImage(
+  input: GalleryImageUploadInput,
   allowedRoots: string[]
 ): Promise<{ image: ValidatedPng; file: UploadedFileSummary }> {
   const image = await readValidatedStaticPng(input.imagePath, allowedRoots);
