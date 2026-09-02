@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name: Check out PR head
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -201,7 +201,7 @@ jobs:
 
       - name: Assume the shared Claude review role
         id: aws_credentials
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: arn:aws:iam::079358094174:role/basic-shared-claude-github-review
           role-session-name: claude-review-${{ github.run_id }}
@@ -235,7 +235,7 @@ jobs:
       - name: Review with Claude
         id: claude_review
         # Pinned from anthropics/claude-code-action v1.0.167. Update deliberately.
-        uses: anthropics/claude-code-action@0fe28cdb64e23015219b0e478100b7105fd7dfa1
+        uses: anthropics/claude-code-action@5ef2e550a465a721f4f45e4a7d3c340c873e1dcc
         with:
           claude_code_oauth_token: ${{ steps.claude_auth.outputs.token }}
           github_token: ${{ github.token }}
