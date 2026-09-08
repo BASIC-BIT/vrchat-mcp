@@ -134,7 +134,9 @@ Account gallery management:
 - `vrchat_gallery_images` lists all gallery images with compact file IDs, names, owner IDs,
   available image URLs, and a total count. It fetches pages internally and deduplicates IDs.
   It fails rather than reporting a complete count if pagination stalls or exceeds its safety
-  bound. Like other offset listings, concurrent changes can affect the snapshot.
+  bound. Transient read failures use the shared retry helper, with at most three attempts
+  and a 60-second deadline per page. Like other offset listings, concurrent changes can affect
+  the snapshot.
 - `vrchat_gallery_image_delete` deletes one exact `fileId` after fresh checks that the file
   belongs to the signed-in account and has the `gallery` tag. The global write guard applies.
   This deletes the underlying file, not a group-gallery entry. It does not scan references or

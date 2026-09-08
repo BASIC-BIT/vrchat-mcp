@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assertWritesAllowed, callOperation, CallError } from '../../core/client.js';
+import { callWithRetry } from '../../core/retry.js';
 import { GalleryImageDeleteInputSchema } from '../../models/gallery.js';
 import type { GalleryImageSummarySchema } from '../../models/gallery.js';
 
@@ -40,10 +41,14 @@ export async function listGalleryImages() {
   const images = new Map<string, z.infer<typeof GalleryImageSummarySchema>>();
   const pageSize = 100;
   for (let offset = 0; offset < 10_000; offset += pageSize) {
-    const result = await callOperation({
-      operationId: 'getFiles',
-      params: { tag: 'gallery', n: pageSize, offset },
-    });
+    const { data: result } = await callWithRetry(
+      () =>
+        callOperation({
+          operationId: 'getFiles',
+          params: { tag: 'gallery', n: pageSize, offset },
+        }),
+      { maxAttempts: 3, baseDelayMs: 1_000, maxDelayMs: 30_000, maxElapsedMs: 60_000 }
+    );
     const files = z.array(GalleryFileSchema).parse(result.data);
     const previousSize = images.size;
     for (const file of files) {

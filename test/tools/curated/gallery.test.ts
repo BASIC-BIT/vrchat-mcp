@@ -18,6 +18,27 @@ function tool(name: string) {
 
 beforeEach(() => vi.resetAllMocks());
 
+it('retries a rate-limited gallery page without advancing its offset', async () => {
+  vi.mocked(callOperation)
+    .mockRejectedValueOnce(
+      Object.assign(new Error('Rate limited'), { status: 429, retryAfter: '0' })
+    )
+    .mockResolvedValueOnce({ url: '', data: [{ id: 'file_retry', tags: ['gallery'] }] });
+  expect(await tool('vrchat_gallery_images').handler({})).toMatchObject({
+    structuredContent: { total: 1, images: [{ fileId: 'file_retry' }] },
+  });
+  expect(callOperation).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(callOperation).mock.calls[0]).toEqual(vi.mocked(callOperation).mock.calls[1]);
+});
+
+it('bounds retries and reports a persistent gallery failure without a partial total', async () => {
+  vi.mocked(callOperation).mockRejectedValue(
+    Object.assign(new Error('Unavailable'), { status: 503, retryAfter: '0' })
+  );
+  expect(await tool('vrchat_gallery_images').handler({})).toMatchObject({ isError: true });
+  expect(callOperation).toHaveBeenCalledTimes(3);
+});
+
 it('deletes an exact owned gallery file after fresh ownership and type checks', async () => {
   vi.mocked(callOperation).mockImplementation(({ operationId }) =>
     Promise.resolve({
