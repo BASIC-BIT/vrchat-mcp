@@ -48,28 +48,21 @@ function invalidateGroupEventCaches(groupId: string): void {
   cacheManager.invalidateByTag(`groups:${groupId}`);
 }
 
-// occurrenceKind is not in the generated CalendarEvent type, but the API returns it
-// and generated schemas currently preserve unknown fields via .passthrough(). Only a
-// missing property represents the legacy single-event response shape. Every present
-// unrecognized value remains a mismatch so deletion fails closed.
-function getDeleteTargetKind(event: GroupCalendarEvent): string {
-  const record = event as Record<string, unknown>;
-  if (!Object.prototype.hasOwnProperty.call(record, 'occurrenceKind')) return 'single_event';
-
-  const kind = record.occurrenceKind;
-  if (kind === 'single') return 'single_event';
-  if (typeof kind === 'string') return kind;
-  return JSON.stringify(kind) ?? String(kind);
+// The generated schema validates occurrenceKind before this helper runs. Preserve
+// the public single_event spelling and the legacy absent-field behavior.
+function getDeleteTargetKind(event: GroupCalendarEvent): CalendarEventDeleteTargetKind {
+  const kind = event.occurrenceKind;
+  return kind === undefined || kind === 'single' ? 'single_event' : kind;
 }
 
 async function getGroupCalendarEventOrThrow(
   groupId: string,
-  calendarId: string,
+  calendarId: string
 ): Promise<GroupCalendarEvent> {
   const eventResult = await callReadOperationParsed(
     'getGroupCalendarEvent',
     { groupId, calendarId },
-    {},
+    {}
   );
   const event = eventResult.data;
   if (!event) {
@@ -81,13 +74,13 @@ async function getGroupCalendarEventOrThrow(
 function assertDeleteTargetKind(
   event: GroupCalendarEvent,
   calendarId: string,
-  targetKind: CalendarEventDeleteTargetKind,
+  targetKind: CalendarEventDeleteTargetKind
 ): void {
   const eventTargetKind = getDeleteTargetKind(event);
   if (eventTargetKind === targetKind) return;
 
   throw new Error(
-    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${eventTargetKind}".`,
+    `Refusing to delete calendar event ${calendarId}: expected targetKind "${targetKind}" but found "${eventTargetKind}".`
   );
 }
 
@@ -133,7 +126,7 @@ export async function listUpcomingEvents(input: EventsUpcomingInput) {
           maxPages,
           maxItems: remaining,
         },
-      },
+      }
     );
 
     const batch = result.data;
@@ -228,7 +221,7 @@ export async function searchEvents(input: EventsSearchInput) {
 function buildDiscoveryParams(
   input: EventsDiscoverInput,
   pageSize: number,
-  nextCursor?: string,
+  nextCursor?: string
 ): Record<string, unknown> {
   const params: Record<string, unknown> = { n: pageSize };
   if (input.scope) params.scope = input.scope;
@@ -261,7 +254,7 @@ export async function discoverEvents(input: EventsDiscoverInput) {
   while (pages < maxPages && events.length < maxItems) {
     const result = await callReadOperationParsed(
       'discoverCalendarEvents',
-      buildDiscoveryParams(input, pageSize, nextCursor),
+      buildDiscoveryParams(input, pageSize, nextCursor)
     );
     pages += 1;
     events.push(...result.data.results);
@@ -272,7 +265,8 @@ export async function discoverEvents(input: EventsDiscoverInput) {
   const sliced = events.slice(0, maxItems);
   const clipped = events.length > sliced.length;
   if (clipped) nextCursor = undefined;
-  const truncated = clipped || (Boolean(nextCursor) && (pages >= maxPages || events.length >= maxItems));
+  const truncated =
+    clipped || (Boolean(nextCursor) && (pages >= maxPages || events.length >= maxItems));
   return {
     scope: input.scope,
     pageSize,
@@ -293,7 +287,7 @@ export async function discoverEvents(input: EventsDiscoverInput) {
 }
 
 export function buildCalendarCreateRequest(
-  input: CalendarEventCreateInput,
+  input: CalendarEventCreateInput
 ): CalendarEventCreateRequest {
   const parsed = CalendarEventCreateSchema.parse(input);
   const { groupId, ...request } = parsed;
@@ -302,7 +296,7 @@ export function buildCalendarCreateRequest(
 }
 
 export function buildCalendarUpdateRequest(
-  input: CalendarEventUpdatePayload,
+  input: CalendarEventUpdatePayload
 ): CalendarEventUpdateRequest {
   const { groupId, calendarId, ...request } = input;
   void groupId;
@@ -319,12 +313,12 @@ export async function createCalendarEvent(groupId: string, request: CalendarEven
 export async function updateCalendarEvent(
   groupId: string,
   calendarId: string,
-  request: CalendarEventUpdateRequest,
+  request: CalendarEventUpdateRequest
 ) {
   const result = await callWriteOperationParsed(
     'updateGroupCalendarEvent',
     { groupId, calendarId },
-    request,
+    request
   );
   invalidateGroupEventCaches(groupId);
   return result.data ?? null;
@@ -333,7 +327,7 @@ export async function updateCalendarEvent(
 export async function deleteCalendarEvent(
   groupId: string,
   calendarId: string,
-  targetKind: CalendarEventDeleteTargetKind,
+  targetKind: CalendarEventDeleteTargetKind
 ) {
   const event = await getGroupCalendarEventOrThrow(groupId, calendarId);
   assertDeleteTargetKind(event, calendarId, targetKind);
@@ -349,7 +343,7 @@ export async function followCalendarEvent(input: CalendarEventFollowInput) {
   const result = await callWriteOperationParsed(
     'followGroupCalendarEvent',
     { groupId: input.groupId, calendarId: input.calendarId },
-    { isFollowing: input.isFollowing },
+    { isFollowing: input.isFollowing }
   );
   // Event reads may include current-user follow state via userInterest.
   invalidateGroupEventCaches(input.groupId);

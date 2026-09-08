@@ -51,13 +51,13 @@ describe('events curated service', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'getCalendarEvents',
       { date: '2025-12-01T00:00:00.000Z' },
-      expect.objectContaining({ page: expectPage({ size: 50 }) }),
+      expect.objectContaining({ page: expectPage({ size: 50 }) })
     );
   });
 
   it('rejects invalid from values', async () => {
     await expect(listUpcomingEvents({ from: 'not-a-date' })).rejects.toThrow(
-      'from must be a valid ISO date/time string.',
+      'from must be a valid ISO date/time string.'
     );
   });
 
@@ -128,13 +128,13 @@ describe('events curated service', () => {
       1,
       'discoverCalendarEvents',
       expect.objectContaining({ scope: 'upcoming', categories: 'music', n: 1 }),
-      undefined,
+      undefined
     );
     expect(callReadOperation).toHaveBeenNthCalledWith(
       2,
       'discoverCalendarEvents',
       expect.objectContaining({ nextCursor: ' cursor_2 ' }),
-      undefined,
+      undefined
     );
     expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
     expect(result.truncated).toBe(false);
@@ -266,7 +266,7 @@ describe('events curated service', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'getGroupCalendarEvent',
       { groupId: 'grp_1', calendarId: 'cal_1' },
-      {},
+      {}
     );
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'deleteGroupCalendarEvent',
@@ -330,16 +330,19 @@ describe('events curated service', () => {
     ['occurrence', 'series'],
     ['series', 'single_event'],
     ['series', 'occurrence'],
-  ] as const)('refuses occurrenceKind=%s when targetKind=%s', async (occurrenceKind, targetKind) => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
-      data: { id: 'cal_mismatch', occurrenceKind },
-    });
+  ] as const)(
+    'refuses occurrenceKind=%s when targetKind=%s',
+    async (occurrenceKind, targetKind) => {
+      vi.mocked(callReadOperation).mockResolvedValueOnce({
+        data: { id: 'cal_mismatch', occurrenceKind },
+      });
 
-    await expect(deleteCalendarEvent('grp_1', 'cal_mismatch', targetKind)).rejects.toThrow(
-      `expected targetKind "${targetKind}"`,
-    );
-    expect(callOperation).not.toHaveBeenCalled();
-  });
+      await expect(deleteCalendarEvent('grp_1', 'cal_mismatch', targetKind)).rejects.toThrow(
+        `expected targetKind "${targetKind}"`
+      );
+      expect(callOperation).not.toHaveBeenCalled();
+    }
+  );
 
   it.each(['single_event', 'occurrence', 'series'] as const)(
     'refuses an unknown occurrenceKind for targetKind=%s',
@@ -349,24 +352,24 @@ describe('events curated service', () => {
       });
 
       await expect(deleteCalendarEvent('grp_1', 'cal_unknown', targetKind)).rejects.toThrow(
-        'found "future_kind"',
+        'occurrenceKind'
       );
       expect(callOperation).not.toHaveBeenCalled();
-    },
+    }
   );
 
-  it.each([undefined, null, '', 7, { unexpected: true }])(
+  it.each([null, '', 7, { unexpected: true }])(
     'refuses a present malformed occurrenceKind value: %j',
     async (occurrenceKind) => {
       vi.mocked(callReadOperation).mockResolvedValueOnce({
         data: { id: 'cal_malformed', occurrenceKind },
       });
 
-      await expect(
-        deleteCalendarEvent('grp_1', 'cal_malformed', 'single_event'),
-      ).rejects.toThrow('Refusing to delete calendar event');
+      await expect(deleteCalendarEvent('grp_1', 'cal_malformed', 'single_event')).rejects.toThrow(
+        'occurrenceKind'
+      );
       expect(callOperation).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it('refuses to delete when targetKind does not match', async () => {
@@ -375,7 +378,7 @@ describe('events curated service', () => {
     });
 
     await expect(deleteCalendarEvent('grp_1', 'cal_series', 'occurrence')).rejects.toThrow(
-      'expected targetKind "occurrence"',
+      'expected targetKind "occurrence"'
     );
     expect(callOperation).not.toHaveBeenCalled();
   });
@@ -386,7 +389,7 @@ describe('events curated service', () => {
     });
 
     await expect(deleteCalendarEvent('grp_1', 'cal_single', 'series')).rejects.toThrow(
-      'found "single_event"',
+      'found "single_event"'
     );
     expect(callOperation).not.toHaveBeenCalled();
   });

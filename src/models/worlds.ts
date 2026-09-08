@@ -150,7 +150,9 @@ export function normalizeWorldName(value: string): string {
   return value.trim().toLowerCase();
 }
 
-type WorldSummarySource = Partial<z.infer<typeof schemas.World>> & {
+type WorldSummarySource = (
+  Partial<z.infer<typeof schemas.World>> | Partial<z.infer<typeof schemas.LimitedWorld>>
+) & {
   favoriteGroup?: string;
   favoriteId?: string;
 };

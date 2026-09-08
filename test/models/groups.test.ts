@@ -70,7 +70,7 @@ describe('group model mappers', () => {
 
   it('maps group member with fallback user id', () => {
     const member = toGroupMemberSummary(
-      schemas.GroupMember.parse({
+      schemas.GroupMember.partial().parse({
         user: { id: 'usr_2', displayName: 'User Two' },
       })
     );

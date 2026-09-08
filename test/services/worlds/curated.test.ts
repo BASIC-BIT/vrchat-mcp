@@ -19,6 +19,21 @@ describe('worlds curated service', () => {
     vi.mocked(callReadOperation).mockReset();
   });
 
+  it('parses limited packages from search without requiring full package IDs', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: [
+        {
+          id: 'wrld_1',
+          name: 'Fixture',
+          unityPackages: [{ created_at: null, platform: 'android', unityVersion: '2017.4.15f1' }],
+        },
+      ],
+    });
+    const result = await searchWorlds({ query: 'Fixture', pageSize: 5 });
+    expect(result.worlds).toEqual([
+      expect.objectContaining({ worldId: 'wrld_1', name: 'Fixture' }),
+    ]);
+  });
   it('resolves world id by name via search', async () => {
     vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: [{ id: 'wrld_1', name: 'Test World' }],
@@ -29,7 +44,7 @@ describe('worlds curated service', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'searchWorlds',
       expect.objectContaining({ search: 'Test World', n: 50 }),
-      expect.any(Object),
+      expect.any(Object)
     );
     expect(result).toMatchObject({ ok: true, worldId: 'wrld_1', resolvedBy: 'name' });
   });
@@ -39,8 +54,8 @@ describe('worlds curated service', () => {
       data: {
         id: 'wrld_1',
         instances: [
-          ['wrld_1:1~public~region(us)', 12],
-          ['wrld_1:2~friends~region(jp)', 5],
+          ['wrld_1:1~public~region(us)', 12, { en: 12 }],
+          ['wrld_1:2~friends~region(jp)', 5, { ja: 5 }],
         ],
       },
     });
@@ -90,7 +105,7 @@ describe('worlds curated service', () => {
         minUnityVersion: undefined,
         platform: undefined,
       },
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -131,7 +146,7 @@ describe('worlds curated service', () => {
         platform: undefined,
         userId: undefined,
       },
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 });

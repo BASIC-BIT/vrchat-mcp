@@ -9,6 +9,7 @@ const UserSchema = schemas.User.partial();
 const CurrentUserSchema = schemas.CurrentUser.partial();
 const InstanceSchema = schemas.Instance.partial();
 const WorldSchema = schemas.World.partial();
+const LimitedWorldSchema = schemas.LimitedWorld.partial();
 const AvatarSchema = schemas.Avatar.partial();
 const CalendarEventSchema = schemas.CalendarEvent.partial();
 const SentNotificationSchema = schemas.SentNotification.partial();
@@ -30,7 +31,7 @@ const readParsers = {
   getInstance: (data: unknown) => parseNullable(InstanceSchema, data, 'getInstance'),
   getWorld: (data: unknown) => parseNullable(WorldSchema, data, 'getWorld'),
   getAvatar: (data: unknown) => parseNullable(AvatarSchema, data, 'getAvatar'),
-  searchWorlds: (data: unknown) => parseArrayWithSchema(WorldSchema, data, 'searchWorlds'),
+  searchWorlds: (data: unknown) => parseArrayWithSchema(LimitedWorldSchema, data, 'searchWorlds'),
   getFavoritedWorlds: (data: unknown) =>
     parseArrayWithSchema(schemas.FavoritedWorld.partial(), data, 'getFavoritedWorlds'),
   getFavoritedAvatars: (data: unknown) =>
@@ -40,7 +41,8 @@ const readParsers = {
   getFavoriteGroups: (data: unknown) =>
     parseArrayWithSchema(FavoriteGroupSchema, data, 'getFavoriteGroups'),
   getFavoriteGroup: (data: unknown) => parseNullable(FavoriteGroupSchema, data, 'getFavoriteGroup'),
-  getFavoriteLimits: (data: unknown) => parseNullable(FavoriteLimitsSchema, data, 'getFavoriteLimits'),
+  getFavoriteLimits: (data: unknown) =>
+    parseNullable(FavoriteLimitsSchema, data, 'getFavoriteLimits'),
   getFriends: (data: unknown) =>
     parseArrayWithSchema(schemas.LimitedUserFriend.partial(), data, 'getFriends'),
   getNotifications: (data: unknown) =>
@@ -89,18 +91,22 @@ const writeParsers = {
   followGroupCalendarEvent: (data: unknown) =>
     parseNullable(CalendarEventSchema, data, 'followGroupCalendarEvent'),
   addFavorite: (data: unknown) => parseNullable(FavoriteSchema, data, 'addFavorite'),
-  removeFavorite: (data: unknown) => parseNullable(schemas.Success.partial(), data, 'removeFavorite'),
+  removeFavorite: (data: unknown) =>
+    parseNullable(schemas.Success.partial(), data, 'removeFavorite'),
   addGroupPost: (data: unknown) => parseNullable(schemas.GroupPost.partial(), data, 'addGroupPost'),
   updateGroupPost: (data: unknown) =>
     parseNullable(schemas.GroupPost.partial(), data, 'updateGroupPost'),
   deleteGroupPost: (data: unknown) =>
     parseNullable(schemas.Success.partial(), data, 'deleteGroupPost'),
-  addGroupMemberRole: (data: unknown) => parseWithSchema(schemas.GroupRoleIDList, data, 'addGroupMemberRole'),
+  addGroupMemberRole: (data: unknown) =>
+    parseWithSchema(schemas.GroupRoleIDList, data, 'addGroupMemberRole'),
   removeGroupMemberRole: (data: unknown) =>
     parseWithSchema(schemas.GroupRoleIDList, data, 'removeGroupMemberRole'),
   createGroupRole: (data: unknown) => parseNullable(GroupRoleSchema, data, 'createGroupRole'),
-  updateGroupRole: (data: unknown) => parseArrayWithSchema(GroupRoleSchema, data, 'updateGroupRole'),
-  deleteGroupRole: (data: unknown) => parseArrayWithSchema(GroupRoleSchema, data, 'deleteGroupRole'),
+  updateGroupRole: (data: unknown) =>
+    parseArrayWithSchema(GroupRoleSchema, data, 'updateGroupRole'),
+  deleteGroupRole: (data: unknown) =>
+    parseArrayWithSchema(GroupRoleSchema, data, 'deleteGroupRole'),
 } as const;
 
 export type ReadOperationId = keyof typeof readParsers;
