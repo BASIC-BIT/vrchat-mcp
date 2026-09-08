@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14 - 2026-09-08
+
+- Add `vrchat_gallery_images` to list the signed-in account's complete gallery with compact file metadata and a total count. Fetch pages internally, deduplicate file IDs, and retry transient read failures with bounded attempts and per-page deadlines.
+- Add individually grantable `vrchat_gallery_image_delete` to delete one exact gallery file after verifying current-account ownership and the gallery tag under the existing write guard. Deletion is single-attempt; callers remain responsible for preserving images referenced by posts, events, or other consumers.
+- Keep existing generic file operations available for their broader uses. Gallery-only deployments should grant the curated tool without granting generic or raw file access.
+
 ## 0.1.13 - 2026-09-01
 
 - **Breaking:** replace `vrchat_group_image_upload` with the strict account-scoped `vrchat_gallery_image_upload`. The upload endpoint creates a file in the signed-in user's personal gallery and has no group authorization relationship, so the old group-scoped contract has been removed rather than retained as a deprecated alias.
