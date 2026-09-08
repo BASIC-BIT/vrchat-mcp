@@ -129,6 +129,23 @@ Account gallery image intake (write):
 
 - `vrchat_gallery_image_upload`
 
+Account gallery management:
+
+- `vrchat_gallery_images` lists all gallery images with compact file IDs, names, owner IDs,
+  available image URLs, and a total count. It fetches pages internally and deduplicates IDs.
+  It fails rather than reporting a complete count if pagination stalls or exceeds its safety
+  bound. Like other offset listings, concurrent changes can affect the snapshot.
+- `vrchat_gallery_image_delete` deletes one exact `fileId` after fresh checks that the file
+  belongs to the signed-in account and has the `gallery` tag. The global write guard applies.
+  This deletes the underlying file, not a group-gallery entry. It does not scan references or
+  require a confirmation-token round trip. The caller decides whether an image is safe to remove;
+  existing posts, events, and other references may be affected. Failed requests are not retried
+  automatically by this tool.
+
+Reuse an existing file ID for repeated artwork. For replacement artwork, upload a new image and
+update the consuming post or event. There is no in-place image replacement tool or automatic
+cleanup policy. Retention and any tracking of image use belong to the calling workflow.
+
 `vrchat_gallery_image_upload` accepts only an absolute `imagePath`; its strict schema rejects group
 selectors, caller-controlled upload purposes, and other unknown fields. It checks the global write
 guard before opening the file, but does not resolve, fetch, or authorize a group because the

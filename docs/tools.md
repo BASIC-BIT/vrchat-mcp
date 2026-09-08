@@ -3235,6 +3235,53 @@ Output schema:
 }
 ```
 
+### vrchat_gallery_image_delete
+Delete one exact image file owned by the signed-in account and tagged gallery. Existing posts, events, or other references may be affected. Does not check usage; the caller decides what to preserve. (write, destructive)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^file_[A-Za-z0-9-]+$",
+      "description": "Exact gallery fileId from vrchat_gallery_images. Deletes the underlying file; existing references may be affected."
+    }
+  },
+  "required": [
+    "fileId"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fileId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "const": "deleted"
+    }
+  },
+  "required": [
+    "fileId",
+    "status"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### vrchat_gallery_image_upload
 Upload a validated static PNG to the signed-in VRChat account gallery. This does not attach the image to a group post or event. (write)
 
@@ -3319,6 +3366,66 @@ Output schema:
   "required": [
     "fileId",
     "image"
+  ],
+  "additionalProperties": false
+}
+```
+
+### vrchat_gallery_images
+List every image in the signed-in account gallery with compact metadata and total count. Fetches all pages internally; reuse fileId when attaching existing artwork. (read-only)
+
+Input schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
+```
+
+Output schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "images",
+    "total"
   ],
   "additionalProperties": false
 }
