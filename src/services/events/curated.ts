@@ -292,8 +292,12 @@ export function buildCalendarCreateRequest(
   input: CalendarEventCreateInput
 ): CalendarEventCreateRequest {
   const parsed = CalendarEventCreateSchema.parse(input);
-  const { groupId, ...request } = parsed;
+  const { groupId, ...parsedRequest } = parsed;
   void groupId;
+  const request: CalendarEventCreateRequest = {
+    ...parsedRequest,
+    occurrenceKind: parsedRequest.occurrenceKind ?? 'single',
+  };
   if (request.recurrence != null && request.occurrenceKind !== 'series')
     throw new Error('A recurring schedule requires occurrenceKind=series.');
   if (request.occurrenceKind === 'series' && request.recurrence == null)

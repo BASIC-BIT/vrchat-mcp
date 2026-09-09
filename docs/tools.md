@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-09-09T07:12:55.475Z
+Generated: 2026-09-09T15:24:37.431Z
 
 Spec: VRChat API Documentation (1.20.9)
 
@@ -477,7 +477,6 @@ Input schema:
       }
     },
     "occurrenceKind": {
-      "default": "single",
       "description": "Recurring schedules require explicit series.",
       "type": "string",
       "enum": [
@@ -616,7 +615,6 @@ Input schema:
     "category",
     "description",
     "endsAt",
-    "occurrenceKind",
     "sendCreationNotification",
     "startsAt",
     "title",

@@ -101,7 +101,7 @@ export const CalendarEventCreateSchema = schemas.CreateCalendarEventRequest.exte
   groupId: schemas.GroupID,
   occurrenceKind: z
     .enum(['single', 'series'])
-    .default('single')
+    .optional()
     .describe('Recurring schedules require explicit series.'),
   accessType: schemas.CreateCalendarEventRequest.shape.accessType.optional().default('group'),
   sendCreationNotification: schemas.CreateCalendarEventRequest.shape.sendCreationNotification

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { toJSONSchema } from 'zod';
 
 vi.mock('../../../src/core/readTools.js', () => ({
   callReadOperation: vi.fn(),
@@ -431,6 +432,10 @@ describe('calendar schedule builders and scope', () => {
   beforeEach(() => {
     vi.mocked(callOperation).mockReset();
     vi.mocked(callReadOperation).mockReset();
+  });
+  it('advertises occurrenceKind as optional when single is the default', () => {
+    const jsonSchema = toJSONSchema(CalendarEventCreateSchema);
+    expect(jsonSchema.required).not.toContain('occurrenceKind');
   });
   it('defaults ordinary create and preserves explicit series', () => {
     expect(buildCalendarCreateRequest(CalendarEventCreateSchema.parse(baseCreate))).toMatchObject({

@@ -7,7 +7,7 @@ const DEFAULT_MAX_TOOLS = 75;
 const DEFAULT_MAX_ARGUMENTS = 500;
 const DEFAULT_MAX_ESTIMATED_TOKENS = 30_000;
 // Spec v1.20.9 adds structured calendar recurrence inputs: measured input metadata
-// grows from 12,337 to 12,720 tokens (378 of 383 added tokens are event inputs).
+// grows from 12,337 to 12,806 tokens (most added tokens are event inputs).
 // Preserve those supported fields and keep all other metadata budgets unchanged.
 const DEFAULT_MAX_LLM_INPUT_TOKENS = 13_000;
 const DEFAULT_MAX_MCP_WIRE_TOKENS = 32_000;
