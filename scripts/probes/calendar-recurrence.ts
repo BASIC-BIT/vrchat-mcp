@@ -66,7 +66,7 @@ async function call(operationId: string, params: RecordData, body?: unknown): Pr
       options: { rawResponse: true },
     });
     // Save the returned creation identity before later assertions or parsing.
-    if (operationId === 'createGroupCalendarEvent' && result.status === 200) {
+    if (operationId === 'createGroupCalendarEvent' && result.status >= 200 && result.status < 300) {
       const id = record(result.data).id;
       if (typeof id === 'string') {
         parentId = id;

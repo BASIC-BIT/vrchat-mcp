@@ -19,7 +19,8 @@ function isLocalDateTime(value: string): boolean {
 export function validateRecurrence(
   input: unknown
 ): z.infer<typeof schemas.CalendarEventRecurrence> {
-  const value = schemas.CalendarEventRecurrence.parse(input);
+  const value = schemas.CalendarEventRecurrence.strict().parse(input);
+  if (value.end !== undefined) schemas.CalendarEventRecurrenceEnd.strict().parse(value.end);
   if (!(value.timezone.includes('/') || value.timezone === 'UTC'))
     throw new Error('Use a named timezone such as America/Indiana/Indianapolis.');
   try {

@@ -21,6 +21,8 @@ describe('recurrence contract', () => {
     { ...weekly, end: { type: 'afterDate', date: '2026-12-31T23:59:00Z' } },
     { ...weekly, frequency: 'daily' },
     { ...weekly, daysOfWeek: ['FR', 'FR'] },
+    { ...weekly, dayOfWeek: ['FR'] },
+    { ...weekly, end: { type: 'afterDate', date: '2026-12-31T23:59:00', typo: true } },
   ])('rejects invalid schedule %j', (input) => {
     expect(() => validateRecurrence(input)).toThrow();
   });
