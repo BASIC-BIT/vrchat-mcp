@@ -76,6 +76,16 @@ describe('group posts service', () => {
   });
 
   describe('createGroupPost', () => {
+    it.each([[42], null])('keeps a successful create successful with malformed legacy roles: %j', async (roleId) => {
+      vi.mocked(callOperation).mockResolvedValueOnce({
+        url: 'u', data: { ...EXISTING_POST, roleId },
+      });
+      await expect(createGroupPost(GROUP_ID, {
+        title: 'T', text: 'B', visibility: 'group', sendNotification: false,
+      })).resolves.toBeNull();
+      expect(callOperation).toHaveBeenCalledTimes(1);
+    });
+
     it('posts the full body and returns a summary with roleIds mapped from roleId', async () => {
       vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: EXISTING_POST });
 
@@ -190,6 +200,34 @@ describe('group posts service', () => {
   });
 
   describe('updateGroupPost', () => {
+    it.each([
+      { fields: { roleIds: [ROLE_ID] }, requestedRoles: undefined, expectedRoles: [ROLE_ID] },
+      { fields: { roleIds: [ROLE_ID] }, requestedRoles: [], expectedRoles: [] },
+      { fields: { roleIds: [], roleId: [ROLE_ID] }, requestedRoles: undefined, expectedRoles: [] },
+    ])('preserves or explicitly clears plural roles in title-only edits: %j', async ({ fields, requestedRoles, expectedRoles }) => {
+      const currentPost = { ...EXISTING_POST, roleId: undefined, ...fields };
+      mockPostsPage([currentPost]);
+      vi.mocked(callOperation).mockResolvedValueOnce({ url: 'u', data: currentPost });
+      await updateGroupPost(GROUP_ID, {
+        postId: POST_ID, title: 'Updated doors', roleIds: requestedRoles, sendNotification: false,
+      });
+      expect(wireBody()).toEqual({
+        title: 'Updated doors', text: 'Come join us.', visibility: 'group',
+        roleIds: expectedRoles, imageId: IMAGE_ID, sendNotification: false,
+      });
+    });
+
+    it.each([
+      { roleId: [42] }, { roleId: null },
+      { roleIds: [42], roleId: [ROLE_ID] }, { roleIds: null, roleId: [ROLE_ID] },
+    ])('rejects malformed lookup roles before writing: %j', async (fields) => {
+      mockPostsPage([{ ...EXISTING_POST, ...fields }]);
+      await expect(updateGroupPost(GROUP_ID, {
+        postId: POST_ID, title: 'Updated doors', sendNotification: false,
+      })).rejects.toThrow();
+      expect(callOperation).not.toHaveBeenCalled();
+    });
+
     it('preserves roleIds and imageId even when the caller supplies a full body', async () => {
       // Regression: a full body used to skip the lookup, so the replacing PUT dropped
       // roleIds and imageId and widened a role-restricted post to the whole group.

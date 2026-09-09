@@ -1,7 +1,9 @@
 import type { z } from 'zod';
+import { validateRecurrence } from './recurrence.js';
 import {
   CalendarEventCreateSchema,
   type CalendarEventCreateInput,
+  type CalendarEventTargetKind,
   type CalendarEventDeleteInput,
   type CalendarEventFollowInput,
   type CalendarEventUpdateInput,
@@ -292,13 +294,20 @@ export function buildCalendarCreateRequest(
   const parsed = CalendarEventCreateSchema.parse(input);
   const { groupId, ...request } = parsed;
   void groupId;
+  if (request.recurrence != null && request.occurrenceKind !== 'series')
+    throw new Error('A recurring schedule requires occurrenceKind=series.');
+  if (request.occurrenceKind === 'series' && request.recurrence == null)
+    throw new Error('A series requires a recurrence schedule.');
+  if (request.recurrence != null) request.recurrence = validateRecurrence(request.recurrence);
   return request;
 }
 
 export function buildCalendarUpdateRequest(
   input: CalendarEventUpdatePayload
 ): CalendarEventUpdateRequest {
-  const { groupId, calendarId, ...request } = input;
+  if ('occurrenceKind' in input) throw new Error('occurrenceKind cannot be changed by update.');
+  const { groupId, calendarId, targetKind, ...request } = input;
+  void targetKind;
   void groupId;
   void calendarId;
   return request;
@@ -313,8 +322,24 @@ export async function createCalendarEvent(groupId: string, request: CalendarEven
 export async function updateCalendarEvent(
   groupId: string,
   calendarId: string,
-  request: CalendarEventUpdateRequest
+  request: CalendarEventUpdateRequest,
+  targetKind?: CalendarEventTargetKind
 ) {
+  if ('occurrenceKind' in request) throw new Error('occurrenceKind cannot be changed by update.');
+  const event = await getGroupCalendarEventOrThrow(groupId, calendarId);
+  const actual = getDeleteTargetKind(event);
+  if (targetKind === undefined && actual !== 'single_event')
+    throw new Error('Specify targetKind=occurrence or series for this recurring event.');
+  if (targetKind !== undefined && targetKind !== actual)
+    throw new Error(`Requested targetKind=${targetKind}, but the event is ${actual}.`);
+  if (request.recurrence === null)
+    throw new Error(
+      'Recurrence clearing is unsupported: VRChat rejects recurrence:null. Omit recurrence to preserve it.'
+    );
+  if (request.recurrence !== undefined && actual !== 'series')
+    throw new Error('Recurrence replacement requires a verified series target.');
+  if (request.recurrence !== undefined)
+    request = { ...request, recurrence: validateRecurrence(request.recurrence) };
   const result = await callWriteOperationParsed(
     'updateGroupCalendarEvent',
     { groupId, calendarId },

@@ -42,6 +42,30 @@ A raw detail GET for the same public Black Cat world returned 22 complete packag
 detail reads across four worlds found 75 complete packages. The search response is evidence
 for selecting the existing limited schema, not for loosening the full package schema.
 
+## Curated consumers after the refresh, 2026-09-09
+
+The upstream `GroupPost.roleId` to `roleIds` correction exposed a local mapper
+that still read only the old spelling. Reads now prefer plural roles, including
+an explicit empty list, and validate the legacy fallback only when plural is
+absent. Regression tests pass a restricted post through the generated parser,
+summary, merge, and serialized update body. They also cover malformed lookup
+roles and successful writes whose response cannot be summarized. These are local
+contract tests, not a new live post-mutation observation.
+
+The refreshed `FavoriteType` includes `vrcPlusWorld`. Existing add/list routing
+already forwards that type, but favorite-group discovery omitted its existing
+`type` input. Discovery now forwards it. Service and tool tests cover all four
+types, selected VRC+ collection names, and distinct favorite-record and target
+IDs. No live favorite add, entitlement test, or pagination change is claimed.
+
+Calendar creates now require explicit series intent for recurrence, and updates
+verify the requested target kind before writing. Curated validation enforces the
+conditional schedule requirements described upstream. A fresh disposable draft
+experiment established child/parent edit behavior, preserved omitted recurrence,
+and a definite HTTP 400 for null recurrence. Null clearing is rejected locally;
+it is not inferred from upstream nullability. See the [calendar evidence and
+remaining validation limits](research/calendar-recurrence-contract.md).
+
 ## Retained generator compatibility
 
 `openapi-zod-client` 1.18.3 still drops `nullable: true` siblings on ID references. Upstream
@@ -78,9 +102,18 @@ patch. The live search response above is a separate, already-modeled case.
 ### Favorite-world `n` is not a reliable upper bound
 
 Raw single requests on 2026-09-08 returned 2 entries for `n=1`, 4 for `n=2`, and 8 for `n=5`,
-all with offset 0 and HTTP 200. There was no local pagination or unrolling. The spec describes
-`n` as the number of objects to return. The underlying expansion mechanism is unverified;
-this evidence does not establish replacement offset or pagination rules.
+all with offset 0 and HTTP 200. Follow-up raw GETs at 17:16:57-17:17:00 UTC identified separate
+ordinary-world and VRC+ slices in the default combined query. The `n=5` response's favorite
+IDs exactly matched the concatenation of `GET /favorites` with `type=world` and
+`type=vrcPlusWorld`, each using `n=5,offset=0`. The tested account contributed five ordinary
+and three VRC+ entries. Additional offsets matched the per-type slices, including `n=2,offset=2`
+returning two ordinary and one VRC+ entry.
+
+These dated observations support the existing paginator's offset advance by requested page
+size, rather than combined response length. They do not establish behavior for every filter,
+sort, or account. No favorite was added or removed. The spec's generic number-of-objects
+wording needs endpoint-specific clarification; changing shared pagination parameters is not
+justified. PR114's later routing tests do not constitute a repeat of this live experiment.
 
 ### Invite request `instanceId` needs the full location
 

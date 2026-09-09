@@ -1,6 +1,6 @@
 # Tool Catalog (generated)
 
-Generated: 2026-09-08T09:29:43.007Z
+Generated: 2026-09-09T07:12:55.475Z
 
 Spec: VRChat API Documentation (1.20.9)
 
@@ -478,11 +478,11 @@ Input schema:
     },
     "occurrenceKind": {
       "default": "single",
+      "description": "Recurring schedules require explicit series.",
       "type": "string",
       "enum": [
-        "occurrence",
-        "series",
-        "single"
+        "single",
+        "series"
       ]
     },
     "parentId": {
@@ -901,7 +901,7 @@ Output schema:
 ```
 
 ### vrchat_event_update
-Update a group calendar event. (write)
+Edit the specified event. Recurring targets require targetKind. (write)
 
 Input schema:
 
@@ -1070,6 +1070,18 @@ Input schema:
     },
     "calendarId": {
       "type": "string"
+    },
+    "targetKind": {
+      "description": "Required for a recurring occurrence or parent series.",
+      "type": "string",
+      "enum": [
+        "single_event",
+        "occurrence",
+        "series"
+      ]
+    },
+    "occurrenceKind": {
+      "not": {}
     }
   },
   "required": [
@@ -1717,7 +1729,7 @@ Input schema:
       "items": {
         "type": "string"
       },
-      "description": "Favorite group tags, e.g. worlds1, avatars1, group_0."
+      "description": "Collection names returned by favorites view=groups; use their type too."
     }
   },
   "required": [
@@ -1877,6 +1889,7 @@ Input schema:
       ]
     },
     "type": {
+      "description": "Favorite type. For groups, filters the collection list.",
       "type": "string",
       "enum": [
         "avatar",

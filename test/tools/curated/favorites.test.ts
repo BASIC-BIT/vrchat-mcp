@@ -120,4 +120,60 @@ describe('curated favorite tools', () => {
     expect(removeFavorite).toHaveBeenCalledWith({ favoriteRecordId: 'fvrt_1' });
     expect(result).toMatchObject({ structuredContent: { status: 'removed' } });
   });
+
+  it.each(['avatar', 'friend', 'world', 'vrcPlusWorld'] as const)(
+    'routes %s collection discovery without changing the type', async (type) => {
+      vi.mocked(listFavoriteGroups).mockResolvedValue({ groups: [] });
+      const server = new FakeServer();
+      registerCuratedFavoriteTools(server as unknown as McpServer);
+      const tool = server.tools.find((entry) => entry.name === 'vrchat_favorites');
+      await tool!.handler({ view: 'groups', type });
+      expect(listFavoriteGroups).toHaveBeenCalledWith({ view: 'groups', type });
+    },
+  );
+
+  it('routes a VRC+ singular collection through favoriteGroupType', async () => {
+    const group = {
+      favoriteGroupId: 'fvgrp_plus', name: 'vrcPlusWorlds1', displayName: 'My worlds', type: 'vrcPlusWorld',
+    };
+    vi.mocked(getFavoriteGroup).mockResolvedValue({ group });
+    const server = new FakeServer();
+    registerCuratedFavoriteTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_favorites');
+    const input = {
+      view: 'group', favoriteGroupType: 'vrcPlusWorld', favoriteGroupName: 'vrcPlusWorlds1', userId: 'usr_test',
+    };
+    await expect(tool!.handler(input)).resolves.toMatchObject({ structuredContent: { group } });
+    expect(getFavoriteGroup).toHaveBeenCalledWith(input);
+  });
+
+  it('adds to the selected VRC+ collection and returns distinct record and target IDs', async () => {
+    const favorite = {
+      favoriteRecordId: 'fvrt_test', targetId: 'wrld_test', type: 'vrcPlusWorld', tags: ['vrcPlusWorlds1'],
+    };
+    vi.mocked(addFavorite).mockResolvedValue({ favorite });
+    const server = new FakeServer();
+    registerCuratedFavoriteTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_favorite_add');
+    const input = { type: 'vrcPlusWorld', targetId: 'wrld_test', tags: ['vrcPlusWorlds1'] };
+    await expect(tool!.handler(input)).resolves.toMatchObject({ structuredContent: { status: 'added', favorite } });
+    expect(addFavorite).toHaveBeenCalledWith(input);
+  });
+
+  it.each([
+    ['vrchat_favorites', { view: 'favorites', type: 'premiumWorld' }],
+    ['vrchat_favorites', { view: 'groups', type: 'premiumWorld' }],
+    ['vrchat_favorites', {
+      view: 'group', favoriteGroupType: 'premiumWorld', favoriteGroupName: 'worlds1', userId: 'usr_test',
+    }],
+    ['vrchat_favorite_add', { type: 'premiumWorld', targetId: 'wrld_test', tags: ['worlds1'] }],
+  ])('rejects unknown favorite types before calling services: %s %j', async (name, input) => {
+    const server = new FakeServer();
+    registerCuratedFavoriteTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === name);
+    await expect(tool!.handler(input)).resolves.toMatchObject({ isError: true });
+    for (const service of [listFavorites, listFavoriteGroups, getFavoriteGroup, addFavorite]) {
+      expect(service).not.toHaveBeenCalled();
+    }
+  });
 });
