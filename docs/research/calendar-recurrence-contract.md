@@ -26,19 +26,30 @@ unique weekdays, and real offset-free end datetimes. This is client policy, not 
 claim that every Intl timezone is supported by VRChat. Omitted end is indefinite
 per the upstream schema. The client does not implement recurrence generation.
 
+## Curated-path and DST validation
+
+Observed 15:11:41-15:11:50 UTC after fresh owner and one-member checks. The
+probe created one new draft series through the real curated create builder and
+core transport, recorded the raw returned ID before assertions, and parsed that
+exact response with `CalendarEvent.partial()`, matching the service parser.
+The create service wrapper and MCP handler remain covered by local tests.
+
+The two generated draft children both represented 09:00 local in
+`America/Indiana/Indianapolis`: October 31 was `13:00Z` at UTC-04:00 and
+November 1 was `14:00Z` at UTC-05:00. This verifies the tested daily schedule
+across that DST transition. It does not establish gap/fold handling or every
+timezone rule.
+
+The real curated update service accepted an explicit `targetKind: series` title
+edit, and a parent read showed the new title. Both children also inherited it.
+The same service rejected `recurrence: null` locally before a wire write. The
+probe freshly rechecked the recorded parent ID, group ownership, and draft status,
+then deleted only that parent. The delete returned HTTP200; October and November
+queries both returned no remaining children (`cleanupRemaining: 0`).
+
 ## Limitations
 
-Final curated-path live verification and a separate two-occurrence DST experiment
-were blocked by automatic approval review before execution. Unit tests verify the
-curated request path, and the raw live experiment above verifies the observed
-protocol behavior. DST offsets, gap/fold handling, month-end, leap-year behavior,
-and end-date inclusivity remain unverified. Do not claim a fully live-validated
-curated recurrence lifecycle until that additional authorized check succeeds.
-
-The prepared final probe uses the real curated create builder and core transport,
-records the raw returned ID before assertions, then parses that exact response with
-CalendarEvent.partial(), matching the service response parser. The create service
-wrapper and MCP handler remain covered by local tests, not this live step. Updates
-use the real curated service. The probe verifies two draft children and records whether their dates match 09:00 local,
-13:00Z on October 31 and 14:00Z on November 1, before its title update. A differing UTC schedule is recorded as a discrepancy and does not skip the independent title/null checks or cleanup. It does not run
-a second scheduling engine.
+The live check covers one daily two-occurrence series and one DST boundary.
+Gap/fold behavior, month-end recurrence, leap-year behavior, and end-date
+inclusivity remain unverified. The client validates inputs and passes scheduling
+to VRChat; it does not implement a second recurrence engine.
