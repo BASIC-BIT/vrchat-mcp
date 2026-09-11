@@ -203,6 +203,20 @@ class AuthManager {
     this.emitStatus();
   }
 
+  /** Non-interactive login used by automatic re-login (see autoLogin.ts). */
+  async loginHeadless(username: string, password: string, totp: string): Promise<void> {
+    try {
+      await this.performLogin(username, password, totp);
+    } catch (err) {
+      this.loggedIn = false;
+      this.emitStatus();
+      throw err;
+    }
+    this.loggedIn = true;
+    await this.persist();
+    this.emitStatus();
+  }
+
   async startLoginServer(): Promise<{ url: string; token: string }> {
     if (this.server) {
       return {

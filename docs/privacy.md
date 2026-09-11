@@ -12,6 +12,8 @@ By default, VRChat auth cookies are stored in the operating system keychain. If 
 
 VRChat's Creator Guidelines caution third-party API applications not to request or store login credentials, auth tokens, or session data. This project currently relies on local user-managed cookies because VRChat does not provide OAuth for this use case. Treat that as a policy-sensitive personal-use boundary: do not collect anyone else's login information, do not host this service for other users, and clear cookies with `vrchat_auth_logout` when you no longer need the session.
 
+Headless login is opt-in and off unless `VRCHAT_MCP_USERNAME`, `VRCHAT_MCP_PASSWORD`, and `VRCHAT_MCP_TOTP_SECRET` are all set. The server reads them from its own environment and never asks anyone for credentials. Use it only for an account you own and operate. Whoever can read that environment holds both the password and the second factor, so keep the values in a mode 0600 env file rather than in MCP host config. The server never logs or returns the password, the TOTP secret, generated codes, or cookie values. See the Headless Login section of the README for the rate limits on automatic logins.
+
 ## Network Requests
 
 The server makes requests to VRChat APIs, VRChat pipeline services, and VRChat status endpoints as needed for the tools you call. VRCX features read local VRCX database files on your machine when VRCX data is present.
