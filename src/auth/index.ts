@@ -138,6 +138,17 @@ class AuthManager {
   private pendingCreds: { username: string; password: string } | null = null;
   private store = getCookieStore();
   private events = new EventEmitter();
+  private loginQueue: Promise<unknown> = Promise.resolve();
+
+  /**
+   * Runs headless and browser logins one at a time, so each login's jar, flags, persist, and
+   * status emit land together. The queue advances whether a login resolves or rejects.
+   */
+  private serializeLogin<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.loginQueue.then(fn, fn);
+    this.loginQueue = run.catch(() => undefined);
+    return run;
+  }
 
   async init() {
     const loaded = await this.store.load();
@@ -204,17 +215,19 @@ class AuthManager {
   }
 
   /** Non-interactive login used by automatic re-login (see autoLogin.ts). */
-  async loginHeadless(username: string, password: string, totp: string): Promise<void> {
-    try {
-      await this.performLogin(username, password, totp);
-    } catch (err) {
-      this.loggedIn = false;
+  loginHeadless(username: string, password: string, totp: string): Promise<void> {
+    return this.serializeLogin(async () => {
+      try {
+        await this.performLogin(username, password, totp);
+      } catch (err) {
+        this.loggedIn = false;
+        this.emitStatus();
+        throw err;
+      }
+      this.loggedIn = true;
+      await this.persist();
       this.emitStatus();
-      throw err;
-    }
-    this.loggedIn = true;
-    await this.persist();
-    this.emitStatus();
+    });
   }
 
   async startLoginServer(): Promise<{ url: string; token: string }> {
@@ -439,24 +452,31 @@ class AuthManager {
       return;
     }
 
-    try {
-      await this.performLogin(creds.username, creds.password, submission.totp, submission.emailOtp);
-      this.loggedIn = true;
-      this.pendingCreds = null;
-      await this.persist();
-      this.emitStatus();
-      res.statusCode = 200;
-      this.renderSuccess(res);
-    } catch (err) {
-      this.loggedIn = false;
-      if (this.renderAuthError(res, token, err, creds.username)) {
-        return;
+    await this.serializeLogin(async () => {
+      try {
+        await this.performLogin(
+          creds.username,
+          creds.password,
+          submission.totp,
+          submission.emailOtp
+        );
+        this.loggedIn = true;
+        this.pendingCreds = null;
+        await this.persist();
+        this.emitStatus();
+        res.statusCode = 200;
+        this.renderSuccess(res);
+      } catch (err) {
+        this.loggedIn = false;
+        if (this.renderAuthError(res, token, err, creds.username)) {
+          return;
+        }
+        this.clearCookies();
+        this.pendingCreds = null;
+        const msg = err instanceof Error ? err.message : 'Login failed';
+        this.renderForm(res, token, { error: msg });
       }
-      this.clearCookies();
-      this.pendingCreds = null;
-      const msg = err instanceof Error ? err.message : 'Login failed';
-      this.renderForm(res, token, { error: msg });
-    }
+    });
   }
 
   private async handleRequest(req: IncomingMessage, res: ServerResponse) {

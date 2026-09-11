@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -34,6 +34,8 @@ const ENV_KEYS = [
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 
 const loginFetch = vi.fn<typeof fetch>();
+// Captured before the tests stub fetch, so a test can still post to the local login server.
+const realFetch = globalThis.fetch;
 let dir: string;
 let cookieFile: string;
 let sidecar: string;
@@ -312,6 +314,51 @@ describe('headless auto-login', () => {
 
     expect(results).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
     expect(loginFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start a headless login while a browser login is in flight', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const account = totpAccount();
+    const timeline: string[] = [];
+    loginFetch.mockImplementation(async (input: unknown) => {
+      timeline.push(new URL(String(input)).pathname);
+      if (timeline.length === 1) await gate;
+      return account(input);
+    });
+    const { authManager } = await newProcess(T0);
+    authManager.onStatusChange(({ loggedIn }) => timeline.push(`loggedIn=${loggedIn}`));
+    const { url } = await authManager.startLoginServer();
+    onTestFinished(() => authManager.logout());
+
+    const browser = realFetch(url.replace('/?', '/submit?'), {
+      method: 'POST',
+      body: new URLSearchParams({ username: USERNAME, password: PASSWORD, totp: CODE_AT_T0 }),
+    }).then((res) => res.text());
+    await vi.waitFor(() => expect(loginFetch).toHaveBeenCalledTimes(1));
+
+    const headless = authManager.loginHeadless(USERNAME, PASSWORD, CODE_AT_T0);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(loginFetch).toHaveBeenCalledTimes(1);
+
+    release();
+    expect(await browser).toContain('Login successful');
+    await headless;
+    const login = ['/api/1/auth/user', '/api/1/auth/twofactorauth/totp/verify', 'loggedIn=true'];
+    expect(timeline).toEqual([...login, ...login]);
+  });
+
+  it('runs the next login after a failed one', async () => {
+    loginFetch.mockRejectedValueOnce(new Error('fetch failed')).mockImplementation(totpAccount());
+    const { authManager } = await newProcess(T0);
+
+    const first = authManager.loginHeadless(USERNAME, PASSWORD, CODE_AT_T0);
+    const second = authManager.loginHeadless(USERNAME, PASSWORD, CODE_AT_T0);
+
+    await expect(first).rejects.toThrow('fetch failed');
+    await expect(second).resolves.toBeUndefined();
+    expect(authManager.getStatus()).toEqual({ loggedIn: true });
+    expect(loginFetch).toHaveBeenCalledTimes(3);
   });
 
   it('keeps an in-memory guard when the cookie store is memory', async () => {

@@ -111,7 +111,7 @@ async function acquireLock(lockPath: string): Promise<FileHandle | null> {
   if (handle) return handle;
   const stat = await fs.stat(lockPath).catch(() => null);
   if (stat && Math.abs(Date.now() - stat.mtimeMs) < LOCK_STALE_MS) return null;
-  // ponytail: two processes can clear the same stale lock at once. The pending record written
+  // Note: two processes can clear the same stale lock at once. The pending record written
   // under the lock limits that race to one extra login, not a storm.
   await fs.rm(lockPath, { force: true });
   return await openExclusive(lockPath);
