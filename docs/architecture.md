@@ -12,7 +12,7 @@ This server is organized by responsibility so each file stays small and focused.
 ## Core API plumbing (`src/core/`)
 
 - `spec.ts` loads and caches the VRChat OpenAPI spec.
-- `client.ts` executes API operations with auth + headers and enforces write gating.
+- `client.ts` executes API operations with auth + headers and enforces write gating. On a 401 it asks `src/auth/autoLogin.ts` for one opt-in headless re-login and retries the request once.
 - `readTools.ts` provides read-only helpers (pagination, field selection, shaping).
 - `readToolRegistry.ts` registers auto-generated GET tools from the spec.
 - `writeToolRegistry.ts` registers auto-generated POST/PUT/PATCH and DELETE routers from the spec.

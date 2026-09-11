@@ -1,4 +1,5 @@
 import { authManager } from '../auth/index.js';
+import { tryAutoLogin } from '../auth/autoLogin.js';
 import { File } from 'node:buffer';
 import { fetch, FormData, Headers, type RequestInit } from 'undici';
 import { getSpecIndex, type OperationDef } from './spec.js';
@@ -319,12 +320,14 @@ function buildNonOkCallError(params: {
   data: unknown;
   headers?: Record<string, string>;
   retryAfter?: string;
+  authNote?: string;
 }): CallError {
   const isClientError = params.status >= 400 && params.status < 500;
   const errorMessage = isClientError ? extractErrorMessage(params.data) : undefined;
-  const message = errorMessage
+  const baseMessage = errorMessage
     ? `VRChat API returned ${params.status}: ${errorMessage}`
     : `VRChat API returned ${params.status}`;
+  const message = params.authNote ? `${baseMessage}. ${params.authNote}` : baseMessage;
   const payload = isClientError
     ? buildErrorPayload({
         status: params.status,
@@ -341,15 +344,29 @@ function buildNonOkCallError(params: {
   );
 }
 
+/**
+ * Every authenticated VRChat request passes through here. On a 401 it asks tryAutoLogin for one
+ * headless re-login and, if that succeeds, retries once with a freshly built request so the new
+ * cookies are sent. buildInit is called per attempt; a second 401 is returned as-is.
+ */
+async function fetchWithAutoLogin(url: string, buildInit: () => Promise<RequestInit>) {
+  const res = await fetch(url, await buildInit());
+  if (res.status !== 401) return { res };
+  const login = await tryAutoLogin();
+  if (!login.ok) return { res, authNote: login.message };
+  await res.body?.cancel();
+  return { res: await fetch(url, await buildInit()) };
+}
+
 async function executeRequestWithHandling(input: {
   operationId: string;
   url: string;
-  init: RequestInit;
+  buildInit: () => Promise<RequestInit>;
   options?: CallOptions;
   indeterminateFailureMessage?: string;
 }): Promise<CallResult> {
   try {
-    const res = await fetch(input.url, input.init);
+    const { res, authNote } = await fetchWithAutoLogin(input.url, input.buildInit);
     const text = await res.text();
     const data = parseResponseText(text);
     const headersRecord = headersToRecord(res.headers);
@@ -366,6 +383,7 @@ async function executeRequestWithHandling(input: {
         data,
         headers: headersRecord,
         retryAfter: res.headers.get('retry-after') ?? undefined,
+        authNote,
       });
     }
 
@@ -405,26 +423,24 @@ export async function uploadGalleryImageMultipart(
 ): Promise<CallResult> {
   assertWritesAllowed('POST');
   const url = buildApiUrl('/file/image');
-  const headers = new Headers();
-  headers.set('user-agent', DEFAULT_USER_AGENT);
-  const cookieHeader = await authManager.getCookieHeader(url);
-  if (cookieHeader) headers.set('cookie', cookieHeader);
-
-  const form = new FormData();
   // Copy into an ordinary ArrayBuffer-backed view so node:buffer's File cannot
   // retain a caller-owned SharedArrayBuffer or mutable view.
-  form.append('file', new File([Uint8Array.from(bytes)], fileName, { type: 'image/png' }));
-  form.append('tag', 'gallery');
+  const file = new File([Uint8Array.from(bytes)], fileName, { type: 'image/png' });
 
   return executeRequestWithHandling({
     operationId: 'uploadImage',
     url,
     indeterminateFailureMessage:
       'The image upload response could not be received. The upload may have succeeded; do not retry automatically.',
-    init: {
-      method: 'POST',
-      headers,
-      body: form,
+    buildInit: async () => {
+      const headers = new Headers();
+      headers.set('user-agent', DEFAULT_USER_AGENT);
+      const cookieHeader = await authManager.getCookieHeader(url);
+      if (cookieHeader) headers.set('cookie', cookieHeader);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('tag', 'gallery');
+      return { method: 'POST', headers, body: form };
     },
   });
 }
@@ -442,6 +458,10 @@ export async function callOperation(input: CallInput): Promise<CallResult> {
     return { url, dryRun: true };
   }
 
-  const init = await buildRequestInit(op, url, params, body);
-  return executeRequestWithHandling({ operationId, url, init, options });
+  return executeRequestWithHandling({
+    operationId,
+    url,
+    buildInit: () => buildRequestInit(op, url, params, body),
+    options,
+  });
 }

@@ -151,6 +151,50 @@ Useful auth tools:
 - `vrchat_auth_status`: check whether the server is logged in.
 - `vrchat_auth_logout`: clear the stored session.
 
+### Headless Login for Bot Accounts
+
+Browser login needs a person. VRChat's `twoFactorAuth` cookie lasts 30 days, and changing an account's 2FA method revokes its session immediately, so an unattended deployment would otherwise need someone to log in again each time. For an account you own and operate with authenticator (TOTP) 2FA, such as a dedicated bot account, the server can log itself back in.
+
+Set all three variables to turn it on. If any of them is missing or empty, nothing changes.
+
+| Variable                 | Use                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `VRCHAT_MCP_USERNAME`    | VRChat username or email.                                                           |
+| `VRCHAT_MCP_PASSWORD`    | VRChat password.                                                                    |
+| `VRCHAT_MCP_TOTP_SECRET` | Base32 authenticator secret. VRChat's space-grouped lowercase form is accepted too. |
+
+When a VRChat API request returns 401, the server logs in once with the password and a freshly generated TOTP code, saves the new cookies to the configured cookie store, and retries the request once. If VRChat asks for an email code instead of TOTP, the server submits no code and returns the normal 401 error with a note to use `vrchat_auth_begin`. VRChat only reveals the 2FA method after the password step, so that still counts as a failed attempt for the backoff below.
+
+Automatic logins are rate limited, and the limit is persisted so it holds when the host spawns a fresh server process for every call:
+
+- At most one automatic attempt every 10 minutes.
+- After a failed attempt (wrong password, rejected code, VRChat error) no automatic attempt for 60 minutes. An attempt that never recorded an outcome, for example because the process was killed mid-login, counts as failed.
+- While in cooldown, the tool error says so and gives the time of the next allowed attempt.
+- The record is `<cookie file>.autologin.json` (mode 0600), beside the configured cookie file path. Keychain storage uses the same path. A short-lived `.lock` file stops two processes from claiming the same attempt. If the record cannot be written, the server does not try to log in.
+- With `VRCHAT_MCP_COOKIE_STORE=memory` there is no file, so the limit lives in memory and only applies within one process. That is much weaker: with a process per call, every process would log in. Use `file` storage for headless deployments.
+
+The password, TOTP secret, generated codes, and cookie values are never logged or included in tool results or errors. `vrchat_auth_logout` still clears the session, but while the variables are set the next API call logs back in.
+
+Some MCP hosts, OpenClaw included, replace the child environment with the server entry's `env` block instead of merging it into their own. Do not put the password or TOTP secret inline in the host config. Keep them in a root-owned env file with mode 0600 and point the host at a small wrapper script that loads the file and execs the server. The host must run the wrapper as a user that can read the file. Quote values that contain shell metacharacters. If the host's `env` block does not pass `PATH`, set it in the wrapper or use absolute paths.
+
+```sh
+#!/bin/sh
+# /usr/local/bin/vrchat-mcp-bot
+set -a
+. /etc/vrchat-mcp/bot.env
+set +a
+exec vrchat-mcp "$@"
+```
+
+```sh
+# /etc/vrchat-mcp/bot.env (owner root, mode 0600)
+VRCHAT_MCP_COOKIE_STORE=file
+VRCHAT_MCP_COOKIE_FILE=/var/lib/vrchat-mcp/cookies.json
+VRCHAT_MCP_USERNAME='bot-account'
+VRCHAT_MCP_PASSWORD='...'
+VRCHAT_MCP_TOTP_SECRET='abcd efgh ijkl mnop qrst uvwx yz23 4567'
+```
+
 ## What You Can Ask
 
 Examples:
@@ -258,22 +302,25 @@ Configuration is optional. Defaults cover normal local use.
 
 Common environment variables:
 
-| Variable                                  | Use                                                      |
-| ----------------------------------------- | -------------------------------------------------------- |
-| `VRCHAT_MCP_CONFIG_FILE`                  | Path to a JSON config file.                              |
-| `VRCHAT_MCP_USER_AGENT`                   | Descriptive user agent for VRChat API requests.          |
-| `VRCHAT_MCP_LOG_LEVEL`                    | `debug`, `info`, `warn`, or `error`.                     |
-| `VRCHAT_MCP_COOKIE_STORE`                 | `keychain`, `file`, or `memory`. Defaults to `keychain`. |
-| `VRCHAT_MCP_COOKIE_FILE`                  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.    |
-| `VRCHAT_MCP_ALLOW_WRITES`                 | Set to `false` for read-only mode.                       |
-| `VRCHAT_MCP_UPLOAD_ROOTS`                 | Absolute roots allowed for local PNG uploads.            |
-| `VRCHAT_MCP_TRANSPORT`                    | `stdio` (default) or `http`.                             |
-| `VRCHAT_MCP_HTTP_BEARER_TOKEN`            | Required 32+ character secret for HTTP mode.             |
-| `VRCHAT_MCP_HTTP_PORT`                    | Loopback HTTP port. Defaults to `8765`.                  |
-| `VRCHAT_MCP_HTTP_PATH`                    | MCP endpoint path. Defaults to `/mcp`.                   |
-| `VRCHAT_MCP_HTTP_MAX_SESSIONS`            | Maximum concurrent HTTP sessions. Defaults to `8`.       |
-| `VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE`   | Per-client HTTP request limit. Defaults to `300`.        |
-| `VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS` | Abandoned-session timeout. Defaults to `1800000`.        |
+| Variable                                  | Use                                                                        |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `VRCHAT_MCP_CONFIG_FILE`                  | Path to a JSON config file.                                                |
+| `VRCHAT_MCP_USER_AGENT`                   | Descriptive user agent for VRChat API requests.                            |
+| `VRCHAT_MCP_LOG_LEVEL`                    | `debug`, `info`, `warn`, or `error`.                                       |
+| `VRCHAT_MCP_COOKIE_STORE`                 | `keychain`, `file`, or `memory`. Defaults to `keychain`.                   |
+| `VRCHAT_MCP_COOKIE_FILE`                  | Cookie file path when `VRCHAT_MCP_COOKIE_STORE=file`.                      |
+| `VRCHAT_MCP_USERNAME`                     | Username for [headless login](#headless-login-for-bot-accounts).           |
+| `VRCHAT_MCP_PASSWORD`                     | Password for [headless login](#headless-login-for-bot-accounts).           |
+| `VRCHAT_MCP_TOTP_SECRET`                  | Base32 TOTP secret for [headless login](#headless-login-for-bot-accounts). |
+| `VRCHAT_MCP_ALLOW_WRITES`                 | Set to `false` for read-only mode.                                         |
+| `VRCHAT_MCP_UPLOAD_ROOTS`                 | Absolute roots allowed for local PNG uploads.                              |
+| `VRCHAT_MCP_TRANSPORT`                    | `stdio` (default) or `http`.                                               |
+| `VRCHAT_MCP_HTTP_BEARER_TOKEN`            | Required 32+ character secret for HTTP mode.                               |
+| `VRCHAT_MCP_HTTP_PORT`                    | Loopback HTTP port. Defaults to `8765`.                                    |
+| `VRCHAT_MCP_HTTP_PATH`                    | MCP endpoint path. Defaults to `/mcp`.                                     |
+| `VRCHAT_MCP_HTTP_MAX_SESSIONS`            | Maximum concurrent HTTP sessions. Defaults to `8`.                         |
+| `VRCHAT_MCP_HTTP_RATE_LIMIT_PER_MINUTE`   | Per-client HTTP request limit. Defaults to `300`.                          |
+| `VRCHAT_MCP_HTTP_SESSION_IDLE_TIMEOUT_MS` | Abandoned-session timeout. Defaults to `1800000`.                          |
 
 Example JSON config:
 
