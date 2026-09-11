@@ -237,6 +237,8 @@ All three accept `groupId` or `shortCode`, and the `groups.allowlist` guard alwa
 
 VRChat replaces the entire post on edit, and its API has no single-post read. `vrchat_group_post_update` therefore always looks the post up first, scanning the most recent 300 posts fresh from the API rather than from the cached list, and fills in whatever fields the caller omitted. Omitting `roleIds` keeps the current role restrictions; pass `roleIds: []` to clear them. Omitting `imageId` keeps the current image; pass `imageId: null` to remove it. An update whose supplied values all match the post is rejected, since re-sending identical content only bumps the timestamp and can re-notify members.
 
+Post reads prefer `roleIds`, including an explicit empty list. They accept validated legacy `roleId` only when `roleIds` is absent. A malformed role list prevents an edit instead of being treated as unrestricted.
+
 If the post is older than that lookup window, supplying `title`, `text`, and `visibility` together still lets the edit land as an outright replace. That path cannot recover `roleIds` or `imageId`, so it clears them and reports `mergedFromExisting: false`. Skipping the lookup is deliberately not offered as an optimization: a replace that silently drops `roleIds` would widen a role-restricted post to the whole group.
 
 Creates and updates report success even when the write lands but VRChat's response cannot be parsed, returning `post: null`. Neither call is idempotent, so reporting a failure there would invite a retry that posts twice and, with `sendNotification`, notifies twice.
@@ -246,6 +248,76 @@ All three tools invalidate cached group reads after the write, including when th
 Invites (write, low-risk):
 
 - `vrchat_invite_self`
+
+## Recurring calendar events
+
+A recurring create requires explicit `occurrenceKind: "series"`. Omitting both the
+kind and recurrence creates a single event. Series require a schedule; single
+events cannot carry one. The curated tool does not create generated occurrences
+directly.
+
+Example arguments for a draft weekly series, using your group's ID:
+
+```json
+{
+  "groupId": "grp_example",
+  "title": "Weekly gathering",
+  "description": "Weekly group event.",
+  "category": "other",
+  "accessType": "group",
+  "isDraft": true,
+  "startsAt": "2026-11-06T23:00:00Z",
+  "endsAt": "2026-11-07T00:00:00Z",
+  "sendCreationNotification": false,
+  "occurrenceKind": "series",
+  "recurrence": {
+    "frequency": "weekly",
+    "interval": 1,
+    "timezone": "America/Indiana/Indianapolis",
+    "daysOfWeek": ["FR"],
+    "end": { "type": "afterOccurrences", "count": 4 }
+  }
+}
+```
+
+The client validates recognized named timezones, positive intervals and counts,
+weekly-only unique weekdays, and the end condition's required value. For
+`afterDate`, supply a real local datetime such as `2026-12-31T23:59:00`, without
+`Z` or an offset. The client preserves that local value; VRChat generates the
+schedule. Omitting `end` means indefinite recurrence. Intl timezone recognition
+is a client check, not a guarantee of server support for every timezone.
+
+`vrchat_event_update` freshly reads the exact requested event. Recurring targets
+require `targetKind: "series"` for a parent or `targetKind: "occurrence"` for one
+child. A mismatch fails before writing. Existing single-event updates can omit
+targetKind, or use `single_event`. For example, update one child with
+`{"groupId":"grp_example","calendarId":"cal_child","targetKind":"occurrence","title":"New title"}`;
+use the parent ID and `targetKind: "series"` to edit the series. The tool does not
+redirect a child ID to its parent or send `targetKind` in the API body.
+
+Only a verified series parent accepts a replacement recurrence object. Omitting `recurrence` preserves the schedule. `recurrence: null` is rejected
+locally because the tested series update returned HTTP 400; it is not a supported
+way to stop or delete a series. `occurrenceKind` cannot be changed by an update.
+A fresh draft experiment found that a parent edit updated an ordinary child while
+preserving a previously customized child. Schedule replacement also produced new
+child IDs. Re-read events after a schedule change rather than assuming old child
+IDs remain usable. See the [dated experiment and limits](research/calendar-recurrence-contract.md).
+
+## Favorite collections
+
+VRC+ collections are additional favorite rows. Discover collections with
+`vrchat_favorites` using `view: "groups"`; optional `type` filters the list.
+Use the returned `displayName` as the human label, `name` as an add `tags` value,
+and `type` as the add `type`. Do not guess names or types from display labels.
+For example, if discovery returns `name: "vrcPlusWorlds1"` and
+`type: "vrcPlusWorld"`, use that pair when adding a world to that collection.
+
+Singular `view: "group"` uses `favoriteGroupType`, `favoriteGroupName`, and
+`userId`. Favorite summaries distinguish `targetId` (the saved user, avatar, or
+world) from `favoriteRecordId` (the record to remove). API entitlement and capacity
+errors are returned without retrying a write under another type. Combined world
+favorites retain the existing pagination behavior; this routing change does not
+alter offset stepping.
 
 ## Next up (near-term)
 

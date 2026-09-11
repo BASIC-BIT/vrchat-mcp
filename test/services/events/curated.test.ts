@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { toJSONSchema } from 'zod';
 
 vi.mock('../../../src/core/readTools.js', () => ({
   callReadOperation: vi.fn(),
@@ -51,13 +52,13 @@ describe('events curated service', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'getCalendarEvents',
       { date: '2025-12-01T00:00:00.000Z' },
-      expect.objectContaining({ page: expectPage({ size: 50 }) }),
+      expect.objectContaining({ page: expectPage({ size: 50 }) })
     );
   });
 
   it('rejects invalid from values', async () => {
     await expect(listUpcomingEvents({ from: 'not-a-date' })).rejects.toThrow(
-      'from must be a valid ISO date/time string.',
+      'from must be a valid ISO date/time string.'
     );
   });
 
@@ -128,13 +129,13 @@ describe('events curated service', () => {
       1,
       'discoverCalendarEvents',
       expect.objectContaining({ scope: 'upcoming', categories: 'music', n: 1 }),
-      undefined,
+      undefined
     );
     expect(callReadOperation).toHaveBeenNthCalledWith(
       2,
       'discoverCalendarEvents',
       expect.objectContaining({ nextCursor: ' cursor_2 ' }),
-      undefined,
+      undefined
     );
     expect(result.events.map((event) => event.id)).toEqual(['evt_1', 'evt_2']);
     expect(result.truncated).toBe(false);
@@ -212,6 +213,9 @@ describe('events curated service', () => {
   it('calls create/update/delete event operations', async () => {
     const invalidateSpy = vi.spyOn(cacheManager, 'invalidateByTag');
     vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_1', occurrenceKind: 'single' },
+    });
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
       data: { id: 'cal_1', occurrenceKind: 'occurrence' },
     });
     vi.mocked(callOperation)
@@ -266,7 +270,7 @@ describe('events curated service', () => {
     expect(callReadOperation).toHaveBeenCalledWith(
       'getGroupCalendarEvent',
       { groupId: 'grp_1', calendarId: 'cal_1' },
-      {},
+      {}
     );
     expect(callOperation).toHaveBeenCalledWith({
       operationId: 'deleteGroupCalendarEvent',
@@ -330,16 +334,19 @@ describe('events curated service', () => {
     ['occurrence', 'series'],
     ['series', 'single_event'],
     ['series', 'occurrence'],
-  ] as const)('refuses occurrenceKind=%s when targetKind=%s', async (occurrenceKind, targetKind) => {
-    vi.mocked(callReadOperation).mockResolvedValueOnce({
-      data: { id: 'cal_mismatch', occurrenceKind },
-    });
+  ] as const)(
+    'refuses occurrenceKind=%s when targetKind=%s',
+    async (occurrenceKind, targetKind) => {
+      vi.mocked(callReadOperation).mockResolvedValueOnce({
+        data: { id: 'cal_mismatch', occurrenceKind },
+      });
 
-    await expect(deleteCalendarEvent('grp_1', 'cal_mismatch', targetKind)).rejects.toThrow(
-      `expected targetKind "${targetKind}"`,
-    );
-    expect(callOperation).not.toHaveBeenCalled();
-  });
+      await expect(deleteCalendarEvent('grp_1', 'cal_mismatch', targetKind)).rejects.toThrow(
+        `expected targetKind "${targetKind}"`
+      );
+      expect(callOperation).not.toHaveBeenCalled();
+    }
+  );
 
   it.each(['single_event', 'occurrence', 'series'] as const)(
     'refuses an unknown occurrenceKind for targetKind=%s',
@@ -349,24 +356,24 @@ describe('events curated service', () => {
       });
 
       await expect(deleteCalendarEvent('grp_1', 'cal_unknown', targetKind)).rejects.toThrow(
-        'found "future_kind"',
+        'occurrenceKind'
       );
       expect(callOperation).not.toHaveBeenCalled();
-    },
+    }
   );
 
-  it.each([undefined, null, '', 7, { unexpected: true }])(
+  it.each([null, '', 7, { unexpected: true }])(
     'refuses a present malformed occurrenceKind value: %j',
     async (occurrenceKind) => {
       vi.mocked(callReadOperation).mockResolvedValueOnce({
         data: { id: 'cal_malformed', occurrenceKind },
       });
 
-      await expect(
-        deleteCalendarEvent('grp_1', 'cal_malformed', 'single_event'),
-      ).rejects.toThrow('Refusing to delete calendar event');
+      await expect(deleteCalendarEvent('grp_1', 'cal_malformed', 'single_event')).rejects.toThrow(
+        'occurrenceKind'
+      );
       expect(callOperation).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it('refuses to delete when targetKind does not match', async () => {
@@ -375,7 +382,7 @@ describe('events curated service', () => {
     });
 
     await expect(deleteCalendarEvent('grp_1', 'cal_series', 'occurrence')).rejects.toThrow(
-      'expected targetKind "occurrence"',
+      'expected targetKind "occurrence"'
     );
     expect(callOperation).not.toHaveBeenCalled();
   });
@@ -386,7 +393,7 @@ describe('events curated service', () => {
     });
 
     await expect(deleteCalendarEvent('grp_1', 'cal_single', 'series')).rejects.toThrow(
-      'found "single_event"',
+      'found "single_event"'
     );
     expect(callOperation).not.toHaveBeenCalled();
   });
@@ -409,5 +416,136 @@ describe('events curated service', () => {
     expect(result).toMatchObject({ id: 'evt_followed' });
     expect(invalidateSpy).toHaveBeenCalledWith('groups:grp_1');
     invalidateSpy.mockRestore();
+  });
+});
+import { CalendarEventCreateSchema } from '../../../src/models/events.js';
+const schedule = { frequency: 'weekly', interval: 1, timezone: 'UTC', daysOfWeek: ['FR'] };
+const baseCreate = {
+  groupId: 'grp_1',
+  title: 'Test',
+  description: 'Test',
+  category: 'other',
+  startsAt: '2026-11-01T14:00:00Z',
+  endsAt: '2026-11-01T14:30:00Z',
+};
+describe('calendar schedule builders and scope', () => {
+  beforeEach(() => {
+    vi.mocked(callOperation).mockReset();
+    vi.mocked(callReadOperation).mockReset();
+  });
+  it('advertises occurrenceKind as optional when single is the default', () => {
+    const jsonSchema = toJSONSchema(CalendarEventCreateSchema);
+    expect(jsonSchema.required).not.toContain('occurrenceKind');
+  });
+  it('defaults ordinary create and preserves explicit series', () => {
+    expect(buildCalendarCreateRequest(CalendarEventCreateSchema.parse(baseCreate))).toMatchObject({
+      occurrenceKind: 'single',
+      accessType: 'group',
+      sendCreationNotification: false,
+    });
+    expect(
+      buildCalendarCreateRequest(
+        CalendarEventCreateSchema.parse({
+          ...baseCreate,
+          occurrenceKind: 'series',
+          recurrence: schedule,
+        })
+      )
+    ).toMatchObject({ occurrenceKind: 'series', recurrence: schedule });
+  });
+  it.each([
+    { recurrence: schedule },
+    { occurrenceKind: 'single', recurrence: schedule },
+    { occurrenceKind: 'series' },
+  ])('rejects contradictory create %j', (change) => {
+    expect(() =>
+      buildCalendarCreateRequest(CalendarEventCreateSchema.parse({ ...baseCreate, ...change }))
+    ).toThrow();
+  });
+  it.each(['occurrence', 'series'] as const)('requires scope for %s', async (occurrenceKind) => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({ data: { id: 'cal_1', occurrenceKind } });
+    await expect(updateCalendarEvent('grp_1', 'cal_1', { title: 'Changed' })).rejects.toThrow(
+      'targetKind'
+    );
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+  it.each(['occurrence', 'series'] as const)(
+    'preserves ID and omissions for explicit %s',
+    async (kind) => {
+      vi.mocked(callReadOperation).mockResolvedValueOnce({
+        data: { id: 'cal_1', occurrenceKind: kind, recurrence: schedule },
+      });
+      vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'cal_1' } });
+      await updateCalendarEvent('grp_1', 'cal_1', { title: 'Changed' }, kind);
+      expect(callOperation).toHaveBeenCalledWith({
+        operationId: 'updateGroupCalendarEvent',
+        params: { groupId: 'grp_1', calendarId: 'cal_1' },
+        body: { title: 'Changed' },
+      });
+    }
+  );
+  it('rejects scope mismatch before writes', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_1', occurrenceKind: 'series' },
+    });
+    await expect(
+      updateCalendarEvent('grp_1', 'cal_1', { title: 'Changed' }, 'occurrence')
+    ).rejects.toThrow('targetKind');
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+  it('rejects recurrence clearing observed to fail with HTTP400', async () => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_1', occurrenceKind: 'series' },
+    });
+    await expect(
+      updateCalendarEvent('grp_1', 'cal_1', { recurrence: null }, 'series')
+    ).rejects.toThrow('clearing');
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+  it('strips scope and rejects kind conversion', () => {
+    expect(buildCalendarUpdateRequest({ targetKind: 'series', title: 'Changed' })).toEqual({
+      title: 'Changed',
+    });
+    expect(() => buildCalendarUpdateRequest({ occurrenceKind: 'single' } as never)).toThrow(
+      'occurrenceKind'
+    );
+  });
+});
+
+describe('series-only recurrence replacement', () => {
+  beforeEach(() => {
+    vi.mocked(callOperation).mockReset();
+    vi.mocked(callReadOperation).mockReset();
+  });
+  it.each([
+    ['single', undefined],
+    ['single', 'single_event'],
+    ['occurrence', 'occurrence'],
+  ] as const)('rejects recurrence for %s scope %s', async (occurrenceKind, targetKind) => {
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_target', occurrenceKind },
+    });
+    await expect(
+      updateCalendarEvent(
+        'grp_1',
+        'cal_target',
+        { recurrence: { frequency: 'daily', interval: 1, timezone: 'UTC' } },
+        targetKind
+      )
+    ).rejects.toThrow('series');
+    expect(callOperation).not.toHaveBeenCalled();
+  });
+  it('replaces recurrence on the exact verified series', async () => {
+    const recurrence = { frequency: 'daily' as const, interval: 1, timezone: 'UTC' };
+    vi.mocked(callReadOperation).mockResolvedValueOnce({
+      data: { id: 'cal_parent', occurrenceKind: 'series' },
+    });
+    vi.mocked(callOperation).mockResolvedValueOnce({ data: { id: 'cal_parent' } });
+    await updateCalendarEvent('grp_1', 'cal_parent', { recurrence }, 'series');
+    expect(callOperation).toHaveBeenCalledWith({
+      operationId: 'updateGroupCalendarEvent',
+      params: { groupId: 'grp_1', calendarId: 'cal_parent' },
+      body: { recurrence },
+    });
   });
 });

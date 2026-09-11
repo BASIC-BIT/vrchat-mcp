@@ -4,7 +4,7 @@ import { FakeServer } from '../../helpers/fake-server.js';
 
 vi.mock('../../../src/services/events/curated.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>(
-    '../../../src/services/events/curated.js',
+    '../../../src/services/events/curated.js'
   );
   return {
     ...actual,
@@ -194,6 +194,7 @@ describe('curated event tools', () => {
       'grp_1',
       'evt_9',
       expect.objectContaining(request),
+      undefined
     );
     expect(result).toMatchObject({
       structuredContent: { status: 'updated' },
@@ -288,5 +289,45 @@ describe('curated event tools', () => {
     expect(result).toMatchObject({
       structuredContent: { status: 'followed' },
     });
+  });
+});
+
+describe('event tool recurrence contract', () => {
+  beforeEach(() => {
+    vi.mocked(createCalendarEvent).mockReset();
+    vi.mocked(updateCalendarEvent).mockReset();
+  });
+  it.each([
+    { recurrence: { frequency: 'daily', interval: 1, timezone: 'UTC' } },
+    { occurrenceKind: 'series' },
+    { occurrenceKind: 'occurrence' },
+  ])('rejects invalid creates before service write %j', async (change) => {
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_create');
+    const result = await tool!.handler({
+      groupId: 'grp_1',
+      title: 'Test',
+      description: 'Test',
+      category: 'other',
+      startsAt: '2026-11-01T14:00:00Z',
+      endsAt: '2026-11-01T14:30:00Z',
+      ...change,
+    });
+    expect(result.isError).toBe(true);
+    expect(createCalendarEvent).not.toHaveBeenCalled();
+  });
+  it.each(['occurrence', 'series'])('passes explicit %s scope separately', async (targetKind) => {
+    vi.mocked(updateCalendarEvent).mockResolvedValueOnce(null);
+    const server = new FakeServer();
+    registerCuratedEventTools(server as unknown as McpServer);
+    const tool = server.tools.find((entry) => entry.name === 'vrchat_event_update');
+    await tool!.handler({ groupId: 'grp_1', calendarId: 'cal_1', title: 'Changed', targetKind });
+    expect(updateCalendarEvent).toHaveBeenCalledWith(
+      'grp_1',
+      'cal_1',
+      { title: 'Changed', sendCreationNotification: false },
+      targetKind
+    );
   });
 });

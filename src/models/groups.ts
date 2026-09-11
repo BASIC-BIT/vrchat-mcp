@@ -464,6 +464,13 @@ export function toGroupSummary(group: LimitedGroupRecord): GroupSummary | null {
   };
 }
 
+function readPostRoleIds(post: GroupPostRecord): string[] | undefined {
+  // Prefer the current field, including an explicit empty list, over the legacy alias.
+  let value: unknown = post.roleIds;
+  if (value === undefined) value = post.roleId;
+  return value === undefined ? undefined : z.array(z.string()).parse(value);
+}
+
 export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | null {
   const id = post.id ?? '';
   if (!id) return null;
@@ -475,8 +482,7 @@ export function toGroupPostSummary(post: GroupPostRecord): GroupPostSummary | nu
     updatedAt: post.updatedAt ?? undefined,
     authorId: post.authorId ?? undefined,
     visibility: post.visibility ?? undefined,
-    // The API reads back the role list as singular `roleId` but accepts it as `roleIds`.
-    roleIds: Array.isArray(post.roleId) ? post.roleId : undefined,
+    roleIds: readPostRoleIds(post),
     imageId: post.imageId ?? undefined,
   };
 }

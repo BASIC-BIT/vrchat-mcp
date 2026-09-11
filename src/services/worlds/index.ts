@@ -21,6 +21,7 @@ const INSTANCE_STALE_TTL_MS = cacheConfig.notificationsStaleTtlMs;
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_PAGES = 5;
 type WorldRecord = Partial<z.infer<typeof schemas.World>>;
+type LimitedWorldRecord = Partial<z.infer<typeof schemas.LimitedWorld>>;
 type FavoritedWorldRecord = Partial<z.infer<typeof schemas.FavoritedWorld>>;
 
 interface PageOptions {
@@ -64,24 +65,22 @@ function readPageOptions(
     maxItems?: number;
     offset?: number;
   },
-  defaults: { pageSize: number; maxPages: number },
+  defaults: { pageSize: number; maxPages: number }
 ): PageOptions {
   const pageSize =
     typeof input.pageSize === 'number' ? Math.floor(input.pageSize) : defaults.pageSize;
   const maxPages =
     typeof input.maxPages === 'number' ? Math.floor(input.maxPages) : defaults.maxPages;
-  const maxItems =
-    typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : undefined;
-  const offset =
-    typeof input.offset === 'number' ? Math.floor(input.offset) : undefined;
+  const maxItems = typeof input.maxItems === 'number' ? Math.floor(input.maxItems) : undefined;
+  const offset = typeof input.offset === 'number' ? Math.floor(input.offset) : undefined;
   return { pageSize, maxPages, maxItems, offset };
 }
 
 async function fetchWorldSearchCached(
   cacheKeyParams: Record<string, string | number | boolean | null | undefined>,
   params: WorldSearchParams,
-  page: PageOptions,
-): Promise<{ value: CachedWorldList<WorldRecord>; stale: boolean }> {
+  page: PageOptions
+): Promise<{ value: CachedWorldList<LimitedWorldRecord>; stale: boolean }> {
   const cacheKey = buildCacheKey('worlds:search', cacheKeyParams);
   return await cacheManager.getOrSetStale(
     cacheKey,
@@ -99,14 +98,14 @@ async function fetchWorldSearchCached(
         },
       });
       return { worlds: result.data, page: result.page };
-    },
+    }
   );
 }
 
 async function fetchWorldFavoritesCached(
   cacheKeyParams: Record<string, string | number | boolean | null | undefined>,
   params: WorldSearchParams,
-  page: PageOptions,
+  page: PageOptions
 ): Promise<{
   value: CachedWorldList<FavoritedWorldRecord>;
   stale: boolean;
@@ -128,14 +127,14 @@ async function fetchWorldFavoritesCached(
         },
       });
       return { worlds: result.data, page: result.page };
-    },
+    }
   );
 }
 
 async function fetchWorldProfileCached(
   worldId: string,
   ttlMs = CACHE_TTL_MS,
-  staleTtlMs = CACHE_STALE_TTL_MS,
+  staleTtlMs = CACHE_STALE_TTL_MS
 ) {
   const cacheKey = buildCacheKey('worlds:profile', { worldId });
   return await cacheManager.getOrSetStale(
@@ -146,11 +145,14 @@ async function fetchWorldProfileCached(
     async () => {
       const result = await callReadOperationParsed('getWorld', { worldId });
       return result.data;
-    },
+    }
   );
 }
 
-function applyWorldSummaryOptions(summary: WorldSummary, input: { includeTags?: boolean }): WorldSummary {
+function applyWorldSummaryOptions(
+  summary: WorldSummary,
+  input: { includeTags?: boolean }
+): WorldSummary {
   if (input.includeTags === true) return summary;
   const withoutTags = { ...summary };
   delete withoutTags.tags;
@@ -214,9 +216,7 @@ function summarizeInstances(raw: WorldRecord['instances']): WorldInstancesSummar
   };
 }
 
-export async function searchWorlds(
-  input: WorldSearchInput,
-): Promise<{
+export async function searchWorlds(input: WorldSearchInput): Promise<{
   worlds: WorldSummary[];
   page?: CachedWorldList<WorldRecord>['page'];
   stale: boolean;
@@ -268,9 +268,7 @@ export async function searchWorlds(
   };
 }
 
-export async function listFavoriteWorlds(
-  input: WorldFavoritesInput,
-): Promise<{
+export async function listFavoriteWorlds(input: WorldFavoritesInput): Promise<{
   worlds: WorldSummary[];
   page?: CachedWorldList<FavoritedWorldRecord>['page'];
   stale: boolean;
@@ -348,7 +346,7 @@ export async function resolveWorldId(args: {
   });
   const normalized = normalizeWorldName(name);
   const matches = searchResult.worlds.filter(
-    (world) => normalizeWorldName(world.name) === normalized,
+    (world) => normalizeWorldName(world.name) === normalized
   );
 
   if (matches.length === 1) {
@@ -370,20 +368,16 @@ export async function resolveWorldId(args: {
 export async function getWorldProfile(
   worldId: string,
   ttlMs = CACHE_TTL_MS,
-  staleTtlMs = CACHE_STALE_TTL_MS,
+  staleTtlMs = CACHE_STALE_TTL_MS
 ): Promise<{ world: WorldRecord | null; stale: boolean }> {
   const result = await fetchWorldProfileCached(worldId, ttlMs, staleTtlMs);
   return { world: result.value, stale: result.stale };
 }
 
 export async function getWorldInstancesOverview(
-  worldId: string,
+  worldId: string
 ): Promise<{ summary: WorldInstancesSummary; stale: boolean }> {
-  const result = await fetchWorldProfileCached(
-    worldId,
-    INSTANCE_TTL_MS,
-    INSTANCE_STALE_TTL_MS,
-  );
+  const result = await fetchWorldProfileCached(worldId, INSTANCE_TTL_MS, INSTANCE_STALE_TTL_MS);
   const world = result.value;
   const summary = summarizeInstances(world?.instances);
   return { summary, stale: result.stale };

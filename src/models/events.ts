@@ -37,7 +37,7 @@ export const EventsUpcomingOutputSchema = z.object({
     z.object({
       date: z.string(),
       page: EventsPageSchema.optional(),
-    }),
+    })
   ),
   events: z.array(ApiObjectSchema),
 });
@@ -99,18 +99,26 @@ export const EventsDiscoverOutputSchema = z.object({
 
 export const CalendarEventCreateSchema = schemas.CreateCalendarEventRequest.extend({
   groupId: schemas.GroupID,
-  accessType: schemas.CreateCalendarEventRequest.shape.accessType
+  occurrenceKind: z
+    .enum(['single', 'series'])
     .optional()
-    .default('group'),
-  sendCreationNotification:
-    schemas.CreateCalendarEventRequest.shape.sendCreationNotification
-      .optional()
-      .default(false),
+    .describe('Recurring schedules require explicit series.'),
+  accessType: schemas.CreateCalendarEventRequest.shape.accessType.optional().default('group'),
+  sendCreationNotification: schemas.CreateCalendarEventRequest.shape.sendCreationNotification
+    .optional()
+    .default(false),
 });
+
+export const CalendarEventTargetKindSchema = z.enum(['single_event', 'occurrence', 'series']);
+export type CalendarEventTargetKind = z.infer<typeof CalendarEventTargetKindSchema>;
 
 export const CalendarEventUpdateSchema = schemas.UpdateCalendarEventRequest.extend({
   groupId: schemas.GroupID,
   calendarId: schemas.CalendarID,
+  targetKind: CalendarEventTargetKindSchema.optional().describe(
+    'Required for a recurring occurrence or parent series.'
+  ),
+  occurrenceKind: z.never().optional(),
   sendCreationNotification:
     schemas.UpdateCalendarEventRequest.shape.sendCreationNotification.optional(),
 });
@@ -118,11 +126,9 @@ export const CalendarEventUpdateSchema = schemas.UpdateCalendarEventRequest.exte
 export const CalendarEventDeleteSchema = z.object({
   groupId: schemas.GroupID,
   calendarId: schemas.CalendarID,
-  targetKind: z
-    .enum(['single_event', 'occurrence', 'series'])
-    .describe(
-      'Required safety check. Use single_event for a non-recurring event, occurrence for a generated recurring occurrence, or series for the recurring parent series.',
-    ),
+  targetKind: CalendarEventTargetKindSchema.describe(
+    'Required safety check. Use single_event for a non-recurring event, occurrence for a generated recurring occurrence, or series for the recurring parent series.'
+  ),
 });
 
 export const CalendarEventFollowSchema = z.object({

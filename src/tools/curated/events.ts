@@ -37,7 +37,8 @@ export function registerCuratedEventTools(server: McpServer): void {
   server.registerTool(
     toolName('vrchat.events.discover'),
     {
-      description: 'Discover public calendar events with optional category/tag filters (read-only).',
+      description:
+        'Discover public calendar events with optional category/tag filters (read-only).',
       inputSchema: EventsDiscoverInputSchema,
       outputSchema: EventsDiscoverOutputSchema,
       annotations: readOnlyToolAnnotations,
@@ -69,13 +70,14 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
     toolName('vrchat.events.upcoming'),
     {
-      description: 'List calendar events in the upcoming window (read-only). Defaults to the next 7 days.',
+      description:
+        'List calendar events in the upcoming window (read-only). Defaults to the next 7 days.',
       inputSchema: EventsUpcomingInputSchema,
       outputSchema: EventsUpcomingOutputSchema,
       annotations: readOnlyToolAnnotations,
@@ -103,7 +105,7 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -135,7 +137,7 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -167,13 +169,13 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
     toolName('vrchat.event.update'),
     {
-      description: 'Update a group calendar event.',
+      description: 'Edit the specified event. Recurring targets require targetKind.',
       inputSchema: CalendarEventUpdateSchema,
       outputSchema: CalendarEventWriteOutputSchema,
       annotations: writeToolAnnotations,
@@ -186,7 +188,12 @@ export function registerCuratedEventTools(server: McpServer): void {
           return toolError(allowed.reason);
         }
         const request = buildCalendarUpdateRequest(input);
-        const event = await updateCalendarEvent(input.groupId, input.calendarId, request);
+        const event = await updateCalendarEvent(
+          input.groupId,
+          input.calendarId,
+          request,
+          input.targetKind
+        );
         const payload = {
           status: 'updated',
           event: event ?? null,
@@ -199,7 +206,7 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -230,7 +237,7 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -252,7 +259,7 @@ export function registerCuratedEventTools(server: McpServer): void {
         const deletion = await deleteCalendarEvent(
           input.groupId,
           input.calendarId,
-          input.targetKind,
+          input.targetKind
         );
         const payload = {
           status: 'deleted',
@@ -267,6 +274,6 @@ export function registerCuratedEventTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : 'Unknown error';
         return toolError(message);
       }
-    },
+    }
   );
 }

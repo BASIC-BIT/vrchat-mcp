@@ -1,104 +1,190 @@
-# Spec Drift
+# Spec drift and generator compatibility
 
-`specs/vrchat-openapi.yaml` is the **community** OpenAPI description
-([vrchatapi/specification](https://github.com/vrchatapi/specification)), not one VRChat
-publishes. It is reverse-engineered and maintained by volunteers, so it drifts from the live API
-continuously and permanently. That is expected, not a bug in the spec.
+The community [VRChat specification](https://github.com/vrchatapi/specification) describes
+observed API behavior. The live API remains the source of truth. This record distinguishes
+current API discrepancies, upstream fixes, and local generator problems. Recheck dated
+observations before relying on them for substantive changes.
 
-**The live API is the source of truth — not the spec, and not this file.** This is a log of
-divergences we have actually observed, with dates and evidence, so nobody re-investigates the same
-thing from scratch.
+## Generation input, 2026-09-08
 
-Every entry is a point-in-time observation and can go stale. VRChat may change behavior, the
-community spec may catch up, and a workaround recorded here may become unnecessary or actively
-wrong. **Before making a substantive change that depends on an entry, re-verify it against the
-live API and update the entry with what you found.** An old date is a reason for suspicion, not
-confidence.
+- Published source: https://vrchat.community/openapi.yaml
+- OpenAPI 3.0.3, document version 1.20.9.
+- Downloaded bundle SHA-256: `67595df7176ed1690a05ce0603427ea94c72234226cf77f880735ddd48cd5cb5`.
+- Audited upstream main: [`5542b9951b2872a0735e30d6ca0e47509814b346`](https://github.com/vrchatapi/specification/commit/5542b9951b2872a0735e30d6ca0e47509814b346).
+  The audited definitions agree with the bundle; this is not a byte-equivalence claim.
 
-Add an entry whenever you find a new divergence, including ones you decide not to work around.
-Where a fix is needed, prefer `scripts/postprocess-schemas.ts` over editing the spec:
-`specs/vrchat-openapi.yaml` is gitignored, so spec edits are local-only and vanish on a fresh
-clone.
+Download the bundle to the gitignored `specs/vrchat-openapi.yaml`, then run
+`npm run generate:schemas`, `npm run generate:test-schemas`, and
+`npm run generate:tools-docs`. Record its version/hash when refreshing. The published URL is
+mutable; compare the hash when reproducing this checkpoint. Do not manually edit generated
+schemas or the downloaded spec. Generator compatibility changes belong in
+`scripts/postprocess-schemas.ts`; endpoint-specific parser selection belongs in
+`src/services/api/client.ts`.
 
----
+## Fixed upstream or corrected locally
 
-## Confirmed divergences
+| Historical workaround                                                                       | Current disposition                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missing `group-instance-announcement-create` and `group-instance-bypass-avatar-performance` | Both exist upstream and in the fresh live permission catalog. Removed local enum injection. Upstream includes 28 enum values including `*`; GET returns 27 permission records.                           |
+| Two-element `World.instances` tuples                                                        | Upstream now documents triples: instance ID, occupancy, language metadata. Four live public worlds corroborated triples. Removed the unbounded-array workaround; retained exact length 3.                |
+| Missing calendar `occurrenceKind`                                                           | Upstream now models `single`, `series`, `occurrence`. Generated parsing rejects unknown/malformed JSON values before deletion. The curated `single_event` name and missing-field legacy behavior remain. |
+| Sparse world-search packages                                                                | Already modeled by `LimitedWorld` / `LimitedUnityPackage`. Our search consumer used `World`; it now uses `LimitedWorld`. Removed optional `UnityPackage.id`/`assetVersion` patches.                      |
 
-### `GroupPermissions` enum is incomplete
-*Observed 2026-08-02, not re-verified since · patched in `postprocess-schemas.ts`*
+Raw authenticated `GET /worlds?search=Black+Cat&n=5&offset=0` returned 30 packages across five
+worlds. Every package had only `created_at`, `platform`, and `unityVersion`. This complete
+package object is representative:
 
-Spec lists 25 values. `GET /groups/{groupId}/permissions` returns **27**, the extras being
-`group-instance-announcement-create` and `group-instance-bypass-avatar-performance`. Any role
-update using them failed zod validation before reaching VRChat.
+```json
+{ "created_at": null, "platform": "android", "unityVersion": "2017.4.15f1" }
+```
 
-### `Group.transferTargetId` is nullable
-*Observed 2026-08-02, not re-verified since · patched in `postprocess-schemas.ts`*
+A raw detail GET for the same public Black Cat world returned 22 complete packages. Earlier
+detail reads across four worlds found 75 complete packages. The search response is evidence
+for selecting the existing limited schema, not for loosening the full package schema.
 
-Spec types it as a non-null `UserID`. Groups with no pending ownership transfer return `null`,
-which failed the whole `getGroup` parse and took `vrchat_group_profile` down with it.
+## Curated consumers after the refresh, 2026-09-09
 
-### `InviteRequest.instanceId` needs the worldId prefix
-*Observed 2026-08-02, not re-verified since · handled in `services/invites/curated.ts`*
+The upstream `GroupPost.roleId` to `roleIds` correction exposed a local mapper
+that still read only the old spelling. Reads now prefer plural roles, including
+an explicit empty list, and validate the legacy fallback only when plural is
+absent. Regression tests pass a restricted post through the generated parser,
+summary, merge, and serialized update body. They also cover malformed lookup
+roles and successful writes whose response cannot be summarized. These are local
+contract tests, not a new live post-mutation observation.
 
-The spec describes `InstanceID` as the bare instance part
-(`12345~hidden(usr_…)~region(eu)`). `POST /invite/{userId}` rejects that form with
-`400: Invalid location` and requires the **full** `worldId:instanceId~…` string.
+The refreshed `FavoriteType` includes `vrcPlusWorld`. Existing add/list routing
+already forwards that type, but favorite-group discovery omitted its existing
+`type` input. Discovery now forwards it. Service and tool tests cover all four
+types, selected VRC+ collection names, and distinct favorite-record and target
+IDs. No live favorite add, entitlement test, or pagination change is claimed.
 
-Verified live: full string → `200`, worldId stripped → `400`.
+Calendar creates now require explicit series intent for recurrence, and updates
+verify the requested target kind before writing. Curated validation enforces the
+conditional schedule requirements described upstream. A fresh disposable draft
+experiment established child/parent edit behavior, preserved omitted recurrence,
+and a definite HTTP 400 for null recurrence. Null clearing is rejected locally;
+it is not inferred from upstream nullability. See the [calendar evidence and
+remaining validation limits](research/calendar-recurrence-contract.md).
 
-### `CreateInstanceRequest.canRequestInvite` is restricted to private instances
-*Observed 2026-09-01 · handled in `services/instances/curated.ts`*
+## Retained generator compatibility
 
-The community schema permits `canRequestInvite` for every instance type. The live API accepts
-`true` only when `type` is `private`; a group instance returns
-`400: Cannot add canRequestInvite to non-private instances.` The same group instance succeeds
-when the field is omitted or set to `false`.
+`openapi-zod-client` 1.18.3 still drops `nullable: true` siblings on ID references. Upstream
+already declares these nullable; do not report them as missing spec declarations:
 
-### Single calendar events report `occurrenceKind: "single"`
-*Observed 2026-09-01 · handled in `services/events/curated.ts`*
+- `CalendarEvent.imageId`
+- `Group.transferTargetId`
+- `GroupPost.editorId` and `imageId`
+- `Instance.categoryId`
 
-The generated `CalendarEvent` schema does not declare `occurrenceKind`. The live group calendar
-event endpoint reports `"single"` for a confirmed non-recurring event, while the curated delete
-tool deliberately exposes the more explicit `targetKind: "single_event"` safety value.
+The postprocessor preserves those nulls. Fresh group/calendar reads confirmed explicit nulls;
+GroupPost null handling also has a historical regression fixture. `Instance.categoryId` is a
+newly modeled nullable field whose generated validator otherwise rejected the declared null.
 
-### Role permissions have undocumented prerequisites
-*Observed 2026-08-02, not re-verified since*
+The generated `NotificationEmpty` branch must be strict. Its upstream
+`additionalProperties: false` constraint means only `{}` matches. The generator otherwise
+strips any populated object to `{}`, swallowing sent-invite details and notification-v2 data
+before later union branches run. A scoped postprocess correction and payload-preservation
+regressions cover this.
 
-Not a schema issue — the API enforces dependencies the spec never mentions.
-`group-members-remove` and `group-bans-manage` both require `group-members-manage` on the same
-role, otherwise `PUT /groups/{groupId}/roles/{roleId}` returns
-`400: Role missing required permissions: group-members-manage`.
+Zod 3-to-4 `z.record` signatures (including formatter-split calls), the Node `File` runtime
+workaround, and removal of generated `@ts-nocheck` remain local toolchain concerns.
 
-### `UserStatus` has no color mapping
-*Observed 2026-08-02, not re-verified since*
+## Current API discrepancies and clarifications
 
-The spec defines the enum but says nothing about colors, because they are a client-UI concept.
-For reference: **Join Me = blue, Active = green, Ask Me = orange, Busy = red.**
+### Full favorite-world packages can have `created_at: null`
 
-### Existing instances can be linked to calendar events with an undocumented `PUT`
-*Observed and re-verified 2026-08-31 · handled by the curated instance linker*
+Reproduced twice on 2026-09-08 via raw authenticated `GET /worlds/favorites?n=5&offset=0`.
+The response contained 32 full package entries; two had null creation timestamps, while every
+package included `id` and `assetVersion`. This differs from upstream's non-null optional
+`UnityPackage.created_at`, used by `FavoritedWorld`. Retain only the timestamp-nullability
+patch. The live search response above is a separate, already-modeled case.
 
-The community spec has no update operation for an existing instance. The live API accepts
-`PUT /instances/{worldId}:{instanceId}` with `{"calendarEntryId":"cal_..."}` and returns the
-updated `Instance`. `PATCH` on the same path returned `405`.
+### Favorite-world `n` is not a reliable upper bound
 
-VRChat returned `400` when the event was outside its link window, with the rule that an event
-must start within six hours or have ended within the previous six hours. Moving the test event
-inside that window made the same `PUT` return `200`. Sending `{"calendarEntryId":null}` also
-returned `200` and removed the link, but the curated tool intentionally exposes linking only.
+Raw single requests on 2026-09-08 returned 2 entries for `n=1`, 4 for `n=2`, and 8 for `n=5`,
+all with offset 0 and HTTP 200. Follow-up raw GETs at 17:16:57-17:17:00 UTC identified separate
+ordinary-world and VRC+ slices in the default combined query. The `n=5` response's favorite
+IDs exactly matched the concatenation of `GET /favorites` with `type=world` and
+`type=vrcPlusWorld`, each using `n=5,offset=0`. The tested account contributed five ordinary
+and three VRC+ entries. Additional offsets matched the per-type slices, including `n=2,offset=2`
+returning two ordinary and one VRC+ entry.
 
-Verified live with an owned disposable test group, event, and group-only instance. No invitation
-or announcement was sent. Because the endpoint is missing from the spec, `core/client.ts` carries
-a narrow operation fallback until the community spec catches up. Raw access is blocked and the
-curated tool sends only `calendarEntryId` after checking the configured group allowlist and both
-objects' ownership.
+These dated observations support the existing paginator's offset advance by requested page
+size, rather than combined response length. They do not establish behavior for every filter,
+sort, or account. No favorite was added or removed. The spec's generic number-of-objects
+wording needs endpoint-specific clarification; changing shared pagination parameters is not
+justified. PR114's later routing tests do not constitute a repeat of this live experiment.
 
----
+### Invite request `instanceId` needs the full location
 
-## Suspected, not yet verified
+Historical live comparison on 2026-08-02: `POST /invite/{userId}` with a full
+`worldId:instanceId` returned 200; a bare instance ID returned `400 Invalid location`.
+`InviteRequest` still references the shared bare `InstanceID` without explaining this
+endpoint-specific requirement. The curated invite builder already supplies the full location.
 
-### `UpdateAvatarRequest.description` minLength
-Spec declares `minLength: 1`, which would make an empty description an invalid request and leave
-no way to clear one. BASIC reports descriptions are effectively optional in practice, so
-`vrchat_avatar_update` deliberately does **not** enforce a minimum and lets VRChat decide. If a
-`description: ""` write is ever seen failing, record the result here and add the constraint.
+A non-delivering probe on 2026-09-08 first confirmed the nil recipient ID was nonexistent
+(GET 404). Both bare and full synthetic destinations then returned 403 because the recipient
+was not a friend. That ordering masks location validation, so it does not refresh the earlier
+200/400 comparison. No real recipient was invited. Do not change the shared InstanceID:
+`inviteMyselfTo` uses separate worldId and instanceId path parameters.
+
+### `canRequestInvite: true` is rejected for group creation
+
+Reverified 2026-09-08 in an owned one-member test group. New members-only group creation with
+`true` returned HTTP 400: `Cannot add canRequestInvite to non-private instances` (API message
+punctuation omitted here). False and omitted each returned 200 with `canRequestInvite: false`.
+Both created instances were immediately hard closed; subsequent GETs confirmed past closedAt,
+hardClose true, active false, and zero occupants. No invites or announcements were sent.
+
+Upstream already describes private invite+ and rejection for friends. Clarify the group case
+and true-versus-false distinction on CreateInstanceRequest. Do not generalize this test into
+an invariant of all Instance responses or claim every other creation type was tested.
+
+### Role permission prerequisites are enforced
+
+Reverified 2026-09-08 using one temporary, unassigned role in the owned test group:
+
+| PUT permissions                               | Result                                       |
+| --------------------------------------------- | -------------------------------------------- |
+| `group-members-remove` alone                  | 400, missing required `group-members-manage` |
+| `group-bans-manage` alone                     | 400, same prerequisite                       |
+| Either permission plus `group-members-manage` | 200                                          |
+
+The fresh GET permission catalog independently lists the prerequisite in `dependsOn`.
+Upstream now exposes this field, but describes it vaguely. Clarify prerequisite direction
+and enforcement instead of proposing a duplicate field. The temporary role was deleted;
+a follow-up GET verified the original role list and permissions. Existing roles were not edited.
+
+### Avatar `acknowledgements` can be null
+
+A raw authenticated `GET /avatars/{avatarId}` on 2026-09-08 at 09:26:31 UTC returned HTTP 200
+with an explicitly present `acknowledgements: null`. Upstream Avatar declares this optional
+field as a non-null string. That already broke avatar detail parsing before this refresh;
+it is a newly discovered existing discrepancy. A narrow response-only postprocessor patch
+allows null. No avatar metadata was changed for this read.
+
+## Pending avatar validation
+
+- `UpdateAvatarRequest.description` still has minLength 1. Whether an update can clear it to
+  an empty string remains unverified; an empty returned description alone would not prove it.
+- The shared `ReleaseStatus` includes `all`, historically introduced as a search filter.
+  Its validity on avatar writes remains unverified. The curated metadata editor continues to
+  accept only public/private/hidden. A local restriction is not proof of server rejection.
+
+Use a user-selected disposable, non-active avatar for any write probes and restore its state.
+Do not publish these hypotheses as confirmed defects.
+
+## Existing upstream work and non-issues
+
+Existing-instance calendar linking remains covered by [issue #596](https://github.com/vrchatapi/specification/issues/596)
+and [PR #597](https://github.com/vrchatapi/specification/pull/597), still open at audit time.
+Retain the scoped local operation fallback until the upstream operation is published.
+
+The 2026-09-08 duplicate audit examined all returned upstream issue/PR titles and bodies plus
+candidate searches including comments. Related historical items include #156 (sparse search
+examples in a different bug), #266/#341 (package URL nullability), #595 (dependsOn), and
+#85/#240 (releaseStatus search flag/shared enum). No direct duplicate was found for the
+remaining candidate reports; search results are point-in-time, not proof of universal absence.
+Upstream issue drafts remain local and unfiled.
+
+User-status colors are client UI presentation, not a REST schema defect.

@@ -80,6 +80,7 @@ export async function listFavoriteGroups(input: FavoritesReadInput): Promise<{
   const result = await callReadOperationParsed(
     'getFavoriteGroups',
     {
+      type: input.type,
       userId: input.userId,
       ownerId: input.ownerId,
       n: pageOptions(input).pageSize,

@@ -1,8 +1,8 @@
 # Tool Catalog (generated)
 
-Generated: 2026-09-01T09:25:52.032Z
+Generated: 2026-09-09T15:24:37.431Z
 
-Spec: VRChat API Documentation (1.20.8)
+Spec: VRChat API Documentation (1.20.9)
 
 This file is generated without starting the MCP server. It reflects curated tools plus the auto-generated tool catalog (curated read/write replacements are omitted).
 
@@ -476,6 +476,14 @@ Input schema:
         "type": "string"
       }
     },
+    "occurrenceKind": {
+      "description": "Recurring schedules require explicit series.",
+      "type": "string",
+      "enum": [
+        "single",
+        "series"
+      ]
+    },
     "parentId": {
       "type": "string"
     },
@@ -489,6 +497,82 @@ Input schema:
           "standalonewindows"
         ]
       }
+    },
+    "recurrence": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "daysOfWeek": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "FR",
+                  "MO",
+                  "SA",
+                  "SU",
+                  "TH",
+                  "TU",
+                  "WE"
+                ]
+              }
+            },
+            "end": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "date": {
+                  "type": "string"
+                },
+                "type": {
+                  "default": "afterDate",
+                  "type": "string",
+                  "enum": [
+                    "afterDate",
+                    "afterOccurrences"
+                  ]
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": {}
+            },
+            "frequency": {
+              "default": "weekly",
+              "type": "string",
+              "enum": [
+                "daily",
+                "monthly",
+                "weekly",
+                "yearly"
+              ]
+            },
+            "interval": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "timezone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "frequency",
+            "interval",
+            "timezone"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "roleIds": {
       "type": "array",
@@ -815,7 +899,7 @@ Output schema:
 ```
 
 ### vrchat_event_update
-Update a group calendar event. (write)
+Edit the specified event. Recurring targets require targetKind. (write)
 
 Input schema:
 
@@ -875,6 +959,82 @@ Input schema:
         "type": "string"
       }
     },
+    "recurrence": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "daysOfWeek": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "FR",
+                  "MO",
+                  "SA",
+                  "SU",
+                  "TH",
+                  "TU",
+                  "WE"
+                ]
+              }
+            },
+            "end": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "date": {
+                  "type": "string"
+                },
+                "type": {
+                  "default": "afterDate",
+                  "type": "string",
+                  "enum": [
+                    "afterDate",
+                    "afterOccurrences"
+                  ]
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": {}
+            },
+            "frequency": {
+              "default": "weekly",
+              "type": "string",
+              "enum": [
+                "daily",
+                "monthly",
+                "weekly",
+                "yearly"
+              ]
+            },
+            "interval": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "timezone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "frequency",
+            "interval",
+            "timezone"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "roleIds": {
       "type": "array",
       "items": {
@@ -908,6 +1068,18 @@ Input schema:
     },
     "calendarId": {
       "type": "string"
+    },
+    "targetKind": {
+      "description": "Required for a recurring occurrence or parent series.",
+      "type": "string",
+      "enum": [
+        "single_event",
+        "occurrence",
+        "series"
+      ]
+    },
+    "occurrenceKind": {
+      "not": {}
     }
   },
   "required": [
@@ -1540,6 +1712,7 @@ Input schema:
       "enum": [
         "avatar",
         "friend",
+        "vrcPlusWorld",
         "world"
       ]
     },
@@ -1554,7 +1727,7 @@ Input schema:
       "items": {
         "type": "string"
       },
-      "description": "Favorite group tags, e.g. worlds1, avatars1, group_0."
+      "description": "Collection names returned by favorites view=groups; use their type too."
     }
   },
   "required": [
@@ -1714,10 +1887,12 @@ Input schema:
       ]
     },
     "type": {
+      "description": "Favorite type. For groups, filters the collection list.",
       "type": "string",
       "enum": [
         "avatar",
         "friend",
+        "vrcPlusWorld",
         "world"
       ]
     },
@@ -1729,6 +1904,7 @@ Input schema:
       "enum": [
         "avatar",
         "friend",
+        "vrcPlusWorld",
         "world"
       ]
     },
@@ -5129,56 +5305,65 @@ Output schema:
             "type": "string"
           },
           "roles": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "basePermissions": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "enum": [
-                    "*",
-                    "group-announcement-manage",
-                    "group-audit-view",
-                    "group-bans-manage",
-                    "group-calendar-manage",
-                    "group-data-manage",
-                    "group-default-role-manage",
-                    "group-galleries-manage",
-                    "group-instance-age-gated-create",
-                    "group-instance-announcement-create",
-                    "group-instance-bypass-avatar-performance",
-                    "group-instance-calendar-link",
-                    "group-instance-join",
-                    "group-instance-manage",
-                    "group-instance-moderate",
-                    "group-instance-open-create",
-                    "group-instance-plus-create",
-                    "group-instance-plus-portal",
-                    "group-instance-plus-portal-unlocked",
-                    "group-instance-public-create",
-                    "group-instance-queue-priority",
-                    "group-instance-restricted-create",
-                    "group-invites-manage",
-                    "group-members-manage",
-                    "group-members-remove",
-                    "group-members-viewall",
-                    "group-roles-assign",
-                    "group-roles-manage"
-                  ]
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "isAddedOnJoin": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "*",
+                      "group-announcement-manage",
+                      "group-audit-view",
+                      "group-bans-manage",
+                      "group-calendar-manage",
+                      "group-data-manage",
+                      "group-default-role-manage",
+                      "group-galleries-manage",
+                      "group-instance-age-gated-create",
+                      "group-instance-announcement-create",
+                      "group-instance-bypass-avatar-performance",
+                      "group-instance-calendar-link",
+                      "group-instance-join",
+                      "group-instance-manage",
+                      "group-instance-moderate",
+                      "group-instance-open-create",
+                      "group-instance-plus-create",
+                      "group-instance-plus-portal",
+                      "group-instance-plus-portal-unlocked",
+                      "group-instance-public-create",
+                      "group-instance-queue-priority",
+                      "group-instance-restricted-create",
+                      "group-invites-manage",
+                      "group-members-manage",
+                      "group-members-remove",
+                      "group-members-viewall",
+                      "group-roles-assign",
+                      "group-roles-manage"
+                    ]
+                  }
                 }
               },
-              "isAddedOnJoin": {
-                "default": false,
-                "type": "boolean"
-              }
-            },
-            "additionalProperties": {}
+              "required": [
+                "description",
+                "isAddedOnJoin",
+                "name",
+                "permissions"
+              ],
+              "additionalProperties": {}
+            }
           }
         },
         "additionalProperties": {}
@@ -5673,14 +5858,7 @@ Input schema:
       }
     },
     "displayName": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": "string"
     },
     "inviteOnly": {
       "type": "boolean"
@@ -9723,6 +9901,8 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getInfoPush` via `vrchat_read` (GET /infoPush) - Read VRChat API: Show Information Notices.
 - `getInstance` via `vrchat_read` (GET /instances/{worldId}:{instanceId}) - Read VRChat API: Get Instance.
 - `getInstanceByShortName` via `vrchat_read` (GET /instances/s/{shortName}) - Read VRChat API: Get Instance By Short Name.
+- `getInstanceCategories` via `vrchat_read` (GET /instanceCategories) - Read VRChat API: List Instance Categories.
+- `getInstanceVibes` via `vrchat_read` (GET /instanceVibes) - Read VRChat API: List Instance Vibes.
 - `getInventory` via `vrchat_read` (GET /inventory) - Read VRChat API: Get Inventory.
 - `getInventoryCollections` via `vrchat_read` (GET /inventory/collections) - Read VRChat API: List Inventory Collections.
 - `getInventoryDrops` via `vrchat_read` (GET /inventory/drops) - Read VRChat API: List Inventory Drops.
@@ -9743,6 +9923,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getNotification` via `vrchat_read` (GET /auth/user/notifications/{notificationId}) - Read VRChat API: Show notification.
 - `getNotificationV2` via `vrchat_read` (GET /notifications/{notificationId}) - Read VRChat API: Get NotificationV2.
 - `getNotificationV2s` via `vrchat_read` (GET /notifications) - Read VRChat API: List NotificationV2s.
+- `getOAuthRedirectCode` via `vrchat_read` (GET /oauth/redirectCode) - Read VRChat API: Get OAuth Redirect Code.
 - `getOwnAvatar` via `vrchat_read` (GET /users/{userId}/avatar) - Read VRChat API: Get Own Avatar.
 - `getOwnInventoryItem` via `vrchat_read` (GET /inventory/{inventoryItemId}) - Read VRChat API: Get Own Inventory Item.
 - `getPermission` via `vrchat_read` (GET /permissions/{permissionId}) - Read VRChat API: Get Permission.
@@ -9765,6 +9946,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `getRecoveryCodes` via `vrchat_read` (GET /auth/user/twofactorauth/otp) - Read VRChat API: Get 2FA Recovery codes.
 - `getSellerEligibility` via `vrchat_read` (GET /economy/seller/eligibility) - Read VRChat API: Get Seller Eligibility.
 - `getShortName` via `vrchat_read` (GET /instances/{worldId}:{instanceId}/shortName) - Read VRChat API: Get Instance Short Name.
+- `getSsoToken` via `vrchat_read` (GET /sso/{provider}) - Read VRChat API: Get SSO Token.
 - `getSteamTransaction` via `vrchat_read` (GET /Steam/transactions/{transactionId}) - Read VRChat API: Get Steam Transaction.
 - `getSteamTransactions` via `vrchat_read` (GET /Steam/transactions) - Read VRChat API: List Steam Transactions.
 - `getStore` via `vrchat_read` (GET /economy/store) - Read VRChat API: Get Store.
@@ -9903,7 +10085,7 @@ Generated output uses a compact envelope; exact API response content is under `d
 - `redeemReward` via `vrchat_write` (POST /reward/redeem) - Write VRChat API: Redeem Reward.
 - `registerUserAccount` via `vrchat_write` (POST /auth/register) - Write VRChat API: Register User Account.
 - `removeTags` via `vrchat_write` (POST /users/{userId}/removeTags) - Write VRChat API: Remove User Tags.
-- `removeWorldTags` via `vrchat_write` (POST /worlds/{worldId}/removeTags) - Write VRChat API: Remove World Tags.
+- `removeWorldTags` via `vrchat_write` (POST /worlds/{worldId}/deleteTags) - Write VRChat API: Remove World Tags.
 - `replyNotificationV2` via `vrchat_write` (POST /notifications/{notificationId}/reply) - Write VRChat API: Reply NotificationV2.
 - `requestInvite` via `vrchat_write` (POST /requestInvite/{userId}) - Write VRChat API: Request Invite.
 - `resendEmailConfirmation` via `vrchat_write` (POST /auth/user/resendEmail) - Write VRChat API: Resend Email Confirmation.

@@ -37,7 +37,7 @@ export const FavoritedAvatarSummarySchema = z.object({
 
 export const FavoritesReadInputSchema = z.object({
   view: z.enum(['favorites', 'groups', 'group', 'limits', 'avatars']).default('favorites'),
-  type: schemas.FavoriteType.optional(),
+  type: schemas.FavoriteType.optional().describe('Favorite type. For groups, filters the collection list.'),
   tag: z.string().optional(),
   favoriteGroupType: schemas.FavoriteType.optional(),
   favoriteGroupName: z.string().optional(),
@@ -73,7 +73,7 @@ export const FavoritesReadOutputSchema = z.object({
 export const FavoriteAddInputSchema = z.object({
   type: schemas.FavoriteType,
   targetId: z.string().min(1).describe('User/avatar/world ID to favorite.'),
-  tags: z.array(z.string()).min(1).describe('Favorite group tags, e.g. worlds1, avatars1, group_0.'),
+  tags: z.array(z.string()).min(1).describe('Collection names returned by favorites view=groups; use their type too.'),
 });
 
 export const FavoriteRemoveInputSchema = z.object({

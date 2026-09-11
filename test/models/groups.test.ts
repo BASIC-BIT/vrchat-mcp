@@ -20,6 +20,21 @@ describe('group schema nullability', () => {
 });
 
 describe('group model mappers', () => {
+  it.each([
+    [{ roleIds: ['grol_new'] }, ['grol_new']],
+    [{ roleId: ['grol_old'] }, ['grol_old']],
+    [{ roleIds: [], roleId: ['grol_old'] }, []],
+    [{ roleIds: ['grol_new'], roleId: ['grol_old'] }, ['grol_new']],
+    [{}, undefined],
+  ])('preserves current and legacy post roles: %j', (fields, expected) => {
+    expect(toGroupPostSummary({ id: 'not_test', ...fields })?.roleIds).toEqual(expected);
+  });
+
+  it.each([[42], null])('rejects malformed legacy post roles: %j', (roleId) => {
+    const post = schemas.GroupPost.partial().parse({ id: 'not_test', roleId });
+    expect(() => toGroupPostSummary(post)).toThrow();
+  });
+
   it('maps group summary fields with rounded member count', () => {
     const summary = toGroupSummary(
       schemas.LimitedGroup.parse({
@@ -70,7 +85,7 @@ describe('group model mappers', () => {
 
   it('maps group member with fallback user id', () => {
     const member = toGroupMemberSummary(
-      schemas.GroupMember.parse({
+      schemas.GroupMember.partial().parse({
         user: { id: 'usr_2', displayName: 'User Two' },
       })
     );
