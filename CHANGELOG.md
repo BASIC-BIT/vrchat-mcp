@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.15 - 2026-09-11
+
+- Add opt-in headless re-login for bot accounts that use TOTP two-factor authentication. When `VRCHAT_MCP_USERNAME`, `VRCHAT_MCP_PASSWORD`, and `VRCHAT_MCP_TOTP_SECRET` are all set, an authenticated request that returns HTTP 401 triggers one automatic login with a locally generated TOTP code, and the original request is retried exactly once. Accounts that use email two-factor authentication are never logged in automatically.
+- Guard automatic login with a record persisted beside the cookie file so separately spawned processes share it: at most one attempt every 10 minutes, a 60-minute backoff after a failed or unfinished attempt, and no attempt at all if the record cannot be written. The memory cookie store falls back to a weaker per-process guard.
+- Run headless and interactive `vrchat_auth_begin` logins through one queue so their cookie, status, and persistence updates cannot interleave. Credentials, the TOTP secret, generated codes, and cookie values never appear in errors or logs.
+- Refresh generated schemas and the tool catalog from community specification v1.20.9. Use `LimitedWorld` for world search, correct multiline Zod record conversion and the empty-notification branch so populated payloads survive parsing, and remove workarounds the specification now resolves.
+- Preserve canonical group-post `roleIds` during partial edits, forward the favorite-group type filter, and require explicit series intent for recurring event creates. Event updates fetch the event and check its kind first, schedule replacement is limited to verified series parents, and clearing recurrence with `null` is rejected locally.
+
 ## 0.1.14 - 2026-09-08
 
 - Add `vrchat_gallery_images` to list the signed-in account's complete gallery with compact file metadata and a total count. Fetch pages internally, deduplicate file IDs, and retry transient read failures with bounded attempts and per-page deadlines.

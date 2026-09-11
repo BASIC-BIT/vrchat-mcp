@@ -8,12 +8,12 @@
     "source": "github",
     "id": "1122295987"
   },
-  "version": "0.1.14",
+  "version": "0.1.15",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@basicbit/vrchat-mcp",
-      "version": "0.1.14",
+      "version": "0.1.15",
       "transport": {
         "type": "stdio"
       },
