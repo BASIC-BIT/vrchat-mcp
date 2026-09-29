@@ -1,7 +1,13 @@
 name: Claude Review
 
+# pull_request_target runs this file from main, never from the PR, which is what lets
+# basic-infra pin the shared review role's trust to this exact workflow on main. It also runs
+# for fork PRs with base-repository permissions and OIDC, so the gate below must reject fork
+# and cross-repository heads before the only job holding id-token: write can start, and no
+# step may ever execute anything from the PR head.
 on:
-  pull_request:
+  pull_request_target:
+    branches: [main]
     # unlabeled resumes a review after skip-claude-review is removed; edited catches a
     # base-branch retarget, which GitHub reports as edited rather than synchronize.
     types: [opened, reopened, ready_for_review, synchronize, unlabeled, edited]
@@ -30,7 +36,9 @@ jobs:
       (github.event.action != 'edited' || github.event.changes.base != null) &&
       (github.event.action != 'unlabeled' || github.event.label.name == 'skip-claude-review') &&
       !github.event.pull_request.draft &&
-      github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
+      !github.event.pull_request.head.repo.fork &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.repo.full_name == github.repository &&
       !endsWith(github.event.pull_request.user.login, '[bot]') &&
       !contains(github.event.pull_request.labels.*.name, 'skip-claude-review')
     runs-on: ubuntu-latest
@@ -65,6 +73,10 @@ jobs:
           }
 
           [ "$(jq -r '.state' "$state_file")" = "open" ] || stop "PR #${PR_NUMBER} is no longer open."
+          # Redundant with the job condition, which is the real fork guard; checked again
+          # against live state because this job is all that stands between a PR and OIDC.
+          [ "$(jq -r '.head.repo.full_name // ""' "$state_file")" = "${GITHUB_REPOSITORY}" ] \
+            || stop "PR #${PR_NUMBER} does not come from a branch of ${GITHUB_REPOSITORY}."
           [ "$(jq -r '.draft' "$state_file")" = "false" ] || stop "PR #${PR_NUMBER} is a draft."
           [ "$(jq -r '.head.sha' "$state_file")" = "${PR_HEAD_SHA}" ] || stop "the PR head has moved past ${PR_HEAD_SHA}."
           # Compare the base branch, not its tip. An ordinary commit landing on the base while
@@ -81,7 +93,12 @@ jobs:
   review:
     name: Generate Claude PR review
     needs: gate
-    if: needs.gate.outputs.available == 'true'
+    # The fork guard is repeated here so the job that requests OIDC does not depend solely on
+    # another job's output to keep fork PRs out.
+    if: >-
+      needs.gate.outputs.available == 'true' &&
+      !github.event.pull_request.head.repo.fork &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -93,12 +110,22 @@ jobs:
       review_markdown_b64: ${{ steps.extract_review.outputs.review_markdown_b64 }}
 
     steps:
-      - name: Check out PR head
-        uses: actions/checkout@v6
+      # The workspace root is the trusted base commit, the only tree Claude sees. The PR head
+      # is checked out beside it solely so git can compute the diff: nothing in it is installed,
+      # built, sourced or otherwise executed, and it is deleted before the role is assumed.
+      - name: Check out trusted base
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Check out isolated PR head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
+          path: pr-head
 
       - name: Build Claude review context
         env:
@@ -113,42 +140,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Drop PR-controlled Claude configuration and project memory first, before anything
-          # else touches the tree. Two separate reasons: hooks and project MCP servers execute
-          # commands at startup, which the tool deny list and --tools cannot constrain and
-          # which would reach CLAUDE_CODE_OAUTH_TOKEN; and auto-loaded memory files let a PR
-          # author put instructions in front of the reviewer without the diff showing a
-          # REVIEW.md edit.
-          #
-          # Deliberately no -type predicate: any of these paths can be committed as a symlink,
-          # which find does not follow and -type d/-type f therefore skip, leaving the
-          # PR-controlled target in place for Claude to load. Matching on name alone and
-          # deleting with rm -rf removes files, directories and symlinks alike, and removes the
-          # link rather than its target. The diff below is produced from git objects, not the
-          # working tree, so it still shows the reviewer every change to these paths.
-          find . -name .git -prune -o \
-            \( -name 'CLAUDE.md' -o -name 'CLAUDE.local.md' -o -name '.mcp.json' -o -name '.claude' \) \
-            -print0 | xargs -0 -r rm -rf
-
-          # REVIEW.md goes too, even though it is the intended calibration; the base revision's
-          # copy is materialized separately below. rm -rf, not rm -f: a PR can commit REVIEW.md
-          # as a directory, and the resulting "Is a directory" under set -e would abort context
-          # construction and turn a legitimate PR into a failed review.
-          rm -rf -- REVIEW.md
-
-          # Then every remaining symlink in the tree, regardless of name. The Read deny rules
-          # match the requested path, not the resolved target, so any PR-added link is a way to
-          # read something the denies were meant to block: leak -> /proc/self/environ turns an
-          # allowed Read("./leak") into the job environment, CLAUDE_CODE_OAUTH_TOKEN included,
-          # which PR-controlled diff text can then ask the model to echo into the review.
-          # Enumerating names cannot cover this; the property needed is that no path Claude can
-          # open resolves anywhere except into the checked-out tree. Links still appear in the
-          # diff, so the reviewer can see what the PR proposed.
-          find . -name .git -prune -o -type l -print0 | xargs -0 -r rm -f
-
-          # Same symlink reasoning: a committed .claude-review, or a committed file inside it,
-          # would otherwise be followed by the redirections below and overwrite REVIEW.md with
-          # PR-controlled text.
+          # Recreated rather than trusted: the base tree is merged code, but a stale file here
+          # would be read as generated context.
           rm -rf .claude-review
           mkdir .claude-review
 
@@ -170,16 +163,16 @@ jobs:
             printf '%s\n' "${PR_BODY}"
           } > .claude-review/pr-context.md
 
-          git diff --find-renames --find-copies --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
-          git diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
+          # Computed from git objects in the head clone, which holds both commits. The base
+          # checkout is shallow and has no head objects.
+          git -C pr-head diff --find-renames --find-copies --no-ext-diff --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
+          git -C pr-head diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
 
-          # Materialize the base revision's calibration as a regular file, read out of the
-          # object database rather than the working tree. This is strictly stronger than reading
-          # the PR's copy: it cannot be a symlink, and a PR can no longer weaken the review
-          # contract at all, which previously relied on the model noticing a REVIEW.md edit.
-          # Proposed changes to it still reach the reviewer through the diff above.
-          if git cat-file -e "${BASE_SHA}:REVIEW.md" 2>/dev/null; then
-            git show "${BASE_SHA}:REVIEW.md" > .claude-review/REVIEW.md
+          # Materialize the base revision's calibration out of the object database, so a PR
+          # cannot weaken the review contract. Proposed changes to it still reach the reviewer
+          # through the diff above.
+          if git -C pr-head cat-file -e "${BASE_SHA}:REVIEW.md" 2>/dev/null; then
+            git -C pr-head show "${BASE_SHA}:REVIEW.md" > .claude-review/REVIEW.md
           else
             echo "_No REVIEW.md on ${BASE_REF}; use the instructions in the prompt alone._" > .claude-review/REVIEW.md
           fi
@@ -198,6 +191,10 @@ jobs:
           if [ ! -s .claude-review/previous-review.md ]; then
             echo "_No previous Claude review on this PR._" > .claude-review/previous-review.md
           fi
+
+          # Nothing PR-controlled other than the generated diff may exist once the shared
+          # credential is in the job.
+          rm -rf -- "${GITHUB_WORKSPACE}/pr-head"
 
       - name: Assume the shared Claude review role
         id: aws_credentials
@@ -274,7 +271,10 @@ jobs:
             security/privacy issues, operational risks, and MCP tool-surface
             invariants introduced by this PR.
 
-            Use the checked-out PR head plus these generated context files:
+            The workspace is a checkout of the base commit, not the PR head;
+            the PR's changes exist only in the generated diff. Read base files
+            for surrounding context, remembering that the PR may change them.
+            Use these generated context files:
             - .claude-review/REVIEW.md
             - .claude-review/previous-review.md
             - .claude-review/pr-context.md
@@ -296,6 +296,7 @@ jobs:
             findings were found.
           settings: |
             {
+              "disableAllHooks": true,
               "permissions": {
                 "deny": [
                   "Bash",
@@ -303,6 +304,10 @@ jobs:
                   "Edit",
                   "MultiEdit",
                   "NotebookEdit",
+                  "Task",
+                  "Agent",
+                  "WebFetch",
+                  "WebSearch",
                   "mcp__github_comment__update_claude_comment",
                   "mcp__github_inline_comment__create_inline_comment",
                   "Read(./.git/**)",
@@ -315,6 +320,8 @@ jobs:
               }
             }
           claude_args: |
+            --safe-mode
+            --setting-sources user
             --max-turns 100
             --tools "Read"
             --strict-mcp-config
