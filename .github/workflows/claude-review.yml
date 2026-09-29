@@ -164,9 +164,10 @@ jobs:
           } > .claude-review/pr-context.md
 
           # Computed from git objects in the head clone, which holds both commits. The base
-          # checkout is shallow and has no head objects.
-          git -C pr-head diff --find-renames --find-copies --no-ext-diff --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
-          git -C pr-head diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
+          # checkout is shallow and has no head objects. Attributes come from the base commit:
+          # the head's .gitattributes could mark files -diff and hide them from the reviewer.
+          git -C pr-head --attr-source="${BASE_SHA}" diff --find-renames --find-copies --no-ext-diff --stat "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-stat.txt
+          git -C pr-head --attr-source="${BASE_SHA}" diff --find-renames --find-copies --no-ext-diff "${BASE_SHA}...${HEAD_SHA}" > .claude-review/pr-diff.patch
 
           # Materialize the base revision's calibration out of the object database, so a PR
           # cannot weaken the review contract. Proposed changes to it still reach the reviewer
@@ -315,7 +316,10 @@ jobs:
                   "Read(//home/runner/.claude/**)",
                   "Read(//home/runner/.config/**)",
                   "Read(//home/runner/.git-credentials)",
-                  "Read(//home/runner/.npmrc)"
+                  "Read(//home/runner/.npmrc)",
+                  "Read(//home/runner/.claude.json)",
+                  "Read(//home/runner/work/_temp/**)",
+                  "Read(//dev/**)"
                 ]
               }
             }
