@@ -372,3 +372,5 @@ Live E2E tests and LLM evals are opt-in. See `docs/evals.md` for details.
 ## License
 
 MIT. See `LICENSE`.
+
+See [shared Claude review](docs/claude-review.md) for repository policy, review evidence and gated activation.
