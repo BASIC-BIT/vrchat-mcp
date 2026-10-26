@@ -15,6 +15,7 @@ import {
 class FakeResourceServer {
   handlers = new Map<unknown, (request: { params: { uri: string } }) => unknown>();
   server = {
+    registerCapabilities: vi.fn(),
     setRequestHandler: vi.fn(
       (schema: unknown, handler: (request: { params: { uri: string } }) => unknown) => {
         this.handlers.set(schema, handler);
@@ -28,6 +29,7 @@ describe('resource subscriptions', () => {
   it('tracks subscriptions and notifies updates', () => {
     const server = new FakeResourceServer();
     registerResourceSubscriptions(server as unknown as McpServer);
+    expect(server.server.registerCapabilities).toHaveBeenCalledWith({ resources: { subscribe: true } });
 
     const subscribe = server.handlers.get(SubscribeRequestSchema);
     const unsubscribe = server.handlers.get(UnsubscribeRequestSchema);

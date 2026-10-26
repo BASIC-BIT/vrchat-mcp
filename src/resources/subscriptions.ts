@@ -23,6 +23,7 @@ export function registerResourceSubscriptions(server: McpServer): void {
   const subscriptions = new Set<string>();
   subscriptionsByServer.set(server, subscriptions);
 
+  server.server.registerCapabilities({ resources: { subscribe: true } });
   server.server.setRequestHandler(SubscribeRequestSchema, (request) => {
     const normalized = normalizeUri(request.params.uri);
     subscriptions.add(normalized);
