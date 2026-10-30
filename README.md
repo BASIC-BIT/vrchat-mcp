@@ -372,3 +372,5 @@ Live E2E tests and LLM evals are opt-in. See `docs/evals.md` for details.
 ## License
 
 MIT. See `LICENSE`.
+
+<!-- Shared Claude reviewer canary; this PR is closed without merging. -->
